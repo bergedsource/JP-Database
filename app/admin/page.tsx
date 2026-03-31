@@ -248,11 +248,13 @@ export default function AdminPage() {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                       >
                         <option value="">Select member...</option>
-                        {members.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
+                        {members
+                          .filter((m) => m.status === "active" || m.status === "pledge")
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} ({m.status})
+                            </option>
+                          ))}
                       </select>
                     </div>
 

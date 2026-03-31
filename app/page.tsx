@@ -19,6 +19,7 @@ export default function Home() {
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const supabase = createClient();
 
@@ -29,12 +30,17 @@ export default function Home() {
     setFines([]);
     setSearched(true);
 
-    const { data } = await supabase
+    let q = supabase
       .from("members")
       .select("*")
       .ilike("name", `%${query.trim()}%`)
       .order("name");
 
+    if (filterStatus !== "all") {
+      q = q.eq("status", filterStatus);
+    }
+
+    const { data } = await q;
     setResults(data ?? []);
     setLoading(false);
   }
@@ -82,6 +88,18 @@ export default function Home() {
             placeholder="Search your name..."
             className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="pledge">Pledge</option>
+            <option value="live-out">Live-out</option>
+            <option value="alumni">Alumni</option>
+            <option value="inactive">Inactive</option>
+          </select>
           <button
             onClick={search}
             disabled={loading}
