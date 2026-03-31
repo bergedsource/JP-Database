@@ -594,6 +594,8 @@ export default function AdminPage() {
                                   <option value="pledge">Pledge</option>
                                   <option value="live-out">Live-out</option>
                                   <option value="alumni">Alumni</option>
+                                  <option value="inactive">Inactive</option>
+                                  <option value="resident-advisor">Resident Advisor</option>
                                 </select>
                               </td>
                               <td className="px-5 py-3 text-gray-500">
