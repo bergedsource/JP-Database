@@ -5,11 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { Fine, Member } from "@/lib/types";
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  upheld: "bg-red-100 text-red-800",
-  dismissed: "bg-green-100 text-green-800",
-  paid: "bg-blue-100 text-blue-800",
-  labor: "bg-purple-100 text-purple-800",
+  pending: "bg-yellow-200 text-yellow-900",
+  upheld: "bg-red-200 text-red-900",
+  dismissed: "bg-green-200 text-green-900",
+  paid: "bg-blue-200 text-blue-900",
+  labor: "bg-purple-200 text-purple-900",
 };
 
 export default function Home() {
@@ -125,7 +125,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-gray-900">
             Acacia Fraternity — Oregon State
           </h1>
-          <p className="text-gray-500 mt-2">JP Fine Lookup</p>
+          <p className="text-gray-700 mt-2">JP Fine Lookup</p>
         </div>
 
         <div className="flex gap-2 mb-8" ref={wrapperRef}>
@@ -148,7 +148,7 @@ export default function Home() {
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex justify-between items-center text-sm"
                     >
                       <span className="font-medium text-gray-800">{m.name}</span>
-                      <span className="text-xs text-gray-400 capitalize">{m.status}</span>
+                      <span className="text-xs text-gray-600 capitalize">{m.status}</span>
                     </button>
                   </li>
                 ))}
@@ -176,7 +176,7 @@ export default function Home() {
                 <h2 className="text-xl font-semibold text-gray-900">
                   {selected.name}
                 </h2>
-                <p className="text-sm text-gray-400 capitalize">{selected.status}</p>
+                <p className="text-sm text-gray-600 capitalize">{selected.status}</p>
               </div>
               <button
                 onClick={() => {
@@ -185,14 +185,14 @@ export default function Home() {
                   setQuery("");
                   setSuggestions([]);
                 }}
-                className="text-sm text-gray-400 hover:text-gray-600"
+                className="text-sm text-gray-600 hover:text-gray-600"
               >
                 Back
               </button>
             </div>
 
             {loading ? (
-              <p className="text-center text-gray-400 py-10 text-sm">Loading...</p>
+              <p className="text-center text-gray-600 py-10 text-sm">Loading...</p>
             ) : (
               <>
                 {totalOwed > 0 && (
@@ -206,7 +206,7 @@ export default function Home() {
                 <FineSection title="Past Fines" fines={pastFines} />
 
                 {fines.length === 0 && (
-                  <p className="text-center text-gray-400 py-10 text-sm">
+                  <p className="text-center text-gray-600 py-10 text-sm">
                     No fines on record.
                   </p>
                 )}
@@ -224,7 +224,7 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
 
   return (
     <div className="mb-8">
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+      <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
         {title}
       </h3>
       <div className="space-y-3">
@@ -236,9 +236,9 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
             <div className="flex justify-between items-start">
               <div>
                 <p className="font-medium text-gray-800">{fine.fine_type}</p>
-                <p className="text-sm text-gray-500 mt-0.5">{fine.description}</p>
+                <p className="text-sm text-gray-700 mt-0.5">{fine.description}</p>
                 {fine.notes && (
-                  <p className="text-xs text-gray-400 mt-1 italic">{fine.notes}</p>
+                  <p className="text-xs text-gray-600 mt-1 italic">{fine.notes}</p>
                 )}
               </div>
               <div className="text-right ml-4 shrink-0">
@@ -256,7 +256,7 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
                 )}
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-600 mt-2">
               Issued: {new Date(fine.date_issued).toLocaleDateString()} · Term:{" "}
               {fine.term}
             </p>
