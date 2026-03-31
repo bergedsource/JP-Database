@@ -30,7 +30,7 @@ export type FineType =
 export interface Member {
   id: string;
   name: string;
-  status: "active" | "pledge" | "alumni" | "live-out" | "inactive";
+  status: "active" | "pledge" | "alumni" | "live-out" | "inactive" | "resident-advisor";
   created_at: string;
 }
 

@@ -528,6 +528,7 @@ export default function AdminPage() {
                       <option value="live-out">Live-out</option>
                       <option value="alumni">Alumni</option>
                       <option value="inactive">Inactive</option>
+                      <option value="resident-advisor">Resident Advisor</option>
                       </select>
                     </div>
                     {memberError && (
