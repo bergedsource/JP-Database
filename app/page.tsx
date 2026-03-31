@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Fine, Member } from "@/lib/types";
 
@@ -14,38 +14,65 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Member[]>([]);
+  const [suggestions, setSuggestions] = useState<Member[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
 
-  async function search() {
-    if (!query.trim()) return;
-    setLoading(true);
-    setSelected(null);
-    setFines([]);
-    setSearched(true);
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function fetchSuggestions(value: string) {
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
 
     let q = supabase
       .from("members")
       .select("*")
-      .ilike("name", `%${query.trim()}%`)
-      .order("name");
+      .ilike("name", `%${value.trim()}%`)
+      .order("name")
+      .limit(8);
 
     if (filterStatus !== "all") {
       q = q.eq("status", filterStatus);
     }
 
     const { data } = await q;
-    setResults(data ?? []);
-    setLoading(false);
+    setSuggestions(data ?? []);
+    setShowSuggestions(true);
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    setQuery(value);
+    setSelected(null);
+    setFines([]);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(value), 200);
   }
 
   async function selectMember(member: Member) {
+    setQuery(member.name);
+    setShowSuggestions(false);
+    setSuggestions([]);
     setSelected(member);
     setLoading(true);
 
@@ -57,6 +84,28 @@ export default function Home() {
 
     setFines(data ?? []);
     setLoading(false);
+  }
+
+  function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setFilterStatus(e.target.value);
+    // Re-fetch suggestions with new filter if there's a query
+    if (query.trim()) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        let q = supabase
+          .from("members")
+          .select("*")
+          .ilike("name", `%${query.trim()}%`)
+          .order("name")
+          .limit(8);
+        if (e.target.value !== "all") {
+          q = q.eq("status", e.target.value);
+        }
+        const { data } = await q;
+        setSuggestions(data ?? []);
+        setShowSuggestions(true);
+      }, 100);
+    }
   }
 
   const currentFines = fines.filter((f) =>
@@ -79,18 +128,36 @@ export default function Home() {
           <p className="text-gray-500 mt-2">JP Fine Lookup</p>
         </div>
 
-        <div className="flex gap-2 mb-8">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && search()}
-            placeholder="Search your name..."
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
+        <div className="flex gap-2 mb-8" ref={wrapperRef}>
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={query}
+              onChange={handleInputChange}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              placeholder="Start typing your name..."
+              autoComplete="off"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                {suggestions.map((m) => (
+                  <li key={m.id}>
+                    <button
+                      onMouseDown={() => selectMember(m)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex justify-between items-center text-sm"
+                    >
+                      <span className="font-medium text-gray-800">{m.name}</span>
+                      <span className="text-xs text-gray-400 capitalize">{m.status}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={handleFilterChange}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
           >
             <option value="all">All</option>
@@ -100,40 +167,7 @@ export default function Home() {
             <option value="alumni">Alumni</option>
             <option value="inactive">Inactive</option>
           </select>
-          <button
-            onClick={search}
-            disabled={loading}
-            className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50"
-          >
-            Search
-          </button>
         </div>
-
-        {searched && !selected && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {results.length === 0 ? (
-              <p className="text-center text-gray-400 py-10 text-sm">
-                No members found matching &quot;{query}&quot;
-              </p>
-            ) : (
-              <ul className="divide-y divide-gray-100">
-                {results.map((m) => (
-                  <li key={m.id}>
-                    <button
-                      onClick={() => selectMember(m)}
-                      className="w-full text-left px-5 py-3 hover:bg-gray-50 flex justify-between items-center"
-                    >
-                      <span className="font-medium text-gray-800">{m.name}</span>
-                      <span className="text-xs text-gray-400 capitalize">
-                        {m.status}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
 
         {selected && (
           <div>
@@ -148,9 +182,8 @@ export default function Home() {
                 onClick={() => {
                   setSelected(null);
                   setFines([]);
-                  setSearched(false);
                   setQuery("");
-                  setResults([]);
+                  setSuggestions([]);
                 }}
                 className="text-sm text-gray-400 hover:text-gray-600"
               >
