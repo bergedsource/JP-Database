@@ -4,13 +4,74 @@ import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Fine, Member } from "@/lib/types";
 
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-yellow-200 text-yellow-900",
-  upheld: "bg-red-200 text-red-900",
-  dismissed: "bg-green-200 text-green-900",
-  paid: "bg-blue-200 text-blue-900",
-  labor: "bg-purple-200 text-purple-900",
+const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string }> = {
+  pending:   { bg: "#FEF3C7", color: "#78350F", border: "#F59E0B" },
+  upheld:    { bg: "#FEE2E2", color: "#7F1D1D", border: "#EF4444" },
+  dismissed: { bg: "#D1FAE5", color: "#064E3B", border: "#10B981" },
+  paid:      { bg: "#DBEAFE", color: "#1E3A5F", border: "#3B82F6" },
+  labor:     { bg: "#EDE9FE", color: "#4C1D95", border: "#8B5CF6" },
 };
+
+function AcaciaCrest() {
+  return (
+    <svg viewBox="0 0 160 180" width="110" height="124" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Acacia Fraternity Crest">
+      {/* Outer ring */}
+      <circle cx="80" cy="82" r="72" stroke="#C9A84C" strokeWidth="2.5" fill="none" />
+      <circle cx="80" cy="82" r="67" stroke="#C9A84C" strokeWidth="0.75" strokeDasharray="3 4" fill="none" />
+
+      {/* Tree trunk */}
+      <path d="M77 130 Q78 118 80 108 Q82 118 83 130 Z" fill="#C9A84C" />
+      <rect x="77.5" y="108" width="5" height="24" rx="2" fill="#C9A84C" />
+
+      {/* Main branches */}
+      <path d="M80 108 Q65 98 48 88" stroke="#C9A84C" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M80 108 Q95 98 112 88" stroke="#C9A84C" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M80 100 Q68 90 55 78" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M80 100 Q92 90 105 78" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M80 92 Q72 82 64 70" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M80 92 Q88 82 96 70" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M80 86 Q80 74 80 62" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Leaf clusters — left low */}
+      <ellipse cx="46" cy="86" rx="9" ry="5.5" transform="rotate(-30 46 86)" fill="#C9A84C" opacity="0.9"/>
+      <ellipse cx="38" cy="82" rx="7" ry="4" transform="rotate(-20 38 82)" fill="#C9A84C" opacity="0.75"/>
+      <ellipse cx="50" cy="79" rx="6" ry="3.5" transform="rotate(-40 50 79)" fill="#C9A84C" opacity="0.8"/>
+
+      {/* Leaf clusters — right low */}
+      <ellipse cx="114" cy="86" rx="9" ry="5.5" transform="rotate(30 114 86)" fill="#C9A84C" opacity="0.9"/>
+      <ellipse cx="122" cy="82" rx="7" ry="4" transform="rotate(20 122 82)" fill="#C9A84C" opacity="0.75"/>
+      <ellipse cx="110" cy="79" rx="6" ry="3.5" transform="rotate(40 110 79)" fill="#C9A84C" opacity="0.8"/>
+
+      {/* Leaf clusters — left mid */}
+      <ellipse cx="53" cy="76" rx="8" ry="4.5" transform="rotate(-35 53 76)" fill="#C9A84C" opacity="0.85"/>
+      <ellipse cx="46" cy="70" rx="6" ry="3.5" transform="rotate(-25 46 70)" fill="#C9A84C" opacity="0.7"/>
+
+      {/* Leaf clusters — right mid */}
+      <ellipse cx="107" cy="76" rx="8" ry="4.5" transform="rotate(35 107 76)" fill="#C9A84C" opacity="0.85"/>
+      <ellipse cx="114" cy="70" rx="6" ry="3.5" transform="rotate(25 114 70)" fill="#C9A84C" opacity="0.7"/>
+
+      {/* Leaf clusters — left upper */}
+      <ellipse cx="62" cy="68" rx="7" ry="4" transform="rotate(-40 62 68)" fill="#C9A84C" opacity="0.8"/>
+      <ellipse cx="56" cy="62" rx="5.5" ry="3" transform="rotate(-30 56 62)" fill="#C9A84C" opacity="0.65"/>
+
+      {/* Leaf clusters — right upper */}
+      <ellipse cx="98" cy="68" rx="7" ry="4" transform="rotate(40 98 68)" fill="#C9A84C" opacity="0.8"/>
+      <ellipse cx="104" cy="62" rx="5.5" ry="3" transform="rotate(30 104 62)" fill="#C9A84C" opacity="0.65"/>
+
+      {/* Crown cluster — top */}
+      <ellipse cx="80" cy="58" rx="10" ry="6" fill="#C9A84C" opacity="0.95"/>
+      <ellipse cx="70" cy="54" rx="7" ry="4" transform="rotate(-20 70 54)" fill="#C9A84C" opacity="0.8"/>
+      <ellipse cx="90" cy="54" rx="7" ry="4" transform="rotate(20 90 54)" fill="#C9A84C" opacity="0.8"/>
+      <ellipse cx="80" cy="48" rx="6" ry="3.5" fill="#C9A84C" opacity="0.85"/>
+
+      {/* Text arc — bottom */}
+      <path id="bottomArc" d="M 20 110 A 62 62 0 0 0 140 110" fill="none" />
+      <text fontSize="9.5" fill="#C9A84C" fontFamily="Georgia, serif" letterSpacing="2.5">
+        <textPath href="#bottomArc" startOffset="12%">OREGON STATE · FOUNDED 1912</textPath>
+      </text>
+    </svg>
+  );
+}
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -25,7 +86,6 @@ export default function Home() {
 
   const supabase = createClient();
 
-  // Close suggestions when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -42,7 +102,6 @@ export default function Home() {
       setShowSuggestions(false);
       return;
     }
-
     let q = supabase
       .from("members")
       .select("*")
@@ -50,11 +109,9 @@ export default function Home() {
       .in("status", ["active", "pledge"])
       .order("name")
       .limit(8);
-
     if (filterStatus !== "all") {
       q = q.eq("status", filterStatus);
     }
-
     const { data } = await q;
     setSuggestions(data ?? []);
     setShowSuggestions(true);
@@ -65,7 +122,6 @@ export default function Home() {
     setQuery(value);
     setSelected(null);
     setFines([]);
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 200);
   }
@@ -76,20 +132,17 @@ export default function Home() {
     setSuggestions([]);
     setSelected(member);
     setLoading(true);
-
     const { data } = await supabase
       .from("fines")
       .select("*")
       .eq("member_id", member.id)
       .order("date_issued", { ascending: false });
-
     setFines(data ?? []);
     setLoading(false);
   }
 
   function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setFilterStatus(e.target.value);
-    // Re-fetch suggestions with new filter if there's a query
     if (query.trim()) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
@@ -110,111 +163,479 @@ export default function Home() {
     }
   }
 
-  const currentFines = fines.filter((f) =>
-    ["pending", "upheld"].includes(f.status)
-  );
-  const pastFines = fines.filter((f) =>
-    ["dismissed", "paid", "labor"].includes(f.status)
-  );
+  const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
+  const pastFines = fines.filter((f) => ["dismissed", "paid", "labor"].includes(f.status));
   const totalOwed = currentFines
     .filter((f) => f.status === "upheld" && f.amount)
     .reduce((sum, f) => sum + (f.amount ?? 0), 0);
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-12">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Acacia Fraternity — Oregon State
-          </h1>
-          <p className="text-gray-700 mt-2">JP Fine Lookup</p>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&display=swap');
 
-        <div className="flex gap-2 mb-8" ref={wrapperRef}>
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={query}
-              onChange={handleInputChange}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder="Start typing your name..."
-              autoComplete="off"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-            />
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                {suggestions.map((m) => (
-                  <li key={m.id}>
-                    <button
-                      onMouseDown={() => selectMember(m)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex justify-between items-center text-sm"
-                    >
-                      <span className="font-medium text-gray-800">{m.name}</span>
-                      <span className="text-xs text-gray-600 capitalize">{m.status}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <select
-            value={filterStatus}
-            onChange={handleFilterChange}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="pledge">Pledge</option>
-          </select>
-        </div>
+        :root {
+          --green-deep: #0D1F14;
+          --green-mid: #163424;
+          --green-card: #1A3D2B;
+          --green-border: #2A5A3C;
+          --gold: #C9A84C;
+          --gold-light: #E2C470;
+          --gold-dim: #8A6E2F;
+          --cream: #F5EDD8;
+          --cream-dim: #B8A98A;
+          --white: #FFFFFF;
+        }
 
-        {selected && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {selected.name}
-                </h2>
-                <p className="text-sm text-gray-600 capitalize">{selected.status}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setSelected(null);
-                  setFines([]);
-                  setQuery("");
-                  setSuggestions([]);
-                }}
-                className="text-sm text-gray-600 hover:text-gray-600"
-              >
-                Back
-              </button>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          background-color: var(--green-deep);
+          font-family: 'Lato', sans-serif;
+          color: var(--cream);
+          min-height: 100vh;
+        }
+
+        .page-wrap {
+          min-height: 100vh;
+          background:
+            radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 100%, rgba(22,52,36,0.6) 0%, transparent 50%),
+            linear-gradient(160deg, #0D1F14 0%, #122A1D 50%, #0D1F14 100%);
+        }
+
+        .inner {
+          max-width: 680px;
+          margin: 0 auto;
+          padding: 56px 20px 80px;
+        }
+
+        /* ── Header ── */
+        .header {
+          text-align: center;
+          margin-bottom: 48px;
+          animation: fadeDown 0.7s ease both;
+        }
+        .crest-wrap {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+          filter: drop-shadow(0 4px 24px rgba(201,168,76,0.25));
+        }
+        .org-label {
+          font-family: 'Lato', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          color: var(--gold-dim);
+          margin-bottom: 10px;
+        }
+        .page-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(32px, 6vw, 48px);
+          font-weight: 600;
+          color: var(--cream);
+          line-height: 1.1;
+          letter-spacing: -0.5px;
+        }
+        .page-subtitle {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 18px;
+          font-weight: 400;
+          font-style: italic;
+          color: var(--gold);
+          margin-top: 6px;
+          letter-spacing: 0.3px;
+        }
+        .divider {
+          width: 60px;
+          height: 1.5px;
+          background: linear-gradient(90deg, transparent, var(--gold), transparent);
+          margin: 18px auto 0;
+        }
+
+        /* ── Search panel ── */
+        .search-panel {
+          background: rgba(26,61,43,0.6);
+          border: 1px solid var(--green-border);
+          border-radius: 14px;
+          padding: 24px;
+          backdrop-filter: blur(8px);
+          margin-bottom: 36px;
+          animation: fadeUp 0.7s 0.15s ease both;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+        }
+        .search-label {
+          font-family: 'Lato', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          color: var(--gold-dim);
+          margin-bottom: 12px;
+          display: block;
+        }
+        .search-row {
+          display: flex;
+          gap: 10px;
+          position: relative;
+        }
+        .search-input-wrap {
+          flex: 1;
+          position: relative;
+        }
+        .search-input {
+          width: 100%;
+          background: rgba(13,31,20,0.7);
+          border: 1.5px solid var(--green-border);
+          border-radius: 8px;
+          padding: 12px 16px;
+          font-family: 'Lato', sans-serif;
+          font-size: 15px;
+          color: var(--cream);
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-input::placeholder { color: var(--cream-dim); opacity: 0.6; }
+        .search-input:focus {
+          border-color: var(--gold);
+          box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+        }
+        .filter-select {
+          background: rgba(13,31,20,0.7);
+          border: 1.5px solid var(--green-border);
+          border-radius: 8px;
+          padding: 12px 14px;
+          font-family: 'Lato', sans-serif;
+          font-size: 14px;
+          color: var(--cream);
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.2s;
+          min-width: 100px;
+        }
+        .filter-select:focus { border-color: var(--gold); }
+        .filter-select option { background: #163424; }
+
+        /* Autocomplete dropdown */
+        .suggestions {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0; right: 0;
+          background: #122A1D;
+          border: 1px solid var(--green-border);
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+          z-index: 50;
+        }
+        .suggestion-item {
+          width: 100%;
+          text-align: left;
+          padding: 12px 18px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: background 0.15s;
+          border-bottom: 1px solid rgba(42,90,60,0.4);
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background: rgba(201,168,76,0.08); }
+        .suggestion-name {
+          font-family: 'Lato', sans-serif;
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--cream);
+        }
+        .suggestion-status {
+          font-size: 11px;
+          font-weight: 400;
+          color: var(--gold-dim);
+          text-transform: capitalize;
+          letter-spacing: 0.5px;
+        }
+
+        /* ── Member header ── */
+        .member-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 28px;
+          animation: fadeUp 0.4s ease both;
+        }
+        .member-name {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 30px;
+          font-weight: 600;
+          color: var(--cream);
+          line-height: 1.1;
+        }
+        .member-status {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: var(--gold);
+          margin-top: 4px;
+        }
+        .back-btn {
+          background: transparent;
+          border: 1px solid var(--green-border);
+          border-radius: 7px;
+          padding: 8px 16px;
+          font-family: 'Lato', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: var(--cream-dim);
+          cursor: pointer;
+          transition: border-color 0.2s, color 0.2s;
+          white-space: nowrap;
+          margin-top: 4px;
+        }
+        .back-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* ── Owed banner ── */
+        .owed-banner {
+          background: linear-gradient(135deg, rgba(127,29,29,0.35) 0%, rgba(153,27,27,0.2) 100%);
+          border: 1px solid rgba(239,68,68,0.35);
+          border-radius: 10px;
+          padding: 14px 20px;
+          margin-bottom: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          animation: fadeUp 0.4s 0.05s ease both;
+        }
+        .owed-label {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: #FCA5A5;
+        }
+        .owed-amount {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 26px;
+          font-weight: 700;
+          color: #F87171;
+        }
+
+        /* ── Fine sections ── */
+        .section-title {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          color: var(--gold-dim);
+          margin-bottom: 14px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid var(--green-border);
+        }
+        .fine-list { margin-bottom: 36px; }
+
+        /* ── Fine card ── */
+        .fine-card {
+          background: rgba(26,61,43,0.5);
+          border: 1px solid var(--green-border);
+          border-radius: 12px;
+          padding: 18px 20px;
+          margin-bottom: 10px;
+          backdrop-filter: blur(4px);
+          transition: border-color 0.2s, box-shadow 0.2s;
+          animation: fadeUp 0.35s ease both;
+        }
+        .fine-card:hover {
+          border-color: rgba(201,168,76,0.3);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .fine-card-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .fine-type {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 18px;
+          font-weight: 600;
+          color: var(--cream);
+          line-height: 1.2;
+        }
+        .fine-desc {
+          font-size: 13px;
+          color: var(--cream-dim);
+          margin-top: 4px;
+          line-height: 1.4;
+        }
+        .fine-notes {
+          font-size: 12px;
+          color: var(--gold-dim);
+          margin-top: 5px;
+          font-style: italic;
+        }
+        .fine-right {
+          text-align: right;
+          flex-shrink: 0;
+        }
+        .status-badge {
+          display: inline-block;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          padding: 3px 10px;
+          border-radius: 20px;
+          border-width: 1px;
+          border-style: solid;
+        }
+        .fine-amount {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--cream);
+          margin-top: 6px;
+        }
+        .fine-meta {
+          font-size: 11px;
+          color: var(--gold-dim);
+          margin-top: 12px;
+          letter-spacing: 0.3px;
+        }
+
+        .loading-text {
+          text-align: center;
+          color: var(--cream-dim);
+          padding: 48px 0;
+          font-style: italic;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 18px;
+        }
+        .empty-text {
+          text-align: center;
+          color: var(--cream-dim);
+          padding: 48px 0;
+          font-style: italic;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 18px;
+        }
+
+        @keyframes fadeDown {
+          from { opacity: 0; transform: translateY(-16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <div className="page-wrap">
+        <div className="inner">
+
+          {/* ── Header ── */}
+          <header className="header">
+            <div className="crest-wrap">
+              <AcaciaCrest />
             </div>
+            <p className="org-label">Acacia Fraternity</p>
+            <h1 className="page-title">Jurisprudence Portal</h1>
+            <p className="page-subtitle">Oregon State Chapter</p>
+            <div className="divider" />
+          </header>
 
-            {loading ? (
-              <p className="text-center text-gray-600 py-10 text-sm">Loading...</p>
-            ) : (
-              <>
-                {totalOwed > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg px-5 py-3 mb-6 text-sm text-red-700">
-                    Total currently owed:{" "}
-                    <span className="font-bold">${totalOwed.toFixed(2)}</span>
-                  </div>
+          {/* ── Search ── */}
+          <div className="search-panel" ref={wrapperRef}>
+            <span className="search-label">Member Fine Lookup</span>
+            <div className="search-row">
+              <div className="search-input-wrap">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={handleInputChange}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="Start typing your name…"
+                  autoComplete="off"
+                  className="search-input"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="suggestions">
+                    {suggestions.map((m) => (
+                      <li key={m.id}>
+                        <button
+                          onMouseDown={() => selectMember(m)}
+                          className="suggestion-item"
+                        >
+                          <span className="suggestion-name">{m.name}</span>
+                          <span className="suggestion-status">{m.status}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-
-                <FineSection title="Current Fines" fines={currentFines} />
-                <FineSection title="Past Fines" fines={pastFines} />
-
-                {fines.length === 0 && (
-                  <p className="text-center text-gray-600 py-10 text-sm">
-                    No fines on record.
-                  </p>
-                )}
-              </>
-            )}
+              </div>
+              <select
+                value={filterStatus}
+                onChange={handleFilterChange}
+                className="filter-select"
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="pledge">Pledge</option>
+              </select>
+            </div>
           </div>
-        )}
+
+          {/* ── Member detail ── */}
+          {selected && (
+            <div>
+              <div className="member-header">
+                <div>
+                  <h2 className="member-name">{selected.name}</h2>
+                  <p className="member-status">{selected.status}</p>
+                </div>
+                <button
+                  className="back-btn"
+                  onClick={() => {
+                    setSelected(null);
+                    setFines([]);
+                    setQuery("");
+                    setSuggestions([]);
+                  }}
+                >
+                  ← Back
+                </button>
+              </div>
+
+              {loading ? (
+                <p className="loading-text">Loading records…</p>
+              ) : (
+                <>
+                  {totalOwed > 0 && (
+                    <div className="owed-banner">
+                      <span className="owed-label">Balance Due</span>
+                      <span className="owed-amount">${totalOwed.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <FineSection title="Current Fines" fines={currentFines} />
+                  <FineSection title="Past Fines" fines={pastFines} />
+
+                  {fines.length === 0 && (
+                    <p className="empty-text">No fines on record.</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </main>
+    </>
   );
 }
 
@@ -222,46 +643,37 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
   if (fines.length === 0) return null;
 
   return (
-    <div className="mb-8">
-      <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-        {title}
-      </h3>
-      <div className="space-y-3">
-        {fines.map((fine) => (
-          <div
-            key={fine.id}
-            className="bg-white border border-gray-200 rounded-xl px-5 py-4"
-          >
-            <div className="flex justify-between items-start">
+    <div className="fine-list">
+      <h3 className="section-title">{title}</h3>
+      {fines.map((fine, i) => {
+        const cfg = STATUS_CONFIG[fine.status] ?? { bg: "#e5e7eb", color: "#374151", border: "#9ca3af" };
+        return (
+          <div key={fine.id} className="fine-card" style={{ animationDelay: `${i * 0.05}s` }}>
+            <div className="fine-card-top">
               <div>
-                <p className="font-medium text-gray-800">{fine.fine_type}</p>
-                <p className="text-sm text-gray-700 mt-0.5">{fine.description}</p>
-                {fine.notes && (
-                  <p className="text-xs text-gray-600 mt-1 italic">{fine.notes}</p>
-                )}
+                <p className="fine-type">{fine.fine_type}</p>
+                <p className="fine-desc">{fine.description}</p>
+                {fine.notes && <p className="fine-notes">{fine.notes}</p>}
               </div>
-              <div className="text-right ml-4 shrink-0">
+              <div className="fine-right">
                 <span
-                  className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                    STATUS_STYLES[fine.status]
-                  }`}
+                  className="status-badge"
+                  style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}
                 >
                   {fine.status}
                 </span>
                 {fine.amount != null && (
-                  <p className="text-sm font-semibold text-gray-700 mt-1">
-                    ${fine.amount.toFixed(2)}
-                  </p>
+                  <p className="fine-amount">${fine.amount.toFixed(2)}</p>
                 )}
               </div>
             </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Issued: {new Date(fine.date_issued).toLocaleDateString()} · Term:{" "}
-              {fine.term}
+            <p className="fine-meta">
+              Issued {new Date(fine.date_issued).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              &nbsp;·&nbsp;{fine.term}
             </p>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
