@@ -47,6 +47,7 @@ export default function Home() {
       .from("members")
       .select("*")
       .ilike("name", `%${value.trim()}%`)
+      .in("status", ["active", "pledge"])
       .order("name")
       .limit(8);
 
@@ -96,6 +97,7 @@ export default function Home() {
           .from("members")
           .select("*")
           .ilike("name", `%${query.trim()}%`)
+          .in("status", ["active", "pledge"])
           .order("name")
           .limit(8);
         if (e.target.value !== "all") {
@@ -163,10 +165,6 @@ export default function Home() {
             <option value="all">All</option>
             <option value="active">Active</option>
             <option value="pledge">Pledge</option>
-            <option value="live-out">Live-out</option>
-            <option value="alumni">Alumni</option>
-            <option value="inactive">Inactive</option>
-            <option value="resident-advisor">Resident Advisor</option>
           </select>
         </div>
 
