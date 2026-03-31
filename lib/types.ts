@@ -25,6 +25,22 @@ export type FineType =
   | "Removal/Damage to House Property"
   | "Removal/Damage to Personal Property"
   | "Unauthorized Weapon Use"
+  | "Missing Blood Drive"
+  | "Missing Philanthropy Hours"
+  | "Vacant Room"
+  | "Cell Phone in Exec Meeting"
+  | "Grievance Committee No-Show"
+  | "Drop Testing Cleanup"
+  | "Sexual Relations on Sleeping Porch"
+  | "Missing House Philanthropy Event"
+  | "Missing Signed-Up Philanthropy Event"
+  | "Bathroom Trash Violation"
+  | "Physical Violence"
+  | "Guest Misconduct"
+  | "Breathalyzer Misuse"
+  | "Room Improvement Removal"
+  | "Inadequate Room Space"
+  | "Failure to Vacate Room"
   | "Other";
 
 export interface Member {
