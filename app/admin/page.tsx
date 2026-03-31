@@ -283,7 +283,7 @@ export default function AdminPage() {
                   <h2 className="font-semibold text-gray-800 mb-4">Issue Fine</h2>
                   <form onSubmit={submitFine} className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Member</label>
+                      <label className="block text-xs text-gray-500 mb-1">Member <span className="text-red-500">(required)</span></label>
                       <input
                         type="text"
                         value={memberSearch}
@@ -316,7 +316,7 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Fine Type</label>
+                      <label className="block text-xs text-gray-500 mb-1">Fine Type <span className="text-red-500">(required)</span></label>
                       <select
                         value={fineForm.fine_type}
                         onChange={(e) =>
@@ -336,7 +336,7 @@ export default function AdminPage() {
                     </div>
 
                     <div className="col-span-2">
-                      <label className="block text-xs text-gray-500 mb-1">Description</label>
+                      <label className="block text-xs text-gray-500 mb-1">Description <span className="text-red-500">(required)</span></label>
                       <input
                         type="text"
                         value={fineForm.description}
@@ -367,7 +367,7 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Term</label>
+                      <label className="block text-xs text-gray-500 mb-1">Term <span className="text-red-500">(required)</span></label>
                       <input
                         type="text"
                         value={fineForm.term}
@@ -381,7 +381,7 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Date Issued</label>
+                      <label className="block text-xs text-gray-500 mb-1">Date Issued <span className="text-red-500">(required)</span></label>
                       <input
                         type="date"
                         value={fineForm.date_issued}
