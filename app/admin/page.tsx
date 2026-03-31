@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
+import type { AuditLog, Fine, FineStatus, FineType, Member } from "@/lib/types";
 
 const FINE_TYPES: FineType[] = [
   "Conduct Unbecoming",
@@ -41,7 +41,7 @@ const STATUS_STYLES: Record<FineStatus, string> = {
   labor: "bg-purple-100 text-purple-800",
 };
 
-type Tab = "fines" | "members";
+type Tab = "fines" | "members" | "audit";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
@@ -50,6 +50,8 @@ export default function AdminPage() {
   const [filterStatus, setFilterStatus] = useState<FineStatus | "all">("all");
   const [filterMember, setFilterMember] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [adminEmail, setAdminEmail] = useState("");
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
@@ -78,16 +80,17 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadData();
+    supabase.auth.getUser().then(({ data }) => {
+      setAdminEmail(data.user?.email ?? "unknown");
+    });
   }, []);
 
   async function loadData() {
     setLoading(true);
-    const [{ data: m }, { data: f }] = await Promise.all([
+    const [{ data: m }, { data: f }, { data: a }] = await Promise.all([
       supabase.from("members").select("*").order("name"),
-      supabase
-        .from("fines")
-        .select("*, members(name)")
-        .order("date_issued", { ascending: false }),
+      supabase.from("fines").select("*, members(name)").order("date_issued", { ascending: false }),
+      supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200),
     ]);
     setMembers(m ?? []);
     setFines(
@@ -96,7 +99,12 @@ export default function AdminPage() {
         member_name: fine.members?.name,
       }))
     );
+    setAuditLogs(a ?? []);
     setLoading(false);
+  }
+
+  async function log(action: string, details: string) {
+    await supabase.from("audit_logs").insert({ admin_email: adminEmail, action, details });
   }
 
   async function signOut() {
@@ -124,6 +132,8 @@ export default function AdminPage() {
     if (error) {
       setFineError(error.message);
     } else {
+      const memberName = members.find((m) => m.id === fineForm.member_id)?.name ?? fineForm.member_id;
+      await log("Issued Fine", `${fineForm.fine_type} against ${memberName} — "${fineForm.description}" (${fineForm.term}${fineForm.amount ? `, $${fineForm.amount}` : ""})`);
       setFineForm({
         member_id: "",
         fine_type: "General Misconduct",
@@ -139,6 +149,7 @@ export default function AdminPage() {
   }
 
   async function updateFineStatus(id: string, status: FineStatus) {
+    const fine = fines.find((f) => f.id === id);
     await supabase
       .from("fines")
       .update({
@@ -148,12 +159,19 @@ export default function AdminPage() {
           : null,
       })
       .eq("id", id);
+    if (fine) {
+      await log("Updated Fine Status", `${fine.member_name ?? "Unknown"} — ${fine.fine_type} changed to "${status}"`);
+    }
     await loadData();
   }
 
   async function deleteFine(id: string) {
     if (!confirm("Delete this fine?")) return;
+    const fine = fines.find((f) => f.id === id);
     await supabase.from("fines").delete().eq("id", id);
+    if (fine) {
+      await log("Deleted Fine", `${fine.member_name ?? "Unknown"} — ${fine.fine_type} (${fine.term})`);
+    }
     await loadData();
   }
 
@@ -170,6 +188,7 @@ export default function AdminPage() {
     if (error) {
       setMemberError(error.message);
     } else {
+      await log("Added Member", `${memberForm.name.trim()} (${memberForm.status})`);
       setMemberForm({ name: "", status: "active" });
       await loadData();
     }
@@ -177,14 +196,22 @@ export default function AdminPage() {
   }
 
   async function updateMemberStatus(id: string, status: Member["status"]) {
+    const member = members.find((m) => m.id === id);
     await supabase.from("members").update({ status }).eq("id", id);
+    if (member) {
+      await log("Updated Member Status", `${member.name} changed from "${member.status}" to "${status}"`);
+    }
     await loadData();
   }
 
   async function deleteMember(id: string) {
     if (!confirm("Delete this member and all their fines?")) return;
+    const member = members.find((m) => m.id === id);
     await supabase.from("fines").delete().eq("member_id", id);
     await supabase.from("members").delete().eq("id", id);
+    if (member) {
+      await log("Deleted Member", `${member.name} (${member.status})`);
+    }
     await loadData();
   }
 
@@ -212,7 +239,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit">
-          {(["fines", "members"] as Tab[]).map((t) => (
+          {(["fines", "members", "audit"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -624,6 +651,44 @@ export default function AdminPage() {
                     </table>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* AUDIT LOG TAB */}
+            {tab === "audit" && (
+              <div>
+                <h2 className="font-semibold text-gray-800 mb-4">Audit Log</h2>
+                {auditLogs.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No actions recorded yet.</p>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">When</th>
+                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</th>
+                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Action</th>
+                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {auditLogs.map((log) => (
+                          <tr key={log.id}>
+                            <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
+                              {new Date(log.created_at).toLocaleDateString()}{" "}
+                              <span className="text-gray-400">
+                                {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-gray-600">{log.admin_email}</td>
+                            <td className="px-5 py-3 font-medium text-gray-800 whitespace-nowrap">{log.action}</td>
+                            <td className="px-5 py-3 text-gray-600">{log.details}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </>

@@ -34,6 +34,14 @@ export interface Member {
   created_at: string;
 }
 
+export interface AuditLog {
+  id: string;
+  admin_email: string;
+  action: string;
+  details: string;
+  created_at: string;
+}
+
 export interface Fine {
   id: string;
   member_id: string;
