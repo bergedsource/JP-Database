@@ -61,6 +61,7 @@ export default function AdminPage() {
     date_issued: new Date().toISOString().split("T")[0],
     notes: "",
   });
+  const [memberSearch, setMemberSearch] = useState("");
   const [fineSubmitting, setFineSubmitting] = useState(false);
   const [fineError, setFineError] = useState("");
 
@@ -239,17 +240,29 @@ export default function AdminPage() {
                   <form onSubmit={submitFine} className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Member</label>
+                      <input
+                        type="text"
+                        value={memberSearch}
+                        onChange={(e) => setMemberSearch(e.target.value)}
+                        placeholder="Search name..."
+                        className="w-full border border-gray-300 rounded-t-lg px-3 py-2 text-sm border-b-0 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
                       <select
                         value={fineForm.member_id}
                         onChange={(e) =>
                           setFineForm({ ...fineForm, member_id: e.target.value })
                         }
                         required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        size={5}
+                        className="w-full border border-gray-300 rounded-b-lg px-3 py-1 text-sm"
                       >
-                        <option value="">Select member...</option>
+                        <option value="">-- Select member --</option>
                         {members
-                          .filter((m) => m.status === "active" || m.status === "pledge")
+                          .filter(
+                            (m) =>
+                              (m.status === "active" || m.status === "pledge") &&
+                              m.name.toLowerCase().includes(memberSearch.toLowerCase())
+                          )
                           .map((m) => (
                             <option key={m.id} value={m.id}>
                               {m.name} ({m.status})
