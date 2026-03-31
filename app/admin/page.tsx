@@ -509,9 +509,10 @@ export default function AdminPage() {
                         className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                       >
                         <option value="active">Active</option>
-                        <option value="pledge">Pledge</option>
-                        <option value="live-out">Live-out</option>
-                        <option value="alumni">Alumni</option>
+                      <option value="pledge">Pledge</option>
+                      <option value="live-out">Live-out</option>
+                      <option value="alumni">Alumni</option>
+                      <option value="inactive">Inactive</option>
                       </select>
                     </div>
                     {memberError && (

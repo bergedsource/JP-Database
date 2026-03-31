@@ -4,7 +4,7 @@
 create table public.members (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  status text not null default 'active' check (status in ('active', 'pledge', 'live-out', 'alumni')),
+  status text not null default 'active' check (status in ('active', 'pledge', 'live-out', 'alumni', 'inactive')),
   created_at timestamptz not null default now()
 );
 
