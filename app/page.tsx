@@ -14,62 +14,8 @@ const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string 
 
 function AcaciaCrest() {
   return (
-    <svg viewBox="0 0 160 180" width="110" height="124" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Acacia Fraternity Crest">
-      {/* Outer ring */}
-      <circle cx="80" cy="82" r="72" stroke="#C9A84C" strokeWidth="2.5" fill="none" />
-      <circle cx="80" cy="82" r="67" stroke="#C9A84C" strokeWidth="0.75" strokeDasharray="3 4" fill="none" />
-
-      {/* Tree trunk */}
-      <path d="M77 130 Q78 118 80 108 Q82 118 83 130 Z" fill="#C9A84C" />
-      <rect x="77.5" y="108" width="5" height="24" rx="2" fill="#C9A84C" />
-
-      {/* Main branches */}
-      <path d="M80 108 Q65 98 48 88" stroke="#C9A84C" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M80 108 Q95 98 112 88" stroke="#C9A84C" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M80 100 Q68 90 55 78" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M80 100 Q92 90 105 78" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M80 92 Q72 82 64 70" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M80 92 Q88 82 96 70" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M80 86 Q80 74 80 62" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" />
-
-      {/* Leaf clusters — left low */}
-      <ellipse cx="46" cy="86" rx="9" ry="5.5" transform="rotate(-30 46 86)" fill="#C9A84C" opacity="0.9"/>
-      <ellipse cx="38" cy="82" rx="7" ry="4" transform="rotate(-20 38 82)" fill="#C9A84C" opacity="0.75"/>
-      <ellipse cx="50" cy="79" rx="6" ry="3.5" transform="rotate(-40 50 79)" fill="#C9A84C" opacity="0.8"/>
-
-      {/* Leaf clusters — right low */}
-      <ellipse cx="114" cy="86" rx="9" ry="5.5" transform="rotate(30 114 86)" fill="#C9A84C" opacity="0.9"/>
-      <ellipse cx="122" cy="82" rx="7" ry="4" transform="rotate(20 122 82)" fill="#C9A84C" opacity="0.75"/>
-      <ellipse cx="110" cy="79" rx="6" ry="3.5" transform="rotate(40 110 79)" fill="#C9A84C" opacity="0.8"/>
-
-      {/* Leaf clusters — left mid */}
-      <ellipse cx="53" cy="76" rx="8" ry="4.5" transform="rotate(-35 53 76)" fill="#C9A84C" opacity="0.85"/>
-      <ellipse cx="46" cy="70" rx="6" ry="3.5" transform="rotate(-25 46 70)" fill="#C9A84C" opacity="0.7"/>
-
-      {/* Leaf clusters — right mid */}
-      <ellipse cx="107" cy="76" rx="8" ry="4.5" transform="rotate(35 107 76)" fill="#C9A84C" opacity="0.85"/>
-      <ellipse cx="114" cy="70" rx="6" ry="3.5" transform="rotate(25 114 70)" fill="#C9A84C" opacity="0.7"/>
-
-      {/* Leaf clusters — left upper */}
-      <ellipse cx="62" cy="68" rx="7" ry="4" transform="rotate(-40 62 68)" fill="#C9A84C" opacity="0.8"/>
-      <ellipse cx="56" cy="62" rx="5.5" ry="3" transform="rotate(-30 56 62)" fill="#C9A84C" opacity="0.65"/>
-
-      {/* Leaf clusters — right upper */}
-      <ellipse cx="98" cy="68" rx="7" ry="4" transform="rotate(40 98 68)" fill="#C9A84C" opacity="0.8"/>
-      <ellipse cx="104" cy="62" rx="5.5" ry="3" transform="rotate(30 104 62)" fill="#C9A84C" opacity="0.65"/>
-
-      {/* Crown cluster — top */}
-      <ellipse cx="80" cy="58" rx="10" ry="6" fill="#C9A84C" opacity="0.95"/>
-      <ellipse cx="70" cy="54" rx="7" ry="4" transform="rotate(-20 70 54)" fill="#C9A84C" opacity="0.8"/>
-      <ellipse cx="90" cy="54" rx="7" ry="4" transform="rotate(20 90 54)" fill="#C9A84C" opacity="0.8"/>
-      <ellipse cx="80" cy="48" rx="6" ry="3.5" fill="#C9A84C" opacity="0.85"/>
-
-      {/* Text arc — bottom */}
-      <path id="bottomArc" d="M 20 110 A 62 62 0 0 0 140 110" fill="none" />
-      <text fontSize="9.5" fill="#C9A84C" fontFamily="Georgia, serif" letterSpacing="2.5">
-        <textPath href="#bottomArc" startOffset="12%">OREGON STATE · FOUNDED 1912</textPath>
-      </text>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/crest.webp" alt="Acacia Fraternity Crest" width={160} height={213} style={{ objectFit: "contain" }} />
   );
 }
 
@@ -175,22 +121,21 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&display=swap');
 
         :root {
-          --green-deep: #0D1F14;
-          --green-mid: #163424;
-          --green-card: #1A3D2B;
-          --green-border: #2A5A3C;
-          --gold: #C9A84C;
-          --gold-light: #E2C470;
-          --gold-dim: #8A6E2F;
-          --cream: #F5EDD8;
-          --cream-dim: #B8A98A;
+          --black: #0A0A0A;
+          --black-card: #141414;
+          --black-border: #2A2A2A;
+          --gold: #CFB53B;
+          --gold-light: #E2CC6A;
+          --gold-dim: #8A7520;
+          --cream: #F0E8D0;
+          --cream-dim: #A89870;
           --white: #FFFFFF;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-          background-color: var(--green-deep);
+          background-color: var(--black);
           font-family: 'Lato', sans-serif;
           color: var(--cream);
           min-height: 100vh;
@@ -199,9 +144,9 @@ export default function Home() {
         .page-wrap {
           min-height: 100vh;
           background:
-            radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.08) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 100%, rgba(22,52,36,0.6) 0%, transparent 50%),
-            linear-gradient(160deg, #0D1F14 0%, #122A1D 50%, #0D1F14 100%);
+            radial-gradient(ellipse at 30% 0%, rgba(207,181,59,0.07) 0%, transparent 55%),
+            radial-gradient(ellipse at 70% 100%, rgba(207,181,59,0.04) 0%, transparent 50%),
+            linear-gradient(160deg, #0A0A0A 0%, #111111 50%, #0A0A0A 100%);
         }
 
         .inner {
@@ -257,8 +202,8 @@ export default function Home() {
 
         /* ── Search panel ── */
         .search-panel {
-          background: rgba(26,61,43,0.6);
-          border: 1px solid var(--green-border);
+          background: rgba(20,20,20,0.8);
+          border: 1px solid var(--black-border);
           border-radius: 14px;
           padding: 24px;
           backdrop-filter: blur(8px);
@@ -287,8 +232,8 @@ export default function Home() {
         }
         .search-input {
           width: 100%;
-          background: rgba(13,31,20,0.7);
-          border: 1.5px solid var(--green-border);
+          background: rgba(10,10,10,0.9);
+          border: 1.5px solid var(--black-border);
           border-radius: 8px;
           padding: 12px 16px;
           font-family: 'Lato', sans-serif;
@@ -303,8 +248,8 @@ export default function Home() {
           box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
         }
         .filter-select {
-          background: rgba(13,31,20,0.7);
-          border: 1.5px solid var(--green-border);
+          background: rgba(10,10,10,0.9);
+          border: 1.5px solid var(--black-border);
           border-radius: 8px;
           padding: 12px 14px;
           font-family: 'Lato', sans-serif;
@@ -316,15 +261,15 @@ export default function Home() {
           min-width: 100px;
         }
         .filter-select:focus { border-color: var(--gold); }
-        .filter-select option { background: #163424; }
+        .filter-select option { background: #111111; }
 
         /* Autocomplete dropdown */
         .suggestions {
           position: absolute;
           top: calc(100% + 6px);
           left: 0; right: 0;
-          background: #122A1D;
-          border: 1px solid var(--green-border);
+          background: #141414;
+          border: 1px solid var(--black-border);
           border-radius: 10px;
           overflow: hidden;
           box-shadow: 0 12px 40px rgba(0,0,0,0.5);
@@ -341,10 +286,10 @@ export default function Home() {
           justify-content: space-between;
           align-items: center;
           transition: background 0.15s;
-          border-bottom: 1px solid rgba(42,90,60,0.4);
+          border-bottom: 1px solid rgba(42,42,42,0.6);
         }
         .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:hover { background: rgba(201,168,76,0.08); }
+        .suggestion-item:hover { background: rgba(207,181,59,0.08); }
         .suggestion-name {
           font-family: 'Lato', sans-serif;
           font-size: 14px;
@@ -400,6 +345,18 @@ export default function Home() {
         }
         .back-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+        /* ── Fine sections ── */
+        .section-title {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          color: var(--gold-dim);
+          margin-bottom: 14px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid var(--black-border);
+        }
+
         /* ── Owed banner ── */
         .owed-banner {
           background: linear-gradient(135deg, rgba(127,29,29,0.35) 0%, rgba(153,27,27,0.2) 100%);
@@ -426,23 +383,12 @@ export default function Home() {
           color: #F87171;
         }
 
-        /* ── Fine sections ── */
-        .section-title {
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 4px;
-          text-transform: uppercase;
-          color: var(--gold-dim);
-          margin-bottom: 14px;
-          padding-bottom: 10px;
-          border-bottom: 1px solid var(--green-border);
-        }
         .fine-list { margin-bottom: 36px; }
 
         /* ── Fine card ── */
         .fine-card {
-          background: rgba(26,61,43,0.5);
-          border: 1px solid var(--green-border);
+          background: rgba(20,20,20,0.8);
+          border: 1px solid var(--black-border);
           border-radius: 12px;
           padding: 18px 20px;
           margin-bottom: 10px;
@@ -451,7 +397,7 @@ export default function Home() {
           animation: fadeUp 0.35s ease both;
         }
         .fine-card:hover {
-          border-color: rgba(201,168,76,0.3);
+          border-color: rgba(207,181,59,0.3);
           box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
         .fine-card-top {
