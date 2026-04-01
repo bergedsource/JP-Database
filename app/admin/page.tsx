@@ -97,7 +97,10 @@ export default function AdminPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    loadData();
+    (async () => {
+      await loadData();
+      await autoEscalateOverdueFines();
+    })();
     supabase.auth.getUser().then(({ data }) => {
       setAdminEmail(data.user?.email ?? "unknown");
     });
@@ -119,6 +122,30 @@ export default function AdminPage() {
     );
     setAuditLogs(a ?? []);
     setLoading(false);
+  }
+
+  async function autoEscalateOverdueFines() {
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: overdue } = await supabase
+      .from("fines")
+      .select("id, fine_type, members(name)")
+      .eq("status", "pending")
+      .lt("created_at", twoWeeksAgo);
+
+    if (!overdue || overdue.length === 0) return;
+
+    const ids = (overdue as { id: string }[]).map((f) => f.id);
+    await supabase.from("fines").update({ status: "upheld" }).in("id", ids);
+
+    for (const fine of overdue as { id: string; fine_type: string; members?: { name: string } }[]) {
+      await supabase.from("audit_logs").insert({
+        admin_email: "system",
+        action: "Auto-Escalated Fine",
+        details: `${fine.members?.name ?? "Unknown"} — ${fine.fine_type} auto-escalated to "upheld" (pending > 2 weeks)`,
+      });
+    }
+
+    await loadData();
   }
 
   async function log(action: string, details: string) {
