@@ -72,7 +72,6 @@ export default function AdminPage() {
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
-    member_id: "",
     fine_type: "General Misconduct" as FineType,
     description: "",
     amount: "",
@@ -80,6 +79,7 @@ export default function AdminPage() {
     date_issued: new Date().toISOString().split("T")[0],
     notes: "",
   });
+  const [selectedMembers, setSelectedMembers] = useState<Member[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false);
   const [fineSubmitting, setFineSubmitting] = useState(false);
@@ -133,11 +133,12 @@ export default function AdminPage() {
 
   async function submitFine(e: React.FormEvent) {
     e.preventDefault();
+    if (selectedMembers.length === 0) { setFineError("Select at least one member."); return; }
     setFineSubmitting(true);
     setFineError("");
 
-    const { error } = await supabase.from("fines").insert({
-      member_id: fineForm.member_id,
+    const rows = selectedMembers.map((m) => ({
+      member_id: m.id,
       fine_type: fineForm.fine_type,
       description: fineForm.description,
       amount: fineForm.amount ? parseFloat(fineForm.amount) : null,
@@ -145,15 +146,16 @@ export default function AdminPage() {
       term: fineForm.term,
       date_issued: fineForm.date_issued,
       notes: fineForm.notes || null,
-    });
+    }));
+
+    const { error } = await supabase.from("fines").insert(rows);
 
     if (error) {
       setFineError(error.message);
     } else {
-      const memberName = members.find((m) => m.id === fineForm.member_id)?.name ?? fineForm.member_id;
-      await log("Issued Fine", `${fineForm.fine_type} against ${memberName} — "${fineForm.description}" (${fineForm.term}${fineForm.amount ? `, $${fineForm.amount}` : ""})`);
+      const names = selectedMembers.map((m) => m.name).join(", ");
+      await log("Issued Fine", `${fineForm.fine_type} against ${names} — "${fineForm.description}" (${fineForm.term}${fineForm.amount ? `, $${fineForm.amount}` : ""})`);
       setFineForm({
-        member_id: "",
         fine_type: "General Misconduct (§11-020)",
         description: "",
         amount: "",
@@ -161,6 +163,7 @@ export default function AdminPage() {
         date_issued: new Date().toISOString().split("T")[0],
         notes: "",
       });
+      setSelectedMembers([]);
       setMemberSearch("");
       await loadData();
     }
@@ -426,6 +429,39 @@ export default function AdminPage() {
         }
         .adm-input option { background: #1C2128; }
 
+        .adm-member-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 8px;
+        }
+        .adm-member-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(207,181,59,0.12);
+          border: 1px solid rgba(207,181,59,0.3);
+          border-radius: 5px;
+          padding: 3px 8px;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--gold);
+          font-family: 'IBM Plex Sans', sans-serif;
+        }
+        .adm-member-tag-remove {
+          background: transparent;
+          border: none;
+          color: var(--gold-dim);
+          cursor: pointer;
+          font-size: 14px;
+          line-height: 1;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          transition: color 0.1s;
+        }
+        .adm-member-tag-remove:hover { color: var(--red); }
+
         .adm-suggestions {
           position: absolute;
           top: calc(100% + 4px);
@@ -646,37 +682,43 @@ export default function AdminPage() {
                     <div className="adm-card-body">
                       <form onSubmit={submitFine} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
-                        <div style={{ position: "relative" }}>
-                          <label className="adm-label">Member <span className="adm-req">*</span></label>
+                        <div style={{ position: "relative", gridColumn: "span 2" }}>
+                          <label className="adm-label">
+                            Members <span className="adm-req">*</span>
+                            {selectedMembers.length > 0 && (
+                              <span style={{ color: "var(--gold)", marginLeft: 6, fontWeight: 600 }}>
+                                {selectedMembers.length} selected
+                              </span>
+                            )}
+                          </label>
                           <input
                             type="text"
                             value={memberSearch}
                             onChange={(e) => {
                               setMemberSearch(e.target.value);
-                              setFineForm({ ...fineForm, member_id: "" });
                               setShowMemberSuggestions(true);
                             }}
                             onFocus={() => setShowMemberSuggestions(true)}
                             onBlur={() => setTimeout(() => setShowMemberSuggestions(false), 150)}
-                            placeholder="Search name…"
+                            placeholder="Search and add members…"
                             autoComplete="off"
                             className="adm-input"
                           />
-                          <input type="hidden" value={fineForm.member_id} required />
                           {showMemberSuggestions && memberSearch.trim() && (
                             <ul className="adm-suggestions">
                               {members
                                 .filter((m) =>
                                   (m.status === "active" || m.status === "pledge") &&
-                                  m.name.toLowerCase().includes(memberSearch.toLowerCase())
+                                  m.name.toLowerCase().includes(memberSearch.toLowerCase()) &&
+                                  !selectedMembers.find((s) => s.id === m.id)
                                 )
                                 .map((m) => (
                                   <li key={m.id}>
                                     <button
                                       type="button"
                                       onMouseDown={() => {
-                                        setFineForm({ ...fineForm, member_id: m.id });
-                                        setMemberSearch(m.name);
+                                        setSelectedMembers((prev) => [...prev, m]);
+                                        setMemberSearch("");
                                         setShowMemberSuggestions(false);
                                       }}
                                       className="adm-suggestion-btn"
@@ -687,6 +729,20 @@ export default function AdminPage() {
                                   </li>
                                 ))}
                             </ul>
+                          )}
+                          {selectedMembers.length > 0 && (
+                            <div className="adm-member-tags">
+                              {selectedMembers.map((m) => (
+                                <span key={m.id} className="adm-member-tag">
+                                  {m.name}
+                                  <button
+                                    type="button"
+                                    className="adm-member-tag-remove"
+                                    onClick={() => setSelectedMembers((prev) => prev.filter((s) => s.id !== m.id))}
+                                  >×</button>
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </div>
 
