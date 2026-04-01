@@ -148,10 +148,7 @@ export default function Home() {
 
         .page-wrap {
           min-height: 100vh;
-          background:
-            radial-gradient(ellipse at 30% 0%, rgba(207,181,59,0.07) 0%, transparent 55%),
-            radial-gradient(ellipse at 70% 100%, rgba(207,181,59,0.04) 0%, transparent 50%),
-            linear-gradient(160deg, #0A0A0A 0%, #111111 50%, #0A0A0A 100%);
+          background: #0A0A0A;
         }
 
         .inner {
