@@ -1353,7 +1353,7 @@ export default function AdminPage() {
 
                     {/* Active list */}
                     <div className="adm-card">
-                      <div className="adm-card-header">
+                      <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <span className="adm-card-title">Currently on Social Probation</span>
                         <span style={{ color: activeSP.length > 0 ? "var(--red)" : "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, fontWeight: 600 }}>
                           {activeSP.length} active
