@@ -1295,7 +1295,7 @@ export default function AdminPage() {
                     ) : (
                       byMember.map(({ member, fines: mFines, totalOwed }) => (
                         <div key={member.id} className="adm-member-block">
-                          <div className="adm-member-block-header">
+                          <div className="adm-member-block-header" style={{ userSelect: "none", cursor: "default" }}>
                             <span className="adm-member-block-name">{member.name}</span>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <span style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "capitalize", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.5px" }}>
@@ -1312,7 +1312,7 @@ export default function AdminPage() {
                             const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
                             return (
                               <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ flex: 1, minWidth: 0, userSelect: "none", cursor: "default" }}>
                                   <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{fine.fine_type}</p>
                                   <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.description}</p>
                                   {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
