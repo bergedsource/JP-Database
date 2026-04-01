@@ -480,28 +480,49 @@ export default function Home() {
         .pay-btn {
           flex: 1;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          padding: 11px 16px;
-          border-radius: 9px;
+          gap: 10px;
+          padding: 20px 16px;
+          border-radius: 12px;
           border: 1px solid var(--black-border);
           background: rgba(20,20,20,0.8);
           color: var(--cream);
           font-family: 'Lato', sans-serif;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 0.3px;
           text-decoration: none;
-          transition: border-color 0.2s, background 0.2s, color 0.2s;
+          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
           cursor: pointer;
         }
         .pay-btn:hover {
-          border-color: var(--gold);
-          background: rgba(207,181,59,0.07);
-          color: var(--gold);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 24px rgba(0,0,0,0.3);
         }
-        .pay-btn svg { flex-shrink: 0; }
+        .pay-btn-cashapp:hover { border-color: #00D632; box-shadow: 0 6px 24px rgba(0,214,50,0.15); }
+        .pay-btn-venmo:hover   { border-color: #008CFF; box-shadow: 0 6px 24px rgba(0,140,255,0.15); }
+        .pay-btn-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .pay-btn-icon-cashapp { background: #00D632; }
+        .pay-btn-icon-venmo   { background: #008CFF; }
+        .pay-btn-name {
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          color: var(--cream);
+        }
+        .pay-btn-handle {
+          font-size: 11px;
+          font-weight: 400;
+          color: var(--cream-dim);
+          margin-top: -4px;
+        }
 
         .loading-text {
           text-align: center;
@@ -620,13 +641,19 @@ export default function Home() {
                       <div className="pay-section">
                         <span className="pay-label">Pay Your Balance</span>
                         <div className="pay-buttons">
-                          <a href="https://cash.app/$AcaciaOSU" target="_blank" rel="noopener noreferrer" className="pay-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.304 12.934l.896-5.58A1.3 1.3 0 0 0 18.914 6H5.086a1.3 1.3 0 0 0-1.286 1.354l.896 5.58A1.3 1.3 0 0 0 5.982 14h12.036a1.3 1.3 0 0 0 1.286-1.066zM12 10.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/><path d="M14.121 16.5H9.879A.879.879 0 0 0 9 17.379v.242C9 18.385 9.615 19 10.379 19h3.242C14.385 19 15 18.385 15 17.621v-.242a.879.879 0 0 0-.879-.879z"/></svg>
-                            Cash App · $AcaciaOSU
+                          <a href="https://cash.app/$AcaciaOSU" target="_blank" rel="noopener noreferrer" className="pay-btn pay-btn-cashapp">
+                            <div className="pay-btn-icon pay-btn-icon-cashapp">
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M13.567 9.948c.492.115.963.298 1.4.542l.638-1.405a5.768 5.768 0 0 0-1.768-.6V7.5h-1.5v.993c-1.56.287-2.587 1.27-2.587 2.67 0 1.504 1.04 2.217 2.587 2.68v2.508c-.7-.118-1.38-.405-1.966-.84l-.713 1.387c.738.527 1.596.872 2.5.998V19h1.5v-1.128c1.695-.303 2.745-1.37 2.745-2.842 0-1.57-1.04-2.295-2.745-2.752V9.948zm-1.317 2.552c-.637-.224-.977-.513-.977-.977 0-.44.314-.795.977-.93v1.907zm1.5 4.088V14.27c.673.242.998.557.998 1.04 0 .492-.347.873-.998 1.278z"/><path fillRule="evenodd" clipRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6zm3-1.5A1.5 1.5 0 0 0 4.5 6v12A1.5 1.5 0 0 0 6 19.5h12a1.5 1.5 0 0 0 1.5-1.5V6A1.5 1.5 0 0 0 18 4.5H6z"/></svg>
+                            </div>
+                            <span className="pay-btn-name">Cash App</span>
+                            <span className="pay-btn-handle">$AcaciaOSU</span>
                           </a>
-                          <a href="https://venmo.com/Dillon-Berge" target="_blank" rel="noopener noreferrer" className="pay-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 3C17.9 3 16.6 4 15.9 5.6c-.3.7-.5 1.5-.5 2.4 0 2 .9 3.8 1.7 5.2L13.3 21H9.4L6 7.2C5.2 4.7 3.9 3.4 2 3l-.2 1.6c1.2.3 2 1.3 2.6 3.3l3.1 12.7h6.2l4.3-10.6c-.9-1.5-1.7-3.3-1.7-5.4 0-.7.1-1.3.4-1.9.3-.8 1-1.3 1.8-1.3.5 0 .9.2 1.2.5l1-1.3C20.4 3.2 20 3 19.5 3z"/></svg>
-                            Venmo · @Dillon-Berge
+                          <a href="https://venmo.com/Dillon-Berge" target="_blank" rel="noopener noreferrer" className="pay-btn pay-btn-venmo">
+                            <div className="pay-btn-icon pay-btn-icon-venmo">
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M18.5 3.5c.6 1 .9 2.1.9 3.3 0 3.3-2.8 7.6-5.1 10.6H9.6L7 4.1l4.7-.5 1.3 10.4c1.2-2 2.7-5.2 2.7-7.3 0-1.2-.2-2-.5-2.7l3.3-.5z"/></svg>
+                            </div>
+                            <span className="pay-btn-name">Venmo</span>
+                            <span className="pay-btn-handle">@Dillon-Berge</span>
                           </a>
                         </div>
                       </div>
