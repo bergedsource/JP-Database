@@ -454,6 +454,50 @@ export default function Home() {
           letter-spacing: 0.3px;
         }
 
+        /* ── Payment buttons ── */
+        .pay-section {
+          margin-bottom: 28px;
+          animation: fadeUp 0.4s 0.08s ease both;
+        }
+        .pay-label {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          color: var(--gold-dim);
+          margin-bottom: 10px;
+          display: block;
+        }
+        .pay-buttons {
+          display: flex;
+          gap: 10px;
+        }
+        .pay-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 11px 16px;
+          border-radius: 9px;
+          border: 1px solid var(--black-border);
+          background: rgba(20,20,20,0.8);
+          color: var(--cream);
+          font-family: 'Lato', sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          text-decoration: none;
+          transition: border-color 0.2s, background 0.2s, color 0.2s;
+          cursor: pointer;
+        }
+        .pay-btn:hover {
+          border-color: var(--gold);
+          background: rgba(207,181,59,0.07);
+          color: var(--gold);
+        }
+        .pay-btn svg { flex-shrink: 0; }
+
         .loading-text {
           text-align: center;
           color: var(--cream-dim);
@@ -563,10 +607,25 @@ export default function Home() {
               ) : (
                 <>
                   {totalOwed > 0 && (
-                    <div className="owed-banner">
-                      <span className="owed-label">Balance Due</span>
-                      <span className="owed-amount">${totalOwed.toFixed(2)}</span>
-                    </div>
+                    <>
+                      <div className="owed-banner">
+                        <span className="owed-label">Balance Due</span>
+                        <span className="owed-amount">${totalOwed.toFixed(2)}</span>
+                      </div>
+                      <div className="pay-section">
+                        <span className="pay-label">Pay Your Balance</span>
+                        <div className="pay-buttons">
+                          <a href="https://cash.app/$AcaciaOSU" target="_blank" rel="noopener noreferrer" className="pay-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.304 12.934l.896-5.58A1.3 1.3 0 0 0 18.914 6H5.086a1.3 1.3 0 0 0-1.286 1.354l.896 5.58A1.3 1.3 0 0 0 5.982 14h12.036a1.3 1.3 0 0 0 1.286-1.066zM12 10.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/><path d="M14.121 16.5H9.879A.879.879 0 0 0 9 17.379v.242C9 18.385 9.615 19 10.379 19h3.242C14.385 19 15 18.385 15 17.621v-.242a.879.879 0 0 0-.879-.879z"/></svg>
+                            Cash App · $AcaciaOSU
+                          </a>
+                          <a href="https://venmo.com/Dillon-Berge" target="_blank" rel="noopener noreferrer" className="pay-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 3C17.9 3 16.6 4 15.9 5.6c-.3.7-.5 1.5-.5 2.4 0 2 .9 3.8 1.7 5.2L13.3 21H9.4L6 7.2C5.2 4.7 3.9 3.4 2 3l-.2 1.6c1.2.3 2 1.3 2.6 3.3l3.1 12.7h6.2l4.3-10.6c-.9-1.5-1.7-3.3-1.7-5.4 0-.7.1-1.3.4-1.9.3-.8 1-1.3 1.8-1.3.5 0 .9.2 1.2.5l1-1.3C20.4 3.2 20 3 19.5 3z"/></svg>
+                            Venmo · @Dillon-Berge
+                          </a>
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   <FineSection title="Current Fines" fines={currentFines} />
