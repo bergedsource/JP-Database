@@ -564,8 +564,8 @@ export default function Home() {
         /* ── Entrance: crest burst ── */
         @keyframes crestBurst {
           0%   { opacity: 0; clip-path: inset(50% 0 50% 0); filter: brightness(0); }
-          45%  { clip-path: inset(0% 0 0% 0); filter: brightness(0.7) drop-shadow(0 0 28px rgba(207,181,59,0.95)); }
-          100% { opacity: 1; clip-path: inset(0% 0 0% 0); filter: brightness(1) drop-shadow(0 4px 24px rgba(207,181,59,0.25)); }
+          45%  { clip-path: inset(0% 0 0% 0); filter: brightness(1.05) drop-shadow(0 0 60px rgba(207,181,59,0.3)) drop-shadow(0 0 120px rgba(207,181,59,0.12)); }
+          100% { opacity: 1; clip-path: inset(0% 0 0% 0); filter: brightness(1) drop-shadow(0 6px 32px rgba(207,181,59,0.18)); }
         }
 
         /* ── Entrance: particles ── */
