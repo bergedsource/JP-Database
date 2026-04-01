@@ -104,6 +104,22 @@ export default function AdminPage() {
   const [memberSubmitting, setMemberSubmitting] = useState(false);
   const [memberError, setMemberError] = useState("");
 
+  // Outstanding fine form state
+  const [outForm, setOutForm] = useState({
+    fine_type: "General Misconduct (§11-020)" as FineType,
+    description: "",
+    amount: "",
+    term: "",
+    date_issued: new Date().toISOString().split("T")[0],
+    notes: "",
+    place_on_soc_pro: false,
+  });
+  const [outMemberSearch, setOutMemberSearch] = useState("");
+  const [outSelectedMember, setOutSelectedMember] = useState<Member | null>(null);
+  const [showOutSuggestions, setShowOutSuggestions] = useState(false);
+  const [outSubmitting, setOutSubmitting] = useState(false);
+  const [outError, setOutError] = useState("");
+
   // Social probation state
   const [socialProbations, setSocialProbations] = useState<SocialProbation[]>([]);
   const [spForm, setSpForm] = useState({
@@ -291,6 +307,66 @@ export default function AdminPage() {
       details: `${memberName} — ${reason} lifted`,
     });
     await loadData();
+  }
+
+  async function submitOutstandingFine(e: React.FormEvent) {
+    e.preventDefault();
+    if (!outSelectedMember) { setOutError("Select a member."); return; }
+    setOutSubmitting(true);
+    setOutError("");
+
+    const { error } = await supabase.from("fines").insert({
+      member_id: outSelectedMember.id,
+      fine_type: outForm.fine_type,
+      description: outForm.description,
+      amount: outForm.amount ? parseFloat(outForm.amount) : null,
+      status: "upheld",
+      term: outForm.term,
+      date_issued: outForm.date_issued,
+      notes: outForm.notes || null,
+    });
+
+    if (error) {
+      setOutError(error.message);
+      setOutSubmitting(false);
+      return;
+    }
+
+    await supabase.from("audit_logs").insert({
+      admin_email: adminEmail,
+      action: "Issued Outstanding Fine",
+      details: `${outSelectedMember.name} — ${outForm.fine_type}${outForm.amount ? ` $${outForm.amount}` : ""} (${outForm.term})`,
+    });
+
+    if (outForm.place_on_soc_pro) {
+      const today = new Date().toISOString().split("T")[0];
+      await supabase.from("social_probation").insert({
+        member_id: outSelectedMember.id,
+        reason: "Outstanding Fines (§10-270)",
+        start_date: today,
+        source: "manual",
+        notes: outForm.notes || null,
+      });
+      await supabase.from("audit_logs").insert({
+        admin_email: adminEmail,
+        action: "Added Social Probation",
+        details: `${outSelectedMember.name} — Outstanding Fines (§10-270) (manual, issued with fine)`,
+      });
+    }
+
+    setOutSelectedMember(null);
+    setOutMemberSearch("");
+    setOutForm({
+      fine_type: "General Misconduct (§11-020)",
+      description: "",
+      amount: "",
+      term: "",
+      date_issued: new Date().toISOString().split("T")[0],
+      notes: "",
+      place_on_soc_pro: false,
+    });
+    await loadData();
+    setOutSubmitting(false);
   }
 
   async function log(action: string, details: string) {
@@ -1102,8 +1178,107 @@ export default function AdminPage() {
 
                 const grandTotal = byMember.reduce((sum, g) => sum + g.totalOwed, 0);
 
+                const outSuggestions = members
+                  .filter((m) => ["active", "pledge"].includes(m.status) && m.name.toLowerCase().includes(outMemberSearch.toLowerCase()))
+                  .slice(0, 8);
+
                 return (
-                  <div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    {/* Add Outstanding Fine Form */}
+                    <div className="adm-card">
+                      <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span className="adm-card-title">Add Outstanding Fine</span>
+                        <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>issued as upheld</span>
+                      </div>
+                      <div className="adm-card-body">
+                        <form onSubmit={submitOutstandingFine} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                          {/* Member picker */}
+                          <div style={{ position: "relative", gridColumn: "span 2" }}>
+                            <label className="adm-label">Member <span className="adm-req">*</span></label>
+                            {outSelectedMember ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ background: "rgba(207,181,59,0.15)", color: "var(--gold)", border: "1px solid rgba(207,181,59,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 13, fontWeight: 500 }}>
+                                  {outSelectedMember.name}
+                                </span>
+                                <button type="button" onClick={() => { setOutSelectedMember(null); setOutMemberSearch(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+                              </div>
+                            ) : (
+                              <>
+                                <input
+                                  type="text"
+                                  value={outMemberSearch}
+                                  onChange={(e) => { setOutMemberSearch(e.target.value); setShowOutSuggestions(true); }}
+                                  onFocus={() => setShowOutSuggestions(true)}
+                                  onBlur={() => setTimeout(() => setShowOutSuggestions(false), 150)}
+                                  placeholder="Type a name…"
+                                  className="adm-input"
+                                  autoComplete="off"
+                                />
+                                {showOutSuggestions && outMemberSearch && outSuggestions.length > 0 && (
+                                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 8, zIndex: 10, marginTop: 2, overflow: "hidden" }}>
+                                    {outSuggestions.map((m) => (
+                                      <div key={m.id} onMouseDown={() => { setOutSelectedMember(m); setOutMemberSearch(""); setShowOutSuggestions(false); }} style={{ padding: "8px 14px", cursor: "pointer", fontSize: 13 }} className="adm-suggestion">
+                                        {m.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          <div style={{ gridColumn: "span 2" }}>
+                            <label className="adm-label">Fine Type <span className="adm-req">*</span></label>
+                            <select value={outForm.fine_type} onChange={(e) => setOutForm({ ...outForm, fine_type: e.target.value as FineType })} className="adm-input" style={{ width: "100%" }}>
+                              {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </div>
+
+                          <div style={{ gridColumn: "span 2" }}>
+                            <label className="adm-label">Description <span className="adm-req">*</span></label>
+                            <input type="text" value={outForm.description} onChange={(e) => setOutForm({ ...outForm, description: e.target.value })} required placeholder="Brief description…" className="adm-input" />
+                          </div>
+
+                          <div>
+                            <label className="adm-label">Amount ($)</label>
+                            <input type="number" min="0" step="0.01" value={outForm.amount} onChange={(e) => setOutForm({ ...outForm, amount: e.target.value })} placeholder="0.00" className="adm-input" />
+                          </div>
+                          <div>
+                            <label className="adm-label">Term <span className="adm-req">*</span></label>
+                            <input type="text" value={outForm.term} onChange={(e) => setOutForm({ ...outForm, term: e.target.value })} required placeholder="e.g. Spring 2026" className="adm-input" />
+                          </div>
+
+                          <div>
+                            <label className="adm-label">Date Issued</label>
+                            <input type="date" value={outForm.date_issued} onChange={(e) => setOutForm({ ...outForm, date_issued: e.target.value })} className="adm-input" />
+                          </div>
+
+                          <div style={{ gridColumn: "span 2" }}>
+                            <label className="adm-label">Notes</label>
+                            <input type="text" value={outForm.notes} onChange={(e) => setOutForm({ ...outForm, notes: e.target.value })} placeholder="Additional context…" className="adm-input" />
+                          </div>
+
+                          <div style={{ gridColumn: "span 2", display: "flex", alignItems: "center", gap: 10 }}>
+                            <input
+                              type="checkbox"
+                              id="out-soc-pro"
+                              checked={outForm.place_on_soc_pro}
+                              onChange={(e) => setOutForm({ ...outForm, place_on_soc_pro: e.target.checked })}
+                              style={{ accentColor: "var(--gold)", width: 15, height: 15, cursor: "pointer" }}
+                            />
+                            <label htmlFor="out-soc-pro" style={{ fontSize: 13, color: "var(--text-muted)", cursor: "pointer", userSelect: "none" }}>
+                              Place on social probation
+                            </label>
+                          </div>
+
+                          {outError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{outError}</p>}
+                          <button type="submit" disabled={outSubmitting} className="adm-btn">
+                            {outSubmitting ? "Adding…" : "Add Outstanding Fine"}
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+
                     <div className="adm-summary">
                       <span style={{ color: "var(--text-muted)" }}>
                         {outstandingFines.length} outstanding fine{outstandingFines.length !== 1 ? "s" : ""} · {byMember.length} member{byMember.length !== 1 ? "s" : ""}
