@@ -642,7 +642,7 @@ export default function AdminPage() {
           font-family: 'IBM Plex Mono', monospace;
         }
 
-        .adm-card-body { padding: 20px; }
+        .adm-card-body { padding: 20px; cursor: default; }
 
         .adm-label {
           display: block;
