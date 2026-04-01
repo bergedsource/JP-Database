@@ -58,7 +58,7 @@ const STATUS_STYLES: Record<FineStatus, string> = {
   labor: "bg-purple-100 text-purple-800",
 };
 
-type Tab = "fines" | "members" | "audit";
+type Tab = "fines" | "outstanding" | "members" | "audit";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
@@ -276,7 +276,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit">
-          {(["fines", "members", "audit"] as Tab[]).map((t) => (
+          {(["fines", "outstanding", "members", "audit"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -554,6 +554,87 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* OUTSTANDING TAB */}
+            {tab === "outstanding" && (() => {
+              const outstandingFines = fines.filter((f) => f.status === "pending" || f.status === "upheld");
+              const byMember = members
+                .map((m) => {
+                  const mFines = outstandingFines.filter((f) => f.member_id === m.id);
+                  const totalOwed = mFines
+                    .filter((f) => f.status === "upheld")
+                    .reduce((sum, f) => sum + (f.amount ?? 0), 0);
+                  return { member: m, fines: mFines, totalOwed };
+                })
+                .filter((g) => g.fines.length > 0)
+                .sort((a, b) => b.totalOwed - a.totalOwed);
+
+              const grandTotal = byMember.reduce((sum, g) => sum + g.totalOwed, 0);
+
+              return (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                      {outstandingFines.length} outstanding fine{outstandingFines.length !== 1 ? "s" : ""} across {byMember.length} member{byMember.length !== 1 ? "s" : ""}
+                    </p>
+                    {grandTotal > 0 && (
+                      <span className="text-sm font-semibold text-red-600">
+                        ${grandTotal.toFixed(2)} total owed
+                      </span>
+                    )}
+                  </div>
+
+                  {byMember.length === 0 ? (
+                    <p className="text-gray-400 text-sm">No outstanding fines.</p>
+                  ) : (
+                    byMember.map(({ member, fines: mFines, totalOwed }) => (
+                      <div key={member.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-200">
+                          <span className="font-semibold text-gray-800">{member.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500 capitalize">{member.status}</span>
+                            {totalOwed > 0 && (
+                              <span className="text-sm font-semibold text-red-600">${totalOwed.toFixed(2)} owed</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                          {mFines.map((fine) => (
+                            <div key={fine.id} className="flex items-start justify-between px-5 py-3 gap-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-800">{fine.fine_type}</p>
+                                <p className="text-xs text-gray-500">{fine.description}</p>
+                                {fine.notes && <p className="text-xs text-gray-400 italic mt-0.5">{fine.notes}</p>}
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                                  {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[fine.status]}`}>
+                                  {fine.status}
+                                </span>
+                                <select
+                                  value={fine.status}
+                                  onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
+                                  className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="upheld">Upheld</option>
+                                  <option value="dismissed">Dismissed</option>
+                                  <option value="paid">Paid</option>
+                                  <option value="labor">Labor</option>
+                                </select>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              );
+            })()}
 
             {/* MEMBERS TAB */}
             {tab === "members" && (
