@@ -81,6 +81,7 @@ export default function AdminPage() {
     notes: "",
   });
   const [memberSearch, setMemberSearch] = useState("");
+  const [showMemberSuggestions, setShowMemberSuggestions] = useState(false);
   const [fineSubmitting, setFineSubmitting] = useState(false);
   const [fineError, setFineError] = useState("");
 
@@ -160,6 +161,7 @@ export default function AdminPage() {
         date_issued: new Date().toISOString().split("T")[0],
         notes: "",
       });
+      setMemberSearch("");
       await loadData();
     }
     setFineSubmitting(false);
@@ -302,37 +304,50 @@ export default function AdminPage() {
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                   <h2 className="font-semibold text-gray-800 mb-4">Issue Fine</h2>
                   <form onSubmit={submitFine} className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="relative">
                       <label className="block text-xs text-gray-500 mb-1">Member <span className="text-red-500">(required)</span></label>
                       <input
                         type="text"
                         value={memberSearch}
-                        onChange={(e) => setMemberSearch(e.target.value)}
+                        onChange={(e) => {
+                          setMemberSearch(e.target.value);
+                          setFineForm({ ...fineForm, member_id: "" });
+                          setShowMemberSuggestions(true);
+                        }}
+                        onFocus={() => setShowMemberSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowMemberSuggestions(false), 150)}
                         placeholder="Search name..."
-                        className="w-full border border-gray-300 rounded-t-lg px-3 py-2 text-sm border-b-0 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        autoComplete="off"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                       />
-                      <select
-                        value={fineForm.member_id}
-                        onChange={(e) =>
-                          setFineForm({ ...fineForm, member_id: e.target.value })
-                        }
-                        required
-                        size={5}
-                        className="w-full border border-gray-300 rounded-b-lg px-3 py-1 text-sm"
-                      >
-                        <option value="">-- Select member --</option>
-                        {members
-                          .filter(
-                            (m) =>
-                              (m.status === "active" || m.status === "pledge") &&
-                              m.name.toLowerCase().includes(memberSearch.toLowerCase())
-                          )
-                          .map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name} ({m.status})
-                            </option>
-                          ))}
-                      </select>
+                      {/* Hidden required input to trigger form validation */}
+                      <input type="hidden" value={fineForm.member_id} required />
+                      {showMemberSuggestions && memberSearch.trim() && (
+                        <ul className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {members
+                            .filter(
+                              (m) =>
+                                (m.status === "active" || m.status === "pledge") &&
+                                m.name.toLowerCase().includes(memberSearch.toLowerCase())
+                            )
+                            .map((m) => (
+                              <li key={m.id}>
+                                <button
+                                  type="button"
+                                  onMouseDown={() => {
+                                    setFineForm({ ...fineForm, member_id: m.id });
+                                    setMemberSearch(m.name);
+                                    setShowMemberSuggestions(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-gray-800">{m.name}</span>
+                                  <span className="text-xs text-gray-400 capitalize">{m.status}</span>
+                                </button>
+                              </li>
+                            ))}
+                        </ul>
+                      )}
                     </div>
 
                     <div>
