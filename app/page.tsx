@@ -164,13 +164,16 @@ export default function Home() {
         .header {
           text-align: center;
           margin-bottom: 48px;
-          animation: fadeDown 0.7s ease both;
         }
         .crest-wrap {
           display: flex;
           justify-content: center;
           margin-bottom: 20px;
-          filter: drop-shadow(0 4px 24px rgba(201,168,76,0.25));
+          position: relative;
+          overflow: visible;
+        }
+        .crest-wrap img {
+          animation: crestBurst 1s 0.5s cubic-bezier(0.16,1,0.3,1) both;
         }
         .org-label {
           font-family: 'Lato', sans-serif;
@@ -180,6 +183,7 @@ export default function Home() {
           text-transform: uppercase;
           color: var(--gold-dim);
           margin-bottom: 10px;
+          animation: sliceIn 0.5s 1.1s ease both;
         }
         .page-title {
           font-family: 'Cormorant Garamond', serif;
@@ -188,6 +192,7 @@ export default function Home() {
           color: var(--cream);
           line-height: 1.1;
           letter-spacing: -0.5px;
+          animation: sliceIn 0.5s 1.25s ease both;
         }
         .page-subtitle {
           font-family: 'Cormorant Garamond', serif;
@@ -197,12 +202,13 @@ export default function Home() {
           color: var(--gold);
           margin-top: 6px;
           letter-spacing: 0.3px;
+          animation: sliceIn 0.5s 1.4s ease both;
         }
         .divider {
-          width: 60px;
           height: 1.5px;
           background: linear-gradient(90deg, transparent, var(--gold), transparent);
           margin: 18px auto 0;
+          animation: shimmerGrow 0.7s 1.55s ease both;
         }
 
         /* ── Search panel ── */
@@ -213,7 +219,7 @@ export default function Home() {
           padding: 24px;
           backdrop-filter: blur(8px);
           margin-bottom: 36px;
-          animation: fadeUp 0.7s 0.15s ease both;
+          animation: fadeUp 0.6s 1.75s ease both;
           box-shadow: 0 8px 40px rgba(0,0,0,0.4);
         }
         .search-label {
@@ -540,23 +546,118 @@ export default function Home() {
           font-size: 18px;
         }
 
-        @keyframes fadeDown {
-          from { opacity: 0; transform: translateY(-16px); }
-          to   { opacity: 1; transform: translateY(0); }
+        /* ── Entrance: scan line ── */
+        @keyframes scanDown {
+          0%   { top: 0; opacity: 0.9; }
+          100% { top: 100vh; opacity: 0; }
         }
+        .scan-line {
+          position: fixed;
+          left: 0; right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, var(--gold), var(--gold-light), var(--gold), transparent);
+          pointer-events: none;
+          z-index: 999;
+          animation: scanDown 0.9s cubic-bezier(0.4, 0, 0.6, 1) both;
+        }
+
+        /* ── Entrance: crest burst ── */
+        @keyframes crestBurst {
+          0%   { opacity: 0; clip-path: inset(50% 0 50% 0); filter: brightness(0); }
+          45%  { clip-path: inset(0% 0 0% 0); filter: brightness(0.7) drop-shadow(0 0 28px rgba(207,181,59,0.95)); }
+          100% { opacity: 1; clip-path: inset(0% 0 0% 0); filter: brightness(1) drop-shadow(0 4px 24px rgba(207,181,59,0.25)); }
+        }
+
+        /* ── Entrance: particles ── */
+        @keyframes particleFly {
+          0%   { opacity: 0; transform: translate(0,0) scale(0); }
+          25%  { opacity: 1; }
+          100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.15); }
+        }
+        .particle {
+          position: absolute;
+          border-radius: 50%;
+          background: var(--gold);
+          pointer-events: none;
+          animation: particleFly var(--dur, 1s) var(--delay, 0s) ease-out both;
+        }
+
+        /* ── Entrance: slice-in for text ── */
+        @keyframes sliceIn {
+          from { opacity: 0; clip-path: inset(50% 0 50% 0); }
+          to   { opacity: 1; clip-path: inset(0% 0 0% 0); }
+        }
+
+        /* ── Entrance: shimmer divider ── */
+        @keyframes shimmerGrow {
+          0%   { width: 0; opacity: 0; }
+          60%  { width: 80px; opacity: 1; }
+          100% { width: 60px; opacity: 1; }
+        }
+
+        /* ── Fine cards / member header ── */
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes fadeDown {
+          from { opacity: 0; transform: translateY(-16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Loading bar ── */
+        @keyframes barSweep {
+          0%   { left: -45%; width: 40%; }
+          50%  { width: 58%; }
+          100% { left: 110%; width: 40%; }
+        }
+        @keyframes loadFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .loading-bar-wrap {
+          width: 260px;
+          height: 3px;
+          background: var(--black-border);
+          border-radius: 3px;
+          position: relative;
+          overflow: hidden;
+          animation: loadFadeIn 0.35s ease both;
+        }
+        .loading-bar {
+          position: absolute;
+          top: 0; height: 100%;
+          background: linear-gradient(90deg, transparent, var(--gold-light), var(--gold), var(--gold-light), transparent);
+          animation: barSweep 1.3s ease-in-out infinite;
+        }
+        .loading-bar-text {
+          font-family: 'Cormorant Garamond', serif;
+          font-style: italic;
+          font-size: 17px;
+          color: var(--cream-dim);
+          animation: loadFadeIn 0.35s 0.1s ease both;
+        }
       `}</style>
 
       <div className="page-wrap">
+        {/* Scan line */}
+        <div className="scan-line" />
+
         <div className="inner">
 
           {/* ── Header ── */}
           <header className="header">
             <div className="crest-wrap">
               <AcaciaCrest />
+              {/* Gold particles bursting from crest */}
+              <div className="particle" style={{ width:5, height:5, top:"45%", left:"50%", "--tx":"-68px", "--ty":"-55px", "--delay":"0.65s", "--dur":"1.1s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:4, height:4, top:"45%", left:"50%", "--tx":"62px", "--ty":"-72px", "--delay":"0.7s", "--dur":"1.0s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:6, height:6, top:"45%", left:"50%", "--tx":"-30px", "--ty":"-90px", "--delay":"0.72s", "--dur":"1.2s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:4, height:4, top:"45%", left:"50%", "--tx":"78px", "--ty":"-38px", "--delay":"0.68s", "--dur":"1.1s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:5, height:5, top:"45%", left:"50%", "--tx":"-80px", "--ty":"-20px", "--delay":"0.75s", "--dur":"1.0s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:3, height:3, top:"45%", left:"50%", "--tx":"40px", "--ty":"-95px", "--delay":"0.78s", "--dur":"1.3s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:4, height:4, top:"45%", left:"50%", "--tx":"-50px", "--ty":"60px", "--delay":"0.73s", "--dur":"0.9s" } as React.CSSProperties} />
+              <div className="particle" style={{ width:3, height:3, top:"45%", left:"50%", "--tx":"55px", "--ty":"52px", "--delay":"0.8s", "--dur":"1.0s" } as React.CSSProperties} />
             </div>
             <p className="org-label">Acacia Fraternity</p>
             <h1 className="page-title">Jurisprudence Portal</h1>
@@ -628,7 +729,10 @@ export default function Home() {
               </div>
 
               {loading ? (
-                <p className="loading-text">Loading records…</p>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16, padding:"52px 0 56px" }}>
+                  <div className="loading-bar-wrap"><div className="loading-bar" /></div>
+                  <p className="loading-bar-text">Retrieving records…</p>
+                </div>
               ) : (
                 <>
                   {totalOwed > 0 && (
