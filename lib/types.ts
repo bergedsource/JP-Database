@@ -1,5 +1,27 @@
 export type FineStatus = "pending" | "upheld" | "dismissed" | "paid" | "labor";
 
+export type SocialProbationReason =
+  | "Outstanding Fines (§10-270)"
+  | "Academic - GPA Below 3.0 (§14-020)"
+  | "Academic - Cumulative GPA Below 2.0 (§14-060)"
+  | "Financial - Unpaid Dues (§9-140)"
+  | "Failure to Attend Ritual (§15-010)"
+  | "Failure to Complete Service Hours (§16-010)"
+  | "Missing House Philanthropy Event (§11-270)"
+  | "Other";
+
+export interface SocialProbation {
+  id: string;
+  member_id: string;
+  member_name?: string;
+  reason: SocialProbationReason;
+  notes: string | null;
+  start_date: string;
+  end_date: string | null;
+  source: "manual" | "auto";
+  created_at: string;
+}
+
 export type FineType =
   | "Conduct Unbecoming (§11-010)"
   | "General Misconduct (§11-020)"
