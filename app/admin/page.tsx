@@ -50,12 +50,12 @@ const FINE_TYPES: FineType[] = [
   "Other",
 ];
 
-const STATUS_STYLES: Record<FineStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  upheld: "bg-red-100 text-red-800",
-  dismissed: "bg-green-100 text-green-800",
-  paid: "bg-blue-100 text-blue-800",
-  labor: "bg-purple-100 text-purple-800",
+const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
+  pending:   { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
+  upheld:    { bg: "rgba(239,68,68,0.1)",    color: "#F87171", border: "rgba(239,68,68,0.3)" },
+  dismissed: { bg: "rgba(52,211,153,0.1)",   color: "#34D399", border: "rgba(52,211,153,0.3)" },
+  paid:      { bg: "rgba(96,165,250,0.1)",   color: "#60A5FA", border: "rgba(96,165,250,0.3)" },
+  labor:     { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
 };
 
 type Tab = "fines" | "outstanding" | "members" | "audit";
@@ -261,572 +261,832 @@ export default function AdminPage() {
   });
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">JP Admin</h1>
-            <p className="text-sm text-gray-400">Acacia — Oregon State</p>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+        :root {
+          --bg: #0D1117;
+          --surface: #161B22;
+          --surface-2: #1C2128;
+          --border: #30363D;
+          --border-light: #21262D;
+          --gold: #CFB53B;
+          --gold-dim: #8A7520;
+          --text: #E6EDF3;
+          --text-muted: #8B949E;
+          --text-dim: #484F58;
+          --red: #F87171;
+        }
+
+        .adm-page {
+          min-height: 100vh;
+          background: var(--bg);
+          font-family: 'IBM Plex Sans', sans-serif;
+          color: var(--text);
+        }
+
+        .adm-header {
+          border-bottom: 1px solid var(--border);
+          background: var(--surface);
+          padding: 0 32px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: 60px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+
+        .adm-header-left { display: flex; align-items: center; gap: 14px; }
+
+        .adm-gold-bar {
+          width: 3px;
+          height: 30px;
+          background: var(--gold);
+          border-radius: 2px;
+          flex-shrink: 0;
+        }
+
+        .adm-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text);
+          line-height: 1.1;
+        }
+
+        .adm-subtitle {
+          font-size: 10px;
+          color: var(--text-dim);
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          font-family: 'IBM Plex Mono', monospace;
+          margin-top: 1px;
+        }
+
+        .adm-signout {
+          background: transparent;
+          border: 1px solid var(--border);
+          color: var(--text-muted);
+          padding: 6px 14px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          cursor: pointer;
+          transition: border-color 0.15s, color 0.15s;
+        }
+        .adm-signout:hover { border-color: var(--gold); color: var(--gold); }
+
+        .adm-body {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 32px 24px 64px;
+        }
+
+        .adm-tabs {
+          display: flex;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 28px;
+        }
+
+        .adm-tab {
+          background: transparent;
+          border: none;
+          border-bottom: 2px solid transparent;
+          margin-bottom: -1px;
+          padding: 10px 20px;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          font-family: 'IBM Plex Mono', monospace;
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: color 0.15s, border-color 0.15s;
+        }
+        .adm-tab:hover { color: var(--text); }
+        .adm-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+        .adm-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .adm-card-header {
+          padding: 14px 20px;
+          border-bottom: 1px solid var(--border);
+          background: var(--surface-2);
+        }
+
+        .adm-card-title {
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .adm-card-body { padding: 20px; }
+
+        .adm-label {
+          display: block;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          margin-bottom: 6px;
+          font-family: 'IBM Plex Mono', monospace;
+        }
+        .adm-req { color: var(--gold); }
+        .adm-opt { color: var(--text-dim); font-weight: 400; }
+
+        .adm-input {
+          width: 100%;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 7px;
+          padding: 9px 12px;
+          font-size: 13px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          color: var(--text);
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          -webkit-appearance: none;
+        }
+        .adm-input::placeholder { color: var(--text-dim); }
+        .adm-input:focus {
+          border-color: var(--gold-dim);
+          box-shadow: 0 0 0 3px rgba(207,181,59,0.08);
+        }
+        .adm-input option { background: #1C2128; }
+
+        .adm-suggestions {
+          position: absolute;
+          top: calc(100% + 4px);
+          left: 0; right: 0;
+          background: var(--surface-2);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+          z-index: 60;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          max-height: 200px;
+          overflow-y: auto;
+        }
+
+        .adm-suggestion-btn {
+          width: 100%;
+          text-align: left;
+          padding: 9px 14px;
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid var(--border-light);
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          color: var(--text);
+          font-size: 13px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          transition: background 0.1s;
+        }
+        .adm-suggestion-btn:last-child { border-bottom: none; }
+        .adm-suggestion-btn:hover { background: rgba(207,181,59,0.06); }
+        .adm-suggestion-name { font-weight: 500; }
+        .adm-suggestion-status {
+          font-size: 10px;
+          color: var(--text-muted);
+          text-transform: capitalize;
+          font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .adm-btn {
+          background: var(--gold);
+          color: #0D1117;
+          border: none;
+          padding: 9px 20px;
+          border-radius: 7px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.3px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          cursor: pointer;
+          transition: opacity 0.15s;
+        }
+        .adm-btn:hover { opacity: 0.85; }
+        .adm-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .adm-fine-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 20px;
+          border-bottom: 1px solid var(--border-light);
+          border-left: 3px solid transparent;
+          transition: background 0.1s;
+        }
+        .adm-fine-row:last-child { border-bottom: none; }
+        .adm-fine-row:hover { background: rgba(255,255,255,0.015); }
+
+        .adm-fine-member { font-weight: 600; font-size: 14px; color: var(--text); }
+        .adm-fine-type { font-size: 12px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+        .adm-fine-desc { font-size: 13px; color: var(--text); margin-top: 3px; }
+        .adm-fine-notes { font-size: 11px; color: var(--gold-dim); font-style: italic; margin-top: 3px; }
+        .adm-fine-meta { font-size: 11px; color: var(--text-dim); margin-top: 5px; font-family: 'IBM Plex Mono', monospace; }
+
+        .adm-status-badge {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          font-family: 'IBM Plex Mono', monospace;
+          border-width: 1px;
+          border-style: solid;
+          white-space: nowrap;
+        }
+
+        .adm-status-select {
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          padding: 5px 8px;
+          font-size: 11px;
+          color: var(--text-muted);
+          font-family: 'IBM Plex Sans', sans-serif;
+          cursor: pointer;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .adm-status-select:focus { border-color: var(--gold-dim); }
+        .adm-status-select option { background: #1C2128; }
+
+        .adm-delete-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-dim);
+          font-size: 11px;
+          cursor: pointer;
+          font-family: 'IBM Plex Sans', sans-serif;
+          transition: color 0.15s;
+          padding: 0;
+        }
+        .adm-delete-btn:hover { color: var(--red); }
+
+        .adm-filters { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+
+        .adm-table { width: 100%; border-collapse: collapse; }
+        .adm-table thead tr { border-bottom: 1px solid var(--border); }
+        .adm-table th {
+          text-align: left;
+          padding: 11px 20px;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: var(--text-dim);
+          font-family: 'IBM Plex Mono', monospace;
+          background: var(--surface-2);
+        }
+        .adm-table td {
+          padding: 12px 20px;
+          border-bottom: 1px solid var(--border-light);
+          font-size: 13px;
+          color: var(--text);
+        }
+        .adm-table tbody tr:last-child td { border-bottom: none; }
+        .adm-table tbody tr:hover td { background: rgba(255,255,255,0.012); }
+
+        .adm-member-block {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 14px;
+        }
+        .adm-member-block-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 20px;
+          background: var(--surface-2);
+          border-bottom: 1px solid var(--border);
+        }
+        .adm-member-block-name { font-weight: 600; font-size: 14px; color: var(--text); }
+
+        .adm-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 12px;
+        }
+
+        .adm-error { font-size: 12px; color: var(--red); margin-top: 4px; }
+        .adm-loading { color: var(--text-muted); font-size: 13px; padding: 64px 0; text-align: center; font-style: italic; }
+        .adm-empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 40px 0; }
+      `}</style>
+
+      <div className="adm-page">
+        {/* Header */}
+        <header className="adm-header">
+          <div className="adm-header-left">
+            <div className="adm-gold-bar" />
+            <div>
+              <div className="adm-title">JP Admin</div>
+              <div className="adm-subtitle">Acacia · Oregon State</div>
+            </div>
           </div>
-          <button
-            onClick={signOut}
-            className="text-sm text-gray-400 hover:text-gray-600"
-          >
-            Sign out
-          </button>
-        </div>
+          <button onClick={signOut} className="adm-signout">Sign out</button>
+        </header>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit">
-          {(["fines", "outstanding", "members", "audit"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${
-                tab === t
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <div className="adm-body">
+          {/* Tabs */}
+          <div className="adm-tabs">
+            {(["fines", "outstanding", "members", "audit"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`adm-tab${tab === t ? " active" : ""}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
 
-        {loading ? (
-          <p className="text-gray-400 text-sm">Loading...</p>
-        ) : (
-          <>
-            {/* FINES TAB */}
-            {tab === "fines" && (
-              <div className="space-y-8">
-                {/* Add Fine Form */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h2 className="font-semibold text-gray-800 mb-4">Issue Fine</h2>
-                  <form onSubmit={submitFine} className="grid grid-cols-2 gap-4">
-                    <div className="relative">
-                      <label className="block text-xs text-gray-500 mb-1">Member <span className="text-red-500">(required)</span></label>
-                      <input
-                        type="text"
-                        value={memberSearch}
-                        onChange={(e) => {
-                          setMemberSearch(e.target.value);
-                          setFineForm({ ...fineForm, member_id: "" });
-                          setShowMemberSuggestions(true);
-                        }}
-                        onFocus={() => setShowMemberSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowMemberSuggestions(false), 150)}
-                        placeholder="Search name..."
-                        autoComplete="off"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-                      />
-                      {/* Hidden required input to trigger form validation */}
-                      <input type="hidden" value={fineForm.member_id} required />
-                      {showMemberSuggestions && memberSearch.trim() && (
-                        <ul className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {members
-                            .filter(
-                              (m) =>
-                                (m.status === "active" || m.status === "pledge") &&
-                                m.name.toLowerCase().includes(memberSearch.toLowerCase())
-                            )
-                            .map((m) => (
-                              <li key={m.id}>
-                                <button
-                                  type="button"
-                                  onMouseDown={() => {
-                                    setFineForm({ ...fineForm, member_id: m.id });
-                                    setMemberSearch(m.name);
-                                    setShowMemberSuggestions(false);
-                                  }}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center"
-                                >
-                                  <span className="font-medium text-gray-800">{m.name}</span>
-                                  <span className="text-xs text-gray-400 capitalize">{m.status}</span>
-                                </button>
-                              </li>
-                            ))}
-                        </ul>
+          {loading ? (
+            <p className="adm-loading">Loading records…</p>
+          ) : (
+            <>
+              {/* FINES TAB */}
+              {tab === "fines" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {/* Issue Fine Form */}
+                  <div className="adm-card">
+                    <div className="adm-card-header">
+                      <span className="adm-card-title">Issue Fine</span>
+                    </div>
+                    <div className="adm-card-body">
+                      <form onSubmit={submitFine} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+                        <div style={{ position: "relative" }}>
+                          <label className="adm-label">Member <span className="adm-req">*</span></label>
+                          <input
+                            type="text"
+                            value={memberSearch}
+                            onChange={(e) => {
+                              setMemberSearch(e.target.value);
+                              setFineForm({ ...fineForm, member_id: "" });
+                              setShowMemberSuggestions(true);
+                            }}
+                            onFocus={() => setShowMemberSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowMemberSuggestions(false), 150)}
+                            placeholder="Search name…"
+                            autoComplete="off"
+                            className="adm-input"
+                          />
+                          <input type="hidden" value={fineForm.member_id} required />
+                          {showMemberSuggestions && memberSearch.trim() && (
+                            <ul className="adm-suggestions">
+                              {members
+                                .filter((m) =>
+                                  (m.status === "active" || m.status === "pledge") &&
+                                  m.name.toLowerCase().includes(memberSearch.toLowerCase())
+                                )
+                                .map((m) => (
+                                  <li key={m.id}>
+                                    <button
+                                      type="button"
+                                      onMouseDown={() => {
+                                        setFineForm({ ...fineForm, member_id: m.id });
+                                        setMemberSearch(m.name);
+                                        setShowMemberSuggestions(false);
+                                      }}
+                                      className="adm-suggestion-btn"
+                                    >
+                                      <span className="adm-suggestion-name">{m.name}</span>
+                                      <span className="adm-suggestion-status">{m.status}</span>
+                                    </button>
+                                  </li>
+                                ))}
+                            </ul>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="adm-label">Fine Type <span className="adm-req">*</span></label>
+                          <select
+                            value={fineForm.fine_type}
+                            onChange={(e) => setFineForm({ ...fineForm, fine_type: e.target.value as FineType })}
+                            className="adm-input"
+                          >
+                            {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+
+                        <div style={{ gridColumn: "span 2" }}>
+                          <label className="adm-label">Description <span className="adm-req">*</span></label>
+                          <input
+                            type="text"
+                            value={fineForm.description}
+                            onChange={(e) => setFineForm({ ...fineForm, description: e.target.value })}
+                            required
+                            placeholder="Brief description of the offense"
+                            className="adm-input"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="adm-label">Amount ($) <span className="adm-opt">optional</span></label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={fineForm.amount}
+                            onChange={(e) => setFineForm({ ...fineForm, amount: e.target.value })}
+                            placeholder="0.00"
+                            className="adm-input"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="adm-label">Term <span className="adm-req">*</span></label>
+                          <input
+                            type="text"
+                            value={fineForm.term}
+                            onChange={(e) => setFineForm({ ...fineForm, term: e.target.value })}
+                            required
+                            placeholder="e.g. Spring 2026"
+                            className="adm-input"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="adm-label">Date Issued <span className="adm-req">*</span></label>
+                          <input
+                            type="date"
+                            value={fineForm.date_issued}
+                            onChange={(e) => setFineForm({ ...fineForm, date_issued: e.target.value })}
+                            required
+                            className="adm-input"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="adm-label">Notes <span className="adm-opt">optional</span></label>
+                          <input
+                            type="text"
+                            value={fineForm.notes}
+                            onChange={(e) => setFineForm({ ...fineForm, notes: e.target.value })}
+                            placeholder="Any additional context"
+                            className="adm-input"
+                          />
+                        </div>
+
+                        {fineError && (
+                          <p className="adm-error" style={{ gridColumn: "span 2" }}>{fineError}</p>
+                        )}
+
+                        <div style={{ gridColumn: "span 2" }}>
+                          <button type="submit" disabled={fineSubmitting} className="adm-btn">
+                            {fineSubmitting ? "Issuing…" : "Issue Fine"}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="adm-filters">
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as FineStatus | "all")}
+                      className="adm-input"
+                      style={{ width: "auto" }}
+                    >
+                      <option value="all">All statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="upheld">Upheld</option>
+                      <option value="dismissed">Dismissed</option>
+                      <option value="paid">Paid</option>
+                      <option value="labor">Labor</option>
+                    </select>
+                    <select
+                      value={filterMember}
+                      onChange={(e) => setFilterMember(e.target.value)}
+                      className="adm-input"
+                      style={{ width: "auto" }}
+                    >
+                      <option value="all">All members</option>
+                      {members.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                    <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                      {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {/* Fines List */}
+                  <div className="adm-card">
+                    {filteredFines.length === 0 ? (
+                      <p className="adm-empty">No fines found.</p>
+                    ) : (
+                      filteredFines.map((fine) => {
+                        const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+                        return (
+                          <div
+                            key={fine.id}
+                            className="adm-fine-row"
+                            style={{ borderLeftColor: sc.color }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <span className="adm-fine-member">{fine.member_name}</span>
+                                <span style={{ color: "var(--text-dim)" }}>·</span>
+                                <span className="adm-fine-type">{fine.fine_type}</span>
+                              </div>
+                              <p className="adm-fine-desc">{fine.description}</p>
+                              {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                              <p className="adm-fine-meta">
+                                {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                                {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                              </p>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                              <span
+                                className="adm-status-badge"
+                                style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}
+                              >
+                                {fine.status}
+                              </span>
+                              <select
+                                value={fine.status}
+                                onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
+                                className="adm-status-select"
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="upheld">Upheld</option>
+                                <option value="dismissed">Dismissed</option>
+                                <option value="paid">Paid</option>
+                                <option value="labor">Labor</option>
+                              </select>
+                              <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* OUTSTANDING TAB */}
+              {tab === "outstanding" && (() => {
+                const outstandingFines = fines.filter((f) => f.status === "pending" || f.status === "upheld");
+                const byMember = members
+                  .map((m) => {
+                    const mFines = outstandingFines.filter((f) => f.member_id === m.id);
+                    const totalOwed = mFines
+                      .filter((f) => f.status === "upheld")
+                      .reduce((sum, f) => sum + (f.amount ?? 0), 0);
+                    return { member: m, fines: mFines, totalOwed };
+                  })
+                  .filter((g) => g.fines.length > 0)
+                  .sort((a, b) => b.totalOwed - a.totalOwed);
+
+                const grandTotal = byMember.reduce((sum, g) => sum + g.totalOwed, 0);
+
+                return (
+                  <div>
+                    <div className="adm-summary">
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {outstandingFines.length} outstanding fine{outstandingFines.length !== 1 ? "s" : ""} · {byMember.length} member{byMember.length !== 1 ? "s" : ""}
+                      </span>
+                      {grandTotal > 0 && (
+                        <span style={{ color: "var(--red)", fontWeight: 600 }}>
+                          ${grandTotal.toFixed(2)} total owed
+                        </span>
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Fine Type <span className="text-red-500">(required)</span></label>
-                      <select
-                        value={fineForm.fine_type}
-                        onChange={(e) =>
-                          setFineForm({
-                            ...fineForm,
-                            fine_type: e.target.value as FineType,
-                          })
-                        }
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      >
-                        {FINE_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-2">
-                      <label className="block text-xs text-gray-500 mb-1">Description <span className="text-red-500">(required)</span></label>
-                      <input
-                        type="text"
-                        value={fineForm.description}
-                        onChange={(e) =>
-                          setFineForm({ ...fineForm, description: e.target.value })
-                        }
-                        required
-                        placeholder="Brief description of the offense"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">
-                        Proposed Amount ($) <span className="text-gray-400">optional</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={fineForm.amount}
-                        onChange={(e) =>
-                          setFineForm({ ...fineForm, amount: e.target.value })
-                        }
-                        placeholder="0.00"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Term <span className="text-red-500">(required)</span></label>
-                      <input
-                        type="text"
-                        value={fineForm.term}
-                        onChange={(e) =>
-                          setFineForm({ ...fineForm, term: e.target.value })
-                        }
-                        required
-                        placeholder="e.g. Fall 2025"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Date Issued <span className="text-red-500">(required)</span></label>
-                      <input
-                        type="date"
-                        value={fineForm.date_issued}
-                        onChange={(e) =>
-                          setFineForm({ ...fineForm, date_issued: e.target.value })
-                        }
-                        required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">
-                        Notes <span className="text-gray-400">optional</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={fineForm.notes}
-                        onChange={(e) =>
-                          setFineForm({ ...fineForm, notes: e.target.value })
-                        }
-                        placeholder="Any additional context"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    {fineError && (
-                      <p className="col-span-2 text-sm text-red-500">{fineError}</p>
-                    )}
-
-                    <div className="col-span-2">
-                      <button
-                        type="submit"
-                        disabled={fineSubmitting}
-                        className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50"
-                      >
-                        {fineSubmitting ? "Issuing..." : "Issue Fine"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Filters */}
-                <div className="flex gap-3">
-                  <select
-                    value={filterStatus}
-                    onChange={(e) =>
-                      setFilterStatus(e.target.value as FineStatus | "all")
-                    }
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                  >
-                    <option value="all">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="upheld">Upheld</option>
-                    <option value="dismissed">Dismissed</option>
-                    <option value="paid">Paid</option>
-                    <option value="labor">Labor</option>
-                  </select>
-
-                  <select
-                    value={filterMember}
-                    onChange={(e) => setFilterMember(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                  >
-                    <option value="all">All members</option>
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <span className="text-sm text-gray-400 self-center">
-                    {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-
-                {/* Fines List */}
-                <div className="space-y-3">
-                  {filteredFines.length === 0 ? (
-                    <p className="text-gray-400 text-sm">No fines found.</p>
-                  ) : (
-                    filteredFines.map((fine) => (
-                      <div
-                        key={fine.id}
-                        className="bg-white border border-gray-200 rounded-xl px-5 py-4"
-                      >
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-gray-800">
-                                {fine.member_name}
+                    {byMember.length === 0 ? (
+                      <p className="adm-empty">No outstanding fines.</p>
+                    ) : (
+                      byMember.map(({ member, fines: mFines, totalOwed }) => (
+                        <div key={member.id} className="adm-member-block">
+                          <div className="adm-member-block-header">
+                            <span className="adm-member-block-name">{member.name}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <span style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "capitalize", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.5px" }}>
+                                {member.status}
                               </span>
-                              <span className="text-gray-300">·</span>
-                              <span className="text-sm text-gray-600">
-                                {fine.fine_type}
-                              </span>
+                              {totalOwed > 0 && (
+                                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, fontWeight: 600, color: "var(--red)" }}>
+                                  ${totalOwed.toFixed(2)} owed
+                                </span>
+                              )}
                             </div>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                              {fine.description}
-                            </p>
-                            {fine.notes && (
-                              <p className="text-xs text-gray-400 mt-1 italic">
-                                {fine.notes}
-                              </p>
-                            )}
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
-                              {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
-                            </p>
                           </div>
-
-                          <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span
-                              className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                                STATUS_STYLES[fine.status]
-                              }`}
-                            >
-                              {fine.status}
-                            </span>
-
-                            <select
-                              value={fine.status}
-                              onChange={(e) =>
-                                updateFineStatus(
-                                  fine.id,
-                                  e.target.value as FineStatus
-                                )
-                              }
-                              className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600"
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="upheld">Upheld</option>
-                              <option value="dismissed">Dismissed</option>
-                              <option value="paid">Paid</option>
-                              <option value="labor">Labor</option>
-                            </select>
-
-                            <button
-                              onClick={() => deleteFine(fine.id)}
-                              className="text-xs text-red-400 hover:text-red-600"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                          {mFines.map((fine) => {
+                            const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+                            return (
+                              <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{fine.fine_type}</p>
+                                  <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.description}</p>
+                                  {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                                  <p className="adm-fine-meta">
+                                    {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                                    {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                  </p>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                                  <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+                                    {fine.status}
+                                  </span>
+                                  <select
+                                    value={fine.status}
+                                    onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
+                                    className="adm-status-select"
+                                  >
+                                    <option value="pending">Pending</option>
+                                    <option value="upheld">Upheld</option>
+                                    <option value="dismissed">Dismissed</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="labor">Labor</option>
+                                  </select>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* OUTSTANDING TAB */}
-            {tab === "outstanding" && (() => {
-              const outstandingFines = fines.filter((f) => f.status === "pending" || f.status === "upheld");
-              const byMember = members
-                .map((m) => {
-                  const mFines = outstandingFines.filter((f) => f.member_id === m.id);
-                  const totalOwed = mFines
-                    .filter((f) => f.status === "upheld")
-                    .reduce((sum, f) => sum + (f.amount ?? 0), 0);
-                  return { member: m, fines: mFines, totalOwed };
-                })
-                .filter((g) => g.fines.length > 0)
-                .sort((a, b) => b.totalOwed - a.totalOwed);
-
-              const grandTotal = byMember.reduce((sum, g) => sum + g.totalOwed, 0);
-
-              return (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500">
-                      {outstandingFines.length} outstanding fine{outstandingFines.length !== 1 ? "s" : ""} across {byMember.length} member{byMember.length !== 1 ? "s" : ""}
-                    </p>
-                    {grandTotal > 0 && (
-                      <span className="text-sm font-semibold text-red-600">
-                        ${grandTotal.toFixed(2)} total owed
-                      </span>
+                      ))
                     )}
                   </div>
+                );
+              })()}
 
-                  {byMember.length === 0 ? (
-                    <p className="text-gray-400 text-sm">No outstanding fines.</p>
-                  ) : (
-                    byMember.map(({ member, fines: mFines, totalOwed }) => (
-                      <div key={member.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-200">
-                          <span className="font-semibold text-gray-800">{member.name}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-gray-500 capitalize">{member.status}</span>
-                            {totalOwed > 0 && (
-                              <span className="text-sm font-semibold text-red-600">${totalOwed.toFixed(2)} owed</span>
-                            )}
-                          </div>
+              {/* MEMBERS TAB */}
+              {tab === "members" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  <div className="adm-card">
+                    <div className="adm-card-header">
+                      <span className="adm-card-title">Add Member</span>
+                    </div>
+                    <div className="adm-card-body">
+                      <form onSubmit={submitMember} style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <label className="adm-label">Full Name</label>
+                          <input
+                            type="text"
+                            value={memberForm.name}
+                            onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                            required
+                            placeholder="First Last"
+                            className="adm-input"
+                          />
                         </div>
-                        <div className="divide-y divide-gray-100">
-                          {mFines.map((fine) => (
-                            <div key={fine.id} className="flex items-start justify-between px-5 py-3 gap-4">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-800">{fine.fine_type}</p>
-                                <p className="text-xs text-gray-500">{fine.description}</p>
-                                {fine.notes && <p className="text-xs text-gray-400 italic mt-0.5">{fine.notes}</p>}
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                  {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
-                                  {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
-                                </p>
-                              </div>
-                              <div className="flex flex-col items-end gap-2 shrink-0">
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[fine.status]}`}>
-                                  {fine.status}
-                                </span>
-                                <select
-                                  value={fine.status}
-                                  onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
-                                  className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="upheld">Upheld</option>
-                                  <option value="dismissed">Dismissed</option>
-                                  <option value="paid">Paid</option>
-                                  <option value="labor">Labor</option>
-                                </select>
-                              </div>
-                            </div>
-                          ))}
+                        <div>
+                          <label className="adm-label">Status</label>
+                          <select
+                            value={memberForm.status}
+                            onChange={(e) => setMemberForm({ ...memberForm, status: e.target.value as Member["status"] })}
+                            className="adm-input"
+                            style={{ width: "auto" }}
+                          >
+                            <option value="active">Active</option>
+                            <option value="pledge">Pledge</option>
+                            <option value="live-out">Live-out</option>
+                            <option value="alumni">Alumni</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="resident-advisor">Resident Advisor</option>
+                          </select>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              );
-            })()}
+                        {memberError && <p className="adm-error">{memberError}</p>}
+                        <button type="submit" disabled={memberSubmitting} className="adm-btn">
+                          {memberSubmitting ? "Adding…" : "Add Member"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
 
-            {/* MEMBERS TAB */}
-            {tab === "members" && (
-              <div className="space-y-8">
-                {/* Add Member Form */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h2 className="font-semibold text-gray-800 mb-4">Add Member</h2>
-                  <form onSubmit={submitMember} className="flex gap-3 items-end">
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-500 mb-1">Full Name</label>
-                      <input
-                        type="text"
-                        value={memberForm.name}
-                        onChange={(e) =>
-                          setMemberForm({ ...memberForm, name: e.target.value })
-                        }
-                        required
-                        placeholder="First Last"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Status</label>
-                      <select
-                        value={memberForm.status}
-                        onChange={(e) =>
-                          setMemberForm({
-                            ...memberForm,
-                            status: e.target.value as Member["status"],
-                          })
-                        }
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      >
-                        <option value="active">Active</option>
-                      <option value="pledge">Pledge</option>
-                      <option value="live-out">Live-out</option>
-                      <option value="alumni">Alumni</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="resident-advisor">Resident Advisor</option>
-                      </select>
-                    </div>
-                    {memberError && (
-                      <p className="text-sm text-red-500">{memberError}</p>
+                  <div className="adm-card">
+                    {members.length === 0 ? (
+                      <p className="adm-empty">No members yet.</p>
+                    ) : (
+                      <table className="adm-table">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Fines</th>
+                            <th />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {members.map((m) => {
+                            const memberFines = fines.filter((f) => f.member_id === m.id);
+                            const open = memberFines.filter((f) => ["pending", "upheld"].includes(f.status)).length;
+                            return (
+                              <tr key={m.id}>
+                                <td style={{ fontWeight: 500 }}>{m.name}</td>
+                                <td>
+                                  <select
+                                    value={m.status}
+                                    onChange={(e) => updateMemberStatus(m.id, e.target.value as Member["status"])}
+                                    className="adm-status-select"
+                                  >
+                                    <option value="active">Active</option>
+                                    <option value="pledge">Pledge</option>
+                                    <option value="live-out">Live-out</option>
+                                    <option value="alumni">Alumni</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="resident-advisor">Resident Advisor</option>
+                                  </select>
+                                </td>
+                                <td>
+                                  {open > 0 ? (
+                                    <span style={{ color: "var(--red)", fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
+                                      {open} open
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: "var(--text-dim)", fontSize: 12 }}>—</span>
+                                  )}
+                                  {memberFines.length > 0 && (
+                                    <span style={{ color: "var(--text-dim)", fontSize: 11, marginLeft: 6 }}>
+                                      ({memberFines.length} total)
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ textAlign: "right" }}>
+                                  <button onClick={() => deleteMember(m.id)} className="adm-delete-btn">Delete</button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     )}
-                    <button
-                      type="submit"
-                      disabled={memberSubmitting}
-                      className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50 h-[38px]"
-                    >
-                      {memberSubmitting ? "Adding..." : "Add"}
-                    </button>
-                  </form>
+                  </div>
                 </div>
+              )}
 
-                {/* Members List */}
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  {members.length === 0 ? (
-                    <p className="text-center text-gray-400 py-10 text-sm">
-                      No members yet.
-                    </p>
+              {/* AUDIT LOG TAB */}
+              {tab === "audit" && (
+                <div className="adm-card">
+                  {auditLogs.length === 0 ? (
+                    <p className="adm-empty">No actions recorded yet.</p>
                   ) : (
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                    <table className="adm-table">
+                      <thead>
                         <tr>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Name
-                          </th>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Status
-                          </th>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Fines
-                          </th>
-                          <th />
+                          <th>When</th>
+                          <th>Admin</th>
+                          <th>Action</th>
+                          <th>Details</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {members.map((m) => {
-                          const memberFines = fines.filter(
-                            (f) => f.member_id === m.id
-                          );
-                          const open = memberFines.filter((f) =>
-                            ["pending", "upheld"].includes(f.status)
-                          ).length;
-                          return (
-                            <tr key={m.id}>
-                              <td className="px-5 py-3 font-medium text-gray-800">
-                                {m.name}
-                              </td>
-                              <td className="px-5 py-3">
-                                <select
-                                  value={m.status}
-                                  onChange={(e) =>
-                                    updateMemberStatus(
-                                      m.id,
-                                      e.target.value as Member["status"]
-                                    )
-                                  }
-                                  className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600"
-                                >
-                                  <option value="active">Active</option>
-                                  <option value="pledge">Pledge</option>
-                                  <option value="live-out">Live-out</option>
-                                  <option value="alumni">Alumni</option>
-                                  <option value="inactive">Inactive</option>
-                                  <option value="resident-advisor">Resident Advisor</option>
-                                </select>
-                              </td>
-                              <td className="px-5 py-3 text-gray-500">
-                                {open > 0 ? (
-                                  <span className="text-red-600 font-medium">
-                                    {open} open
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">None open</span>
-                                )}
-                                {memberFines.length > 0 &&
-                                  ` (${memberFines.length} total)`}
-                              </td>
-                              <td className="px-5 py-3 text-right">
-                                <button
-                                  onClick={() => deleteMember(m.id)}
-                                  className="text-xs text-red-400 hover:text-red-600"
-                                >
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* AUDIT LOG TAB */}
-            {tab === "audit" && (
-              <div>
-                <h2 className="font-semibold text-gray-800 mb-4">Audit Log</h2>
-                {auditLogs.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No actions recorded yet.</p>
-                ) : (
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">When</th>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</th>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Action</th>
-                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Details</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody>
                         {auditLogs.map((log) => (
                           <tr key={log.id}>
-                            <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
+                            <td style={{ whiteSpace: "nowrap", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
                               {new Date(log.created_at).toLocaleDateString()}{" "}
-                              <span className="text-gray-400">
+                              <span style={{ color: "var(--text-dim)" }}>
                                 {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                               </span>
                             </td>
-                            <td className="px-5 py-3 text-gray-600">{log.admin_email}</td>
-                            <td className="px-5 py-3 font-medium text-gray-800 whitespace-nowrap">{log.action}</td>
-                            <td className="px-5 py-3 text-gray-600">{log.details}</td>
+                            <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{log.admin_email}</td>
+                            <td style={{ fontWeight: 500, whiteSpace: "nowrap" }}>{log.action}</td>
+                            <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{log.details}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </main>
+    </>
   );
 }
