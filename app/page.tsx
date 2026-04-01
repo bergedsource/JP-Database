@@ -178,7 +178,7 @@ export default function Home() {
           font-weight: 700;
           letter-spacing: 4px;
           text-transform: uppercase;
-          color: var(--gold-dim);
+          color: var(--gold);
           margin-bottom: 10px;
           animation: sliceIn 0.5s 1.1s ease both;
         }
