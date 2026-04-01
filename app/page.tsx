@@ -455,7 +455,6 @@ export default function Home() {
         .fine-meta {
           font-size: 11px;
           color: var(--gold-dim);
-          margin-top: 12px;
           letter-spacing: 0.3px;
         }
 
@@ -703,10 +702,22 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
                 )}
               </div>
             </div>
-            <p className="fine-meta">
-              Issued {new Date(fine.date_issued).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-              &nbsp;·&nbsp;{fine.term}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+              <p className="fine-meta" style={{ marginTop: 0 }}>
+                Issued {new Date(fine.date_issued).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                &nbsp;·&nbsp;{fine.term}
+              </p>
+              <a
+                href="https://docs.google.com/document/d/1zWRALtkvjH3Koyc46nlu_5EZwxMubr26-2142DOffTQ/edit"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 11, color: "var(--gold-dim)", textDecoration: "none", fontFamily: "'Lato', sans-serif", letterSpacing: "0.5px", whiteSpace: "nowrap", transition: "color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--gold)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--gold-dim)")}
+              >
+                View Bylaw ↗
+              </a>
+            </div>
           </div>
         );
       })}
