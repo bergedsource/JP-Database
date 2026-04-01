@@ -897,6 +897,14 @@ export default function AdminPage() {
               <div className="adm-title">JP Admin</div>
               <div className="adm-subtitle">Acacia · Oregon State</div>
             </div>
+            <a
+              href={`mailto:bergedillon@gmail.com?subject=JP Admin Bug Report&body=Reported by: ${adminEmail}%0A%0ADescribe the bug:%0A`}
+              style={{ marginLeft: 8, fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", border: "1px solid var(--border)", borderRadius: 5, padding: "3px 8px", textDecoration: "none", cursor: "pointer" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
+            >
+              bugs?
+            </a>
           </div>
           <button onClick={signOut} className="adm-signout">Sign out</button>
         </header>
