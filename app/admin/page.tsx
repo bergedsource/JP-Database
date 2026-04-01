@@ -1030,10 +1030,8 @@ export default function AdminPage() {
                           >
                             <option value="active">Active</option>
                             <option value="pledge">Pledge</option>
-                            <option value="live-out">Live-out</option>
                             <option value="alumni">Alumni</option>
                             <option value="inactive">Inactive</option>
-                            <option value="resident-advisor">Resident Advisor</option>
                           </select>
                         </div>
                         {memberError && <p className="adm-error">{memberError}</p>}
@@ -1072,11 +1070,9 @@ export default function AdminPage() {
                                   >
                                     <option value="active">Active</option>
                                     <option value="pledge">Pledge</option>
-                                    <option value="live-out">Live-out</option>
-                                    <option value="alumni">Alumni</option>
+                                            <option value="alumni">Alumni</option>
                                     <option value="inactive">Inactive</option>
-                                    <option value="resident-advisor">Resident Advisor</option>
-                                  </select>
+                                          </select>
                                 </td>
                                 <td>
                                   {open > 0 ? (
