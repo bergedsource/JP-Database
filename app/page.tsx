@@ -14,13 +14,8 @@ const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string 
 
 function AcaciaCrest() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/crest.webp" alt="Acacia Fraternity Crest" width={160} height={213} style={{ objectFit: "contain", clipPath: "inset(0 0 38px 0)" }} />
-      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "22px", fontWeight: 600, color: "#DC4405", marginTop: "-6px", letterSpacing: "0.5px", userSelect: "none" }}>
-        Acacia
-      </span>
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/crest.webp" alt="Acacia Fraternity Crest" width={160} height={213} style={{ objectFit: "contain" }} />
   );
 }
 
