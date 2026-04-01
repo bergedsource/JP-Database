@@ -134,6 +134,11 @@ export default function Home() {
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        .page-wrap, .inner, .header, .crest-wrap, .org-label, .page-title, .page-subtitle, .divider, .section-title, .fine-card, .fine-type, .member-name, .member-status, .owed-banner {
+          user-select: none;
+          cursor: default;
+        }
+
         body {
           background-color: var(--black);
           font-family: 'Lato', sans-serif;
