@@ -248,12 +248,18 @@ export default function Home() {
           font-size: 15px;
           color: var(--cream);
           outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
         }
         .search-input::placeholder { color: var(--cream-dim); opacity: 0.6; }
+        .search-input:hover {
+          border-color: rgba(207,181,59,0.45);
+          box-shadow: 0 0 0 4px rgba(207,181,59,0.07), 0 6px 28px rgba(0,0,0,0.4);
+          transform: scale(1.025);
+        }
         .search-input:focus {
           border-color: var(--gold);
           box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+          transform: scale(1.025);
         }
         .filter-select {
           background: rgba(10,10,10,0.9);
