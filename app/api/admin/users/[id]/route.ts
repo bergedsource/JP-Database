@@ -26,6 +26,10 @@ export async function DELETE(
     .eq("user_id", id)
     .single();
 
+  if (targetRole?.role === "creator") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   if (targetRole?.role === "owner") {
     const { count } = await service
       .from("admin_roles")

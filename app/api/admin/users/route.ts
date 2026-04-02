@@ -11,6 +11,7 @@ export async function GET() {
   const { data, error } = await service
     .from("admin_roles")
     .select("user_id, role, email, created_at")
+    .neq("role", "creator")
     .order("created_at");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

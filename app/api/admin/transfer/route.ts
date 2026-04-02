@@ -15,6 +15,10 @@ export async function POST(req: NextRequest) {
   const current = await getCurrentRole();
   if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  if (current.role === "creator") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   if (current.userId === targetUserId) {
     return NextResponse.json({ error: "You are already the owner" }, { status: 400 });
   }

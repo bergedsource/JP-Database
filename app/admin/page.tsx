@@ -139,8 +139,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [adminEmail, setAdminEmail] = useState("");
-  const [userRole, setUserRole] = useState<"owner" | "admin" | null>(null);
+  const [userRole, setUserRole] = useState<"owner" | "admin" | "creator" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const isPrivileged = userRole === "owner" || userRole === "creator";
   const [adminUsers, setAdminUsers] = useState<{ user_id: string; email: string; role: string; created_at: string }[]>([]);
   const [newUserForm, setNewUserForm] = useState({ email: "", password: "", role: "admin" });
   const [newUserSubmitting, setNewUserSubmitting] = useState(false);
@@ -1087,7 +1088,7 @@ export default function AdminPage() {
                 {t}
               </button>
             ))}
-            {userRole === "owner" && (
+            {isPrivileged && (
               <button
                 className={`adm-tab${tab === "audit" ? " active" : ""}`}
                 onClick={() => setTab("audit")}
@@ -1095,7 +1096,7 @@ export default function AdminPage() {
                 audit
               </button>
             )}
-            {userRole === "owner" && (
+            {isPrivileged && (
               <button
                 className={`adm-tab${tab === "transition" ? " active" : ""}`}
                 onClick={() => { setTab("transition"); loadAdminUsers(); loadVenmoSettings(); }}
@@ -1113,7 +1114,7 @@ export default function AdminPage() {
               {tab === "fines" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   {/* Issue Fine Form — owner only */}
-                  {userRole === "owner" && <div className="adm-card">
+                  {isPrivileged && <div className="adm-card">
                     <div className="adm-card-header">
                       <span className="adm-card-title">Issue Fine</span>
                     </div>
@@ -1264,7 +1265,7 @@ export default function AdminPage() {
                         )}
 
                         <div style={{ gridColumn: "span 2" }}>
-                          {userRole === "owner" && (
+                          {isPrivileged && (
                             <button type="submit" disabled={fineSubmitting} className="adm-btn">
                               {fineSubmitting ? "Issuing…" : "Issue Fine"}
                             </button>
@@ -1338,7 +1339,7 @@ export default function AdminPage() {
                               >
                                 {fine.status}
                               </span>
-                              {userRole === "owner" ? (
+                              {isPrivileged ? (
                                 <select
                                   value={fine.status}
                                   onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
@@ -1353,7 +1354,7 @@ export default function AdminPage() {
                               ) : (
                                 <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
                               )}
-                              {userRole === "owner" && (
+                              {isPrivileged && (
                                 <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
                               )}
                             </div>
@@ -1388,7 +1389,7 @@ export default function AdminPage() {
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                     {/* Add Outstanding Fine Form — owner only */}
-                    {userRole === "owner" && <div className="adm-card">
+                    {isPrivileged && <div className="adm-card">
                       <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <span className="adm-card-title">Add Outstanding Fine</span>
                         <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>issued as upheld</span>
@@ -1484,7 +1485,7 @@ export default function AdminPage() {
                           </div>
 
                           {outError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{outError}</p>}
-                          {userRole === "owner" && (
+                          {isPrivileged && (
                             <button type="submit" disabled={outSubmitting} className="adm-btn">
                               {outSubmitting ? "Adding…" : "Add Outstanding Fine"}
                             </button>
@@ -1539,7 +1540,7 @@ export default function AdminPage() {
                                   <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
                                     {fine.status}
                                   </span>
-                                  {userRole === "owner" ? (
+                                  {isPrivileged ? (
                                     <select
                                       value={fine.status}
                                       onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
@@ -1568,7 +1569,7 @@ export default function AdminPage() {
               {/* MEMBERS TAB */}
               {tab === "members" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {userRole === "owner" && <div className="adm-card">
+                  {isPrivileged && <div className="adm-card">
                     <div className="adm-card-header">
                       <span className="adm-card-title">Add Member</span>
                     </div>
@@ -1611,7 +1612,7 @@ export default function AdminPage() {
                           </select>
                         </div>
                         {memberError && <p className="adm-error">{memberError}</p>}
-                        {userRole === "owner" && (
+                        {isPrivileged && (
                           <button type="submit" disabled={memberSubmitting} className="adm-btn">
                             {memberSubmitting ? "Adding…" : "Add Member"}
                           </button>
@@ -1645,7 +1646,7 @@ export default function AdminPage() {
                                   {m.roll ?? "—"}
                                 </td>
                                 <td>
-                                  {userRole === "owner" ? (
+                                  {isPrivileged ? (
                                     <select
                                       value={m.status}
                                       onChange={(e) => updateMemberStatus(m.id, e.target.value as Member["status"])}
@@ -1675,7 +1676,7 @@ export default function AdminPage() {
                                   )}
                                 </td>
                                 <td style={{ textAlign: "right" }}>
-                                  {userRole === "owner" && (
+                                  {isPrivileged && (
                                     <button onClick={() => deleteMember(m.id)} className="adm-delete-btn">Delete</button>
                                   )}
                                 </td>
@@ -1698,7 +1699,7 @@ export default function AdminPage() {
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                     {/* Add form — owner only */}
-                    {userRole === "owner" && <div className="adm-card">
+                    {isPrivileged && <div className="adm-card">
                       <div className="adm-card-header">
                         <span className="adm-card-title">Add to Social Probation</span>
                       </div>
@@ -1760,7 +1761,7 @@ export default function AdminPage() {
                           </div>
 
                           {spError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{spError}</p>}
-                          {userRole === "owner" && (
+                          {isPrivileged && (
                             <button type="submit" disabled={spSubmitting} className="adm-btn">
                               {spSubmitting ? "Adding…" : "Add to Social Probation"}
                             </button>
@@ -1812,7 +1813,7 @@ export default function AdminPage() {
                                 </td>
                                 <td style={{ fontSize: 12, color: "var(--text-dim)" }}>{sp.notes ?? "—"}</td>
                                 <td style={{ textAlign: "right" }}>
-                                  {userRole === "owner" && (
+                                  {isPrivileged && (
                                     <button onClick={() => removeSocialProbation(sp.id, sp.member_name ?? "Unknown", sp.reason)} className="adm-delete-btn">
                                       Lift
                                     </button>
@@ -1829,7 +1830,7 @@ export default function AdminPage() {
               })()}
 
               {/* AUDIT LOG TAB */}
-              {tab === "audit" && userRole === "owner" && (
+              {tab === "audit" && isPrivileged && (
                 <div className="adm-card">
                   {auditLogs.length === 0 ? (
                     <p className="adm-empty">No actions recorded yet.</p>
@@ -1864,7 +1865,7 @@ export default function AdminPage() {
               )}
 
               {/* SETTINGS TAB */}
-              {tab === "transition" && userRole === "owner" && (
+              {tab === "transition" && isPrivileged && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
                   {/* User Management */}
@@ -1899,7 +1900,7 @@ export default function AdminPage() {
                                 {new Date(u.created_at).toLocaleDateString()}
                               </td>
                               <td style={{ textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                {u.role === "admin" && (
+                                {u.role === "admin" && userRole !== "creator" && (
                                   <button
                                     onClick={() => transferOwnership(u.user_id, u.email)}
                                     style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif" }}
