@@ -917,9 +917,12 @@ export default function AdminPage() {
           border-bottom: 1px solid var(--border-light);
           font-size: 13px;
           color: var(--text);
+          cursor: default;
+          user-select: none;
         }
         .adm-table tbody tr:last-child td { border-bottom: none; }
         .adm-table tbody tr:hover td { background: rgba(255,255,255,0.012); }
+        .adm-table th { cursor: default; user-select: none; }
 
         .adm-member-block {
           background: var(--surface);
