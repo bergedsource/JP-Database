@@ -58,7 +58,7 @@ const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: str
   labor:     { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
 };
 
-type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "settings";
+type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "transition";
 
 const SP_REASONS: SocialProbationReason[] = [
   "Outstanding Fines (§10-270)",
@@ -147,6 +147,7 @@ export default function AdminPage() {
   const [venmoForm, setVenmoForm] = useState({ venmo_handle: "", venmo_url: "" });
   const [venmoSaving, setVenmoSaving] = useState(false);
   const [venmoSaved, setVenmoSaved] = useState(false);
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
@@ -1093,10 +1094,10 @@ export default function AdminPage() {
             ))}
             {userRole === "owner" && (
               <button
-                className={`adm-tab${tab === "settings" ? " active" : ""}`}
-                onClick={() => { setTab("settings"); loadAdminUsers(); loadVenmoSettings(); }}
+                className={`adm-tab${tab === "transition" ? " active" : ""}`}
+                onClick={() => { setTab("transition"); loadAdminUsers(); loadVenmoSettings(); }}
               >
-                Settings
+                Transition
               </button>
             )}
           </div>
@@ -1860,7 +1861,7 @@ export default function AdminPage() {
               )}
 
               {/* SETTINGS TAB */}
-              {tab === "settings" && userRole === "owner" && (
+              {tab === "transition" && userRole === "owner" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
                   {/* User Management */}
@@ -1925,14 +1926,25 @@ export default function AdminPage() {
                         </div>
                         <div style={{ flex: 1, minWidth: 160 }}>
                           <label className="adm-label">Password</label>
-                          <input
-                            type="password"
-                            required
-                            value={newUserForm.password}
-                            onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
-                            placeholder="Set a password"
-                            className="adm-input"
-                          />
+                          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                            <input
+                              type={showNewUserPassword ? "text" : "password"}
+                              required
+                              value={newUserForm.password}
+                              onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                              placeholder="Set a password"
+                              className="adm-input"
+                              style={{ paddingRight: 36 }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewUserPassword((v) => !v)}
+                              style={{ position: "absolute", right: 8, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 13, padding: 0, lineHeight: 1 }}
+                              tabIndex={-1}
+                            >
+                              {showNewUserPassword ? "Hide" : "Show"}
+                            </button>
+                          </div>
                         </div>
                         <div>
                           <label className="adm-label">Role</label>
