@@ -84,7 +84,7 @@ All under `/app/api/admin/`:
 | Route | Method | Auth Required | Purpose |
 |---|---|---|---|
 | `/api/admin/users` | GET | owner | List all admin users with roles |
-| `/api/admin/users` | POST | owner | Invite new user by email with role |
+| `/api/admin/users` | POST | owner | Create new user with email + password + role |
 | `/api/admin/users/[id]` | DELETE | owner | Remove a user |
 | `/api/admin/transfer` | POST | owner | Transfer ownership to another user |
 | `/api/admin/settings` | GET | authenticated | Read settings |
@@ -103,7 +103,7 @@ Visible only to owners. Contains two sections:
 
 **User Management:**
 - Table listing all admin users: Email, Role badge, actions
-- "Invite User" form: email input + role dropdown (owner/admin) + Send Invite button (Supabase sends magic link email)
+- "Add User" form: email input + password input + role dropdown (owner/admin) + Create button — account is created immediately, no email required, new user logs in with those credentials
 - Remove button per user (cannot remove yourself if you are the only owner)
 - "Transfer Ownership" button per owner-role row — promotes that user to owner, demotes current user to admin atomically
 
@@ -171,8 +171,8 @@ This is never exposed to the browser. All service-role operations are server-sid
 ## Handoff Flow (end state)
 
 1. Outgoing JP chair logs into admin portal
-2. Goes to Settings → Users → "Invite User" → enters new chair's email, sets role to Owner → sends invite
-3. New chair receives email, sets password, logs in
+2. Goes to Settings → Users → "Add User" → enters new chair's email + password + role → creates account instantly
+3. New chair logs in with those credentials
 4. Outgoing chair goes to Settings → Users → clicks "Transfer Ownership" next to new chair
 5. New chair is now owner, outgoing chair becomes admin or is removed
 6. Done — no Supabase, no Vercel, no GitHub touched
