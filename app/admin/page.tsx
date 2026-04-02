@@ -1498,6 +1498,7 @@ export default function AdminPage() {
                         <thead>
                           <tr>
                             <th>Name</th>
+                            <th>Roll #</th>
                             <th>Status</th>
                             <th>Fines</th>
                             <th />
@@ -1510,6 +1511,9 @@ export default function AdminPage() {
                             return (
                               <tr key={m.id}>
                                 <td style={{ fontWeight: 500 }}>{m.name}</td>
+                                <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: m.roll ? "var(--gold)" : "var(--text-dim)" }}>
+                                  {m.roll ?? "—"}
+                                </td>
                                 <td>
                                   <select
                                     value={m.status}
