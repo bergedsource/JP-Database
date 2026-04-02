@@ -369,8 +369,10 @@ export default function Home() {
         }
         .fine-card:hover {
           border-color: rgba(207,181,59,0.45);
-          box-shadow: 0 0 0 4px rgba(207,181,59,0.07), 0 6px 28px rgba(0,0,0,0.4);
-          transform: scale(1.025);
+          box-shadow: 0 0 0 4px rgba(207,181,59,0.07), 0 12px 40px rgba(0,0,0,0.5);
+          transform: scale(1.04);
+          z-index: 1;
+          position: relative;
         }
         .fine-card-top {
           display: flex;
