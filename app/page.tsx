@@ -364,12 +364,13 @@ export default function Home() {
           padding: 18px 20px;
           margin-bottom: 10px;
           backdrop-filter: blur(4px);
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
           animation: fadeUp 0.35s ease both;
         }
         .fine-card:hover {
-          border-color: rgba(207,181,59,0.3);
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          border-color: rgba(207,181,59,0.45);
+          box-shadow: 0 0 0 4px rgba(207,181,59,0.07), 0 6px 28px rgba(0,0,0,0.4);
+          transform: scale(1.025);
         }
         .fine-card-top {
           display: flex;
