@@ -666,7 +666,9 @@ export default function Home() {
             <div>
               <div className="member-header">
                 <div>
-                  <h2 className="member-name">{selected.name}</h2>
+                  <h2 className="member-name">
+                  {selected.name}{selected.roll ? ` - ${selected.roll}` : ""}
+                </h2>
                   <p className="member-status">{selected.status}</p>
                 </div>
                 <button

@@ -71,6 +71,7 @@ export interface Member {
   name: string;
   status: "active" | "pledge" | "alumni" | "live-out" | "inactive" | "resident-advisor";
   created_at: string;
+  roll?: number | null;
 }
 
 export interface AuditLog {
