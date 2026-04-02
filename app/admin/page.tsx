@@ -100,6 +100,7 @@ export default function AdminPage() {
   const [memberForm, setMemberForm] = useState({
     name: "",
     status: "active" as Member["status"],
+    roll: "",
   });
   const [memberSubmitting, setMemberSubmitting] = useState(false);
   const [memberError, setMemberError] = useState("");
@@ -473,13 +474,14 @@ export default function AdminPage() {
     const { error } = await supabase.from("members").insert({
       name: memberForm.name.trim(),
       status: memberForm.status,
+      roll: memberForm.roll ? parseInt(memberForm.roll) : null,
     });
 
     if (error) {
       setMemberError(error.message);
     } else {
-      await log("Added Member", `${memberForm.name.trim()} (${memberForm.status})`);
-      setMemberForm({ name: "", status: "active" });
+      await log("Added Member", `${memberForm.name.trim()} (${memberForm.status})${memberForm.roll ? ` — Roll ${memberForm.roll}` : ""}`);
+      setMemberForm({ name: "", status: "active", roll: "" });
       await loadData();
     }
     setMemberSubmitting(false);
@@ -1380,6 +1382,17 @@ export default function AdminPage() {
                             required
                             placeholder="First Last"
                             className="adm-input"
+                          />
+                        </div>
+                        <div>
+                          <label className="adm-label">Roll #</label>
+                          <input
+                            type="number"
+                            value={memberForm.roll}
+                            onChange={(e) => setMemberForm({ ...memberForm, roll: e.target.value })}
+                            placeholder="e.g. 1391"
+                            className="adm-input"
+                            style={{ width: 120 }}
                           />
                         </div>
                         <div>
