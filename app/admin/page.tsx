@@ -535,6 +535,7 @@ export default function AdminPage() {
           background: var(--bg);
           font-family: 'IBM Plex Sans', sans-serif;
           color: var(--text);
+          overflow-x: hidden;
         }
 
         .adm-header {
@@ -600,7 +601,11 @@ export default function AdminPage() {
           display: flex;
           border-bottom: 1px solid var(--border);
           margin-bottom: 28px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
         }
+        .adm-tabs::-webkit-scrollbar { display: none; }
 
         .adm-tab {
           background: transparent;
@@ -616,6 +621,8 @@ export default function AdminPage() {
           color: var(--text-muted);
           cursor: pointer;
           transition: color 0.15s, border-color 0.15s;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
         .adm-tab:hover { color: var(--text); }
         .adm-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
