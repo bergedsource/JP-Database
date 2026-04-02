@@ -139,6 +139,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [adminEmail, setAdminEmail] = useState("");
+  const [userRole, setUserRole] = useState<"owner" | "admin" | null>(null);
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
@@ -206,6 +207,10 @@ export default function AdminPage() {
     supabase.auth.getUser().then(({ data }) => {
       setAdminEmail(data.user?.email ?? "unknown");
     });
+    fetch("/api/admin/me")
+      .then((r) => r.json())
+      .then((d) => setUserRole(d.role ?? null))
+      .catch(() => {});
   }, []);
 
   async function loadData() {
@@ -957,6 +962,21 @@ export default function AdminPage() {
         .adm-error { font-size: 12px; color: var(--red); margin-top: 4px; }
         .adm-loading { color: var(--text-muted); font-size: 13px; padding: 64px 0; text-align: center; font-style: italic; }
         .adm-empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 40px 0; }
+
+        .adm-view-only-banner {
+          background: rgba(207,181,59,0.08);
+          border: 1px solid rgba(207,181,59,0.25);
+          border-radius: 8px;
+          padding: 10px 18px;
+          margin-bottom: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: var(--gold);
+          font-family: 'IBM Plex Mono', monospace;
+          text-align: center;
+        }
       `}</style>
 
       <div className="adm-page">
@@ -981,6 +1001,9 @@ export default function AdminPage() {
         </header>
 
         <div className="adm-body">
+          {userRole === "admin" && (
+            <div className="adm-view-only-banner">View Only — Contact JP Chair to make changes</div>
+          )}
           {/* Tabs */}
           <div className="adm-tabs">
             {(["fines", "outstanding", "members", "soc pro", "audit"] as Tab[]).map((t) => (
@@ -1153,9 +1176,11 @@ export default function AdminPage() {
                         )}
 
                         <div style={{ gridColumn: "span 2" }}>
-                          <button type="submit" disabled={fineSubmitting} className="adm-btn">
-                            {fineSubmitting ? "Issuing…" : "Issue Fine"}
-                          </button>
+                          {userRole === "owner" && (
+                            <button type="submit" disabled={fineSubmitting} className="adm-btn">
+                              {fineSubmitting ? "Issuing…" : "Issue Fine"}
+                            </button>
+                          )}
                         </div>
                       </form>
                     </div>
@@ -1225,18 +1250,24 @@ export default function AdminPage() {
                               >
                                 {fine.status}
                               </span>
-                              <select
-                                value={fine.status}
-                                onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
-                                className="adm-status-select"
-                              >
-                                <option value="pending">Pending</option>
-                                <option value="upheld">Upheld</option>
-                                <option value="dismissed">Dismissed</option>
-                                <option value="paid">Paid</option>
-                                <option value="labor">Labor</option>
-                              </select>
-                              <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
+                              {userRole === "owner" ? (
+                                <select
+                                  value={fine.status}
+                                  onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
+                                  className="adm-status-select"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="upheld">Upheld</option>
+                                  <option value="dismissed">Dismissed</option>
+                                  <option value="paid">Paid</option>
+                                  <option value="labor">Labor</option>
+                                </select>
+                              ) : (
+                                <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
+                              )}
+                              {userRole === "owner" && (
+                                <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
+                              )}
                             </div>
                           </div>
                         );
@@ -1365,9 +1396,11 @@ export default function AdminPage() {
                           </div>
 
                           {outError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{outError}</p>}
-                          <button type="submit" disabled={outSubmitting} className="adm-btn">
-                            {outSubmitting ? "Adding…" : "Add Outstanding Fine"}
-                          </button>
+                          {userRole === "owner" && (
+                            <button type="submit" disabled={outSubmitting} className="adm-btn">
+                              {outSubmitting ? "Adding…" : "Add Outstanding Fine"}
+                            </button>
+                          )}
                         </form>
                       </div>
                     </div>
@@ -1418,17 +1451,21 @@ export default function AdminPage() {
                                   <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
                                     {fine.status}
                                   </span>
-                                  <select
-                                    value={fine.status}
-                                    onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
-                                    className="adm-status-select"
-                                  >
-                                    <option value="pending">Pending</option>
-                                    <option value="upheld">Upheld</option>
-                                    <option value="dismissed">Dismissed</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="labor">Labor</option>
-                                  </select>
+                                  {userRole === "owner" ? (
+                                    <select
+                                      value={fine.status}
+                                      onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
+                                      className="adm-status-select"
+                                    >
+                                      <option value="pending">Pending</option>
+                                      <option value="upheld">Upheld</option>
+                                      <option value="dismissed">Dismissed</option>
+                                      <option value="paid">Paid</option>
+                                      <option value="labor">Labor</option>
+                                    </select>
+                                  ) : (
+                                    <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -1486,9 +1523,11 @@ export default function AdminPage() {
                           </select>
                         </div>
                         {memberError && <p className="adm-error">{memberError}</p>}
-                        <button type="submit" disabled={memberSubmitting} className="adm-btn">
-                          {memberSubmitting ? "Adding…" : "Add Member"}
-                        </button>
+                        {userRole === "owner" && (
+                          <button type="submit" disabled={memberSubmitting} className="adm-btn">
+                            {memberSubmitting ? "Adding…" : "Add Member"}
+                          </button>
+                        )}
                       </form>
                     </div>
                   </div>
@@ -1518,16 +1557,20 @@ export default function AdminPage() {
                                   {m.roll ?? "—"}
                                 </td>
                                 <td>
-                                  <select
-                                    value={m.status}
-                                    onChange={(e) => updateMemberStatus(m.id, e.target.value as Member["status"])}
-                                    className="adm-status-select"
-                                  >
-                                    <option value="active">Active</option>
-                                    <option value="pledge">Pledge</option>
-                                            <option value="alumni">Alumni</option>
-                                    <option value="inactive">Inactive</option>
-                                          </select>
+                                  {userRole === "owner" ? (
+                                    <select
+                                      value={m.status}
+                                      onChange={(e) => updateMemberStatus(m.id, e.target.value as Member["status"])}
+                                      className="adm-status-select"
+                                    >
+                                      <option value="active">Active</option>
+                                      <option value="pledge">Pledge</option>
+                                      <option value="alumni">Alumni</option>
+                                      <option value="inactive">Inactive</option>
+                                    </select>
+                                  ) : (
+                                    <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{m.status}</span>
+                                  )}
                                 </td>
                                 <td>
                                   {open > 0 ? (
@@ -1544,7 +1587,9 @@ export default function AdminPage() {
                                   )}
                                 </td>
                                 <td style={{ textAlign: "right" }}>
-                                  <button onClick={() => deleteMember(m.id)} className="adm-delete-btn">Delete</button>
+                                  {userRole === "owner" && (
+                                    <button onClick={() => deleteMember(m.id)} className="adm-delete-btn">Delete</button>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -1627,9 +1672,11 @@ export default function AdminPage() {
                           </div>
 
                           {spError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{spError}</p>}
-                          <button type="submit" disabled={spSubmitting} className="adm-btn">
-                            {spSubmitting ? "Adding…" : "Add to Social Probation"}
-                          </button>
+                          {userRole === "owner" && (
+                            <button type="submit" disabled={spSubmitting} className="adm-btn">
+                              {spSubmitting ? "Adding…" : "Add to Social Probation"}
+                            </button>
+                          )}
                         </form>
                       </div>
                     </div>
@@ -1677,9 +1724,11 @@ export default function AdminPage() {
                                 </td>
                                 <td style={{ fontSize: 12, color: "var(--text-dim)" }}>{sp.notes ?? "—"}</td>
                                 <td style={{ textAlign: "right" }}>
-                                  <button onClick={() => removeSocialProbation(sp.id, sp.member_name ?? "Unknown", sp.reason)} className="adm-delete-btn">
-                                    Lift
-                                  </button>
+                                  {userRole === "owner" && (
+                                    <button onClick={() => removeSocialProbation(sp.id, sp.member_name ?? "Unknown", sp.reason)} className="adm-delete-btn">
+                                      Lift
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
                             ))}
