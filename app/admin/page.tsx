@@ -575,21 +575,15 @@ export default function AdminPage() {
       await log("Updated Fine Status", `${fine.member_name ?? "Unknown"} — ${fine.fine_type} changed to "${status}"`);
 
       if (status === "paid") {
-        await fetch("/api/export-fine", {
+        await fetch("/api/admin/export-fine", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             member_name: fine.member_name,
             fine_type: fine.fine_type,
             description: fine.description,
             amount: fine.amount,
-            term: fine.term,
-            date_issued: fine.date_issued,
             date_resolved: dateResolved,
-            notes: fine.notes,
           }),
         });
       }
