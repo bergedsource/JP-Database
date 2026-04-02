@@ -26,7 +26,6 @@ export default function Home() {
   const [selected, setSelected] = useState<Member | null>(null);
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>("all");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -48,17 +47,13 @@ export default function Home() {
       setShowSuggestions(false);
       return;
     }
-    let q = supabase
+    const { data } = await supabase
       .from("members")
       .select("*")
       .ilike("name", `%${value.trim()}%`)
       .in("status", ["active", "pledge"])
       .order("name")
       .limit(8);
-    if (filterStatus !== "all") {
-      q = q.eq("status", filterStatus);
-    }
-    const { data } = await q;
     setSuggestions(data ?? []);
     setShowSuggestions(true);
   }
@@ -85,28 +80,6 @@ export default function Home() {
       .order("date_issued", { ascending: false });
     setFines(data ?? []);
     setLoading(false);
-  }
-
-  function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setFilterStatus(e.target.value);
-    if (query.trim()) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(async () => {
-        let q = supabase
-          .from("members")
-          .select("*")
-          .ilike("name", `%${query.trim()}%`)
-          .in("status", ["active", "pledge"])
-          .order("name")
-          .limit(8);
-        if (e.target.value !== "all") {
-          q = q.eq("status", e.target.value);
-        }
-        const { data } = await q;
-        setSuggestions(data ?? []);
-        setShowSuggestions(true);
-      }, 100);
-    }
   }
 
   const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
@@ -261,22 +234,6 @@ export default function Home() {
           box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
           transform: scale(1.025);
         }
-        .filter-select {
-          background: rgba(10,10,10,0.9);
-          border: 1.5px solid var(--black-border);
-          border-radius: 8px;
-          padding: 12px 14px;
-          font-family: 'Lato', sans-serif;
-          font-size: 14px;
-          color: var(--cream);
-          outline: none;
-          cursor: pointer;
-          transition: border-color 0.2s;
-          min-width: 100px;
-        }
-        .filter-select:focus { border-color: var(--gold); }
-        .filter-select option { background: #111111; }
-
         /* Autocomplete dropdown */
         .suggestions {
           position: absolute;
@@ -698,15 +655,6 @@ export default function Home() {
                   </ul>
                 )}
               </div>
-              <select
-                value={filterStatus}
-                onChange={handleFilterChange}
-                className="filter-select"
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="pledge">Pledge</option>
-              </select>
             </div>
           </div>
 
