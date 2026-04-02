@@ -1,18 +1,27 @@
-import { requireOwner } from "@/lib/admin-auth";
+import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/admin/users — list all admin users with roles
+// Creator sees themselves + all others; owners never see creator entries
 export async function GET() {
   const denied = await requireOwner();
   if (denied) return denied;
 
+  const current = await getCurrentRole();
   const service = createServiceClient();
-  const { data, error } = await service
+
+  let query = service
     .from("admin_roles")
     .select("user_id, role, email, created_at")
-    .neq("role", "creator")
     .order("created_at");
+
+  // Owners cannot see creator entries; creators can see their own entry
+  if (current?.role !== "creator") {
+    query = query.neq("role", "creator");
+  }
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data ?? []);
