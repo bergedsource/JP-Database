@@ -140,6 +140,7 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [adminEmail, setAdminEmail] = useState("");
   const [userRole, setUserRole] = useState<"owner" | "admin" | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [adminUsers, setAdminUsers] = useState<{ user_id: string; email: string; role: string; created_at: string }[]>([]);
   const [newUserForm, setNewUserForm] = useState({ email: "", password: "", role: "admin" });
   const [newUserSubmitting, setNewUserSubmitting] = useState(false);
@@ -217,7 +218,7 @@ export default function AdminPage() {
     });
     fetch("/api/admin/me")
       .then((r) => r.json())
-      .then((d) => setUserRole(d.role ?? null))
+      .then((d) => { setUserRole(d.role ?? null); setCurrentUserId(d.userId ?? null); })
       .catch(() => {});
   }, []);
 
@@ -1898,7 +1899,9 @@ export default function AdminPage() {
                                     Transfer Ownership
                                   </button>
                                 )}
-                                <button onClick={() => removeAdminUser(u.user_id)} className="adm-delete-btn">Remove</button>
+                                {u.user_id !== currentUserId && (
+                                  <button onClick={() => removeAdminUser(u.user_id)} className="adm-delete-btn">Remove</button>
+                                )}
                               </td>
                             </tr>
                           ))}
