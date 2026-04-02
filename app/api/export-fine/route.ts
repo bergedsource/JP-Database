@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A2:F`,
       valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: [[
           new Date().toLocaleString("en-US"),
