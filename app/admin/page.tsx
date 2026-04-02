@@ -1103,8 +1103,8 @@ export default function AdminPage() {
               {/* FINES TAB */}
               {tab === "fines" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {/* Issue Fine Form */}
-                  <div className="adm-card">
+                  {/* Issue Fine Form — owner only */}
+                  {userRole === "owner" && <div className="adm-card">
                     <div className="adm-card-header">
                       <span className="adm-card-title">Issue Fine</span>
                     </div>
@@ -1263,7 +1263,7 @@ export default function AdminPage() {
                         </div>
                       </form>
                     </div>
-                  </div>
+                  </div>}
 
                   {/* Filters */}
                   <div className="adm-filters">
@@ -1378,8 +1378,8 @@ export default function AdminPage() {
 
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                    {/* Add Outstanding Fine Form */}
-                    <div className="adm-card">
+                    {/* Add Outstanding Fine Form — owner only */}
+                    {userRole === "owner" && <div className="adm-card">
                       <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <span className="adm-card-title">Add Outstanding Fine</span>
                         <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>issued as upheld</span>
@@ -1482,7 +1482,7 @@ export default function AdminPage() {
                           )}
                         </form>
                       </div>
-                    </div>
+                    </div>}
 
                     <div className="adm-summary">
                       <span style={{ color: "var(--text-muted)" }}>
@@ -1559,7 +1559,7 @@ export default function AdminPage() {
               {/* MEMBERS TAB */}
               {tab === "members" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  <div className="adm-card">
+                  {userRole === "owner" && <div className="adm-card">
                     <div className="adm-card-header">
                       <span className="adm-card-title">Add Member</span>
                     </div>
@@ -1609,7 +1609,7 @@ export default function AdminPage() {
                         )}
                       </form>
                     </div>
-                  </div>
+                  </div>}
 
                   <div className="adm-card">
                     {members.length === 0 ? (
@@ -1688,8 +1688,8 @@ export default function AdminPage() {
                   .slice(0, 8);
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                    {/* Add form */}
-                    <div className="adm-card">
+                    {/* Add form — owner only */}
+                    {userRole === "owner" && <div className="adm-card">
                       <div className="adm-card-header">
                         <span className="adm-card-title">Add to Social Probation</span>
                       </div>
@@ -1758,7 +1758,7 @@ export default function AdminPage() {
                           )}
                         </form>
                       </div>
-                    </div>
+                    </div>}
 
                     {/* Active list */}
                     <div className="adm-card">
