@@ -1078,7 +1078,7 @@ export default function AdminPage() {
           )}
           {/* Tabs */}
           <div className="adm-tabs">
-            {(["fines", "outstanding", "members", "soc pro", "audit"] as Tab[]).map((t) => (
+            {(["fines", "outstanding", "members", "soc pro"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -1087,6 +1087,14 @@ export default function AdminPage() {
                 {t}
               </button>
             ))}
+            {userRole === "owner" && (
+              <button
+                className={`adm-tab${tab === "audit" ? " active" : ""}`}
+                onClick={() => setTab("audit")}
+              >
+                audit
+              </button>
+            )}
             {userRole === "owner" && (
               <button
                 className={`adm-tab${tab === "transition" ? " active" : ""}`}
@@ -1821,7 +1829,7 @@ export default function AdminPage() {
               })()}
 
               {/* AUDIT LOG TAB */}
-              {tab === "audit" && (
+              {tab === "audit" && userRole === "owner" && (
                 <div className="adm-card">
                   {auditLogs.length === 0 ? (
                     <p className="adm-empty">No actions recorded yet.</p>
