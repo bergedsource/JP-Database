@@ -474,7 +474,7 @@ export default function Home() {
           justify-content: center;
           flex-shrink: 0;
         }
-        .pay-btn-icon-cashapp { background: #00D632; }
+        .pay-btn-icon-cashapp { background: transparent; }
         .pay-btn-icon-venmo   { background: #008CFF; }
         .pay-btn-name {
           font-size: 13px;
@@ -697,7 +697,8 @@ export default function Home() {
                         <div className="pay-buttons">
                           <a href="https://cash.app/$AcaciaOSU" target="_blank" rel="noopener noreferrer" className="pay-btn pay-btn-cashapp">
                             <div className="pay-btn-icon pay-btn-icon-cashapp">
-                              <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M13.567 9.948c.492.115.963.298 1.4.542l.638-1.405a5.768 5.768 0 0 0-1.768-.6V7.5h-1.5v.993c-1.56.287-2.587 1.27-2.587 2.67 0 1.504 1.04 2.217 2.587 2.68v2.508c-.7-.118-1.38-.405-1.966-.84l-.713 1.387c.738.527 1.596.872 2.5.998V19h1.5v-1.128c1.695-.303 2.745-1.37 2.745-2.842 0-1.57-1.04-2.295-2.745-2.752V9.948zm-1.317 2.552c-.637-.224-.977-.513-.977-.977 0-.44.314-.795.977-.93v1.907zm1.5 4.088V14.27c.673.242.998.557.998 1.04 0 .492-.347.873-.998 1.278z"/><path fillRule="evenodd" clipRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6zm3-1.5A1.5 1.5 0 0 0 4.5 6v12A1.5 1.5 0 0 0 6 19.5h12a1.5 1.5 0 0 0 1.5-1.5V6A1.5 1.5 0 0 0 18 4.5H6z"/></svg>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src="/cashapp-logo.png" alt="Cash App" width={48} height={48} style={{ borderRadius: 12, display: "block" }} />
                             </div>
                             <span className="pay-btn-name">Cash App</span>
                             <span className="pay-btn-handle">$AcaciaOSU</span>
