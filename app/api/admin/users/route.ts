@@ -23,16 +23,33 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
 
   const { email, password, role } = await req.json();
-  if (!email || !password || !["owner", "admin"].includes(role)) {
-    return NextResponse.json({ error: "email, password, and role (owner|admin) are required" }, { status: 400 });
+
+  // Input validation
+  if (typeof email !== "string" || typeof password !== "string" || typeof role !== "string") {
+    return NextResponse.json({ error: "Invalid input types" }, { status: 400 });
+  }
+  const trimmedEmail = email.trim().slice(0, 254);
+  const trimmedPassword = password.slice(0, 72); // bcrypt max
+  if (!trimmedEmail || !trimmedPassword) {
+    return NextResponse.json({ error: "email and password are required" }, { status: 400 });
+  }
+  // Basic email format check
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+  }
+  if (trimmedPassword.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+  }
+  if (!["owner", "admin"].includes(role)) {
+    return NextResponse.json({ error: "role must be owner or admin" }, { status: 400 });
   }
 
   const service = createServiceClient();
 
   // Create the Supabase auth user
   const { data: created, error: createError } = await service.auth.admin.createUser({
-    email,
-    password,
+    email: trimmedEmail,
+    password: trimmedPassword,
     email_confirm: true,
   });
 
@@ -41,7 +58,7 @@ export async function POST(req: NextRequest) {
   // Insert into admin_roles
   const { error: roleError } = await service
     .from("admin_roles")
-    .insert({ user_id: created.user.id, role, email });
+    .insert({ user_id: created.user.id, role, email: trimmedEmail });
 
   if (roleError) {
     // Rollback: delete the auth user if role insert fails

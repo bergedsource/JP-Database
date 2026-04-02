@@ -1,10 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { isRateLimited, getIP } from "@/lib/rate-limit";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isRateLimited(getIP(_req), { maxRequests: 30, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { id } = await params;
   if (!id) return NextResponse.json([], { status: 400 });
 
