@@ -211,7 +211,7 @@ export default function AdminPage() {
   async function loadData() {
     setLoading(true);
     const [{ data: m }, { data: f }, { data: a }, { data: sp }] = await Promise.all([
-      supabase.from("members").select("*").order("name"),
+      supabase.from("members").select("*").order("roll", { ascending: true, nullsFirst: false }).order("name"),
       supabase.from("fines").select("*, members(name)").order("date_issued", { ascending: false }),
       supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("social_probation").select("*, members(name)").order("created_at", { ascending: false }),
