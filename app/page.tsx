@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import type { Fine, Member } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string }> = {
@@ -29,8 +28,6 @@ export default function Home() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const supabase = createClient();
-
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -47,13 +44,8 @@ export default function Home() {
       setShowSuggestions(false);
       return;
     }
-    const { data } = await supabase
-      .from("members")
-      .select("*")
-      .ilike("name", `%${value.trim()}%`)
-      .in("status", ["active", "pledge"])
-      .order("name")
-      .limit(8);
+    const res = await fetch(`/api/search?q=${encodeURIComponent(value.trim())}`);
+    const data = await res.json();
     setSuggestions(data ?? []);
     setShowSuggestions(true);
   }
@@ -73,11 +65,8 @@ export default function Home() {
     setSuggestions([]);
     setSelected(member);
     setLoading(true);
-    const { data } = await supabase
-      .from("fines")
-      .select("*")
-      .eq("member_id", member.id)
-      .order("date_issued", { ascending: false });
+    const res = await fetch(`/api/member-fines/${member.id}`);
+    const data = await res.json();
     setFines(data ?? []);
     setLoading(false);
   }
