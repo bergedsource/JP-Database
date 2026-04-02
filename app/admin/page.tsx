@@ -58,7 +58,7 @@ const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: str
   labor:     { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
 };
 
-type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit";
+type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "settings";
 
 const SP_REASONS: SocialProbationReason[] = [
   "Outstanding Fines (§10-270)",
@@ -140,6 +140,13 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [adminEmail, setAdminEmail] = useState("");
   const [userRole, setUserRole] = useState<"owner" | "admin" | null>(null);
+  const [adminUsers, setAdminUsers] = useState<{ user_id: string; email: string; role: string; created_at: string }[]>([]);
+  const [newUserForm, setNewUserForm] = useState({ email: "", password: "", role: "admin" });
+  const [newUserSubmitting, setNewUserSubmitting] = useState(false);
+  const [newUserError, setNewUserError] = useState("");
+  const [venmoForm, setVenmoForm] = useState({ venmo_handle: "", venmo_url: "" });
+  const [venmoSaving, setVenmoSaving] = useState(false);
+  const [venmoSaved, setVenmoSaved] = useState(false);
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
@@ -330,6 +337,75 @@ export default function AdminPage() {
     }
 
     await loadData();
+  }
+
+  async function loadAdminUsers() {
+    const res = await fetch("/api/admin/users");
+    if (res.ok) setAdminUsers(await res.json());
+  }
+
+  async function loadVenmoSettings() {
+    const res = await fetch("/api/admin/settings");
+    if (res.ok) {
+      const data = await res.json();
+      setVenmoForm({ venmo_handle: data.venmo_handle ?? "", venmo_url: data.venmo_url ?? "" });
+    }
+  }
+
+  async function createAdminUser(e: React.FormEvent) {
+    e.preventDefault();
+    setNewUserSubmitting(true);
+    setNewUserError("");
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUserForm),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setNewUserError(data.error ?? "Failed to create user");
+    } else {
+      setNewUserForm({ email: "", password: "", role: "admin" });
+      await loadAdminUsers();
+    }
+    setNewUserSubmitting(false);
+  }
+
+  async function removeAdminUser(userId: string) {
+    if (!confirm("Remove this user? They will lose access immediately.")) return;
+    await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+    await loadAdminUsers();
+  }
+
+  async function transferOwnership(targetUserId: string, targetEmail: string) {
+    if (!confirm(`Transfer ownership to ${targetEmail}? You will become an admin.`)) return;
+    const res = await fetch("/api/admin/transfer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetUserId }),
+    });
+    if (res.ok) {
+      setUserRole("admin");
+      await loadAdminUsers();
+    }
+  }
+
+  async function saveVenmo(e: React.FormEvent) {
+    e.preventDefault();
+    setVenmoSaving(true);
+    await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "venmo_handle", value: venmoForm.venmo_handle }),
+    });
+    await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "venmo_url", value: venmoForm.venmo_url }),
+    });
+    setVenmoSaving(false);
+    setVenmoSaved(true);
+    setTimeout(() => setVenmoSaved(false), 2500);
   }
 
   async function addSocialProbation(e: React.FormEvent) {
@@ -1015,6 +1091,14 @@ export default function AdminPage() {
                 {t}
               </button>
             ))}
+            {userRole === "owner" && (
+              <button
+                className={`adm-tab${tab === "settings" ? " active" : ""}`}
+                onClick={() => { setTab("settings"); loadAdminUsers(); loadVenmoSettings(); }}
+              >
+                Settings
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -1772,6 +1856,146 @@ export default function AdminPage() {
                       </tbody>
                     </table>
                   )}
+                </div>
+              )}
+
+              {/* SETTINGS TAB */}
+              {tab === "settings" && userRole === "owner" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+
+                  {/* User Management */}
+                  <div className="adm-card">
+                    <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span className="adm-card-title">Admin Users</span>
+                    </div>
+                    <div className="adm-card-body">
+                      <table className="adm-table" style={{ marginBottom: 24 }}>
+                        <thead>
+                          <tr>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Added</th>
+                            <th />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminUsers.map((u) => (
+                            <tr key={u.user_id}>
+                              <td style={{ fontWeight: 500 }}>{u.email}</td>
+                              <td>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const,
+                                  fontFamily: "'IBM Plex Mono', monospace",
+                                  color: u.role === "owner" ? "var(--gold)" : "var(--text-muted)",
+                                }}>
+                                  {u.role}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                                {new Date(u.created_at).toLocaleDateString()}
+                              </td>
+                              <td style={{ textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                {u.role === "admin" && (
+                                  <button
+                                    onClick={() => transferOwnership(u.user_id, u.email)}
+                                    style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif" }}
+                                  >
+                                    Transfer Ownership
+                                  </button>
+                                )}
+                                <button onClick={() => removeAdminUser(u.user_id)} className="adm-delete-btn">Remove</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <p className="adm-label" style={{ marginBottom: 12 }}>Add New User</p>
+                      <form onSubmit={createAdminUser} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+                        <div style={{ flex: 1, minWidth: 180 }}>
+                          <label className="adm-label">Email</label>
+                          <input
+                            type="email"
+                            required
+                            value={newUserForm.email}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                            placeholder="email@example.com"
+                            className="adm-input"
+                          />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 160 }}>
+                          <label className="adm-label">Password</label>
+                          <input
+                            type="password"
+                            required
+                            value={newUserForm.password}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                            placeholder="Set a password"
+                            className="adm-input"
+                          />
+                        </div>
+                        <div>
+                          <label className="adm-label">Role</label>
+                          <select
+                            value={newUserForm.role}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+                            className="adm-input"
+                            style={{ width: "auto" }}
+                          >
+                            <option value="admin">Admin (view only)</option>
+                            <option value="owner">Owner (full access)</option>
+                          </select>
+                        </div>
+                        {newUserError && <p className="adm-error">{newUserError}</p>}
+                        <button type="submit" disabled={newUserSubmitting} className="adm-btn">
+                          {newUserSubmitting ? "Creating…" : "Create User"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  {/* Payment Info */}
+                  <div className="adm-card">
+                    <div className="adm-card-header">
+                      <span className="adm-card-title">Payment Info</span>
+                    </div>
+                    <div className="adm-card-body">
+                      <form onSubmit={saveVenmo} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 480 }}>
+                        <div>
+                          <label className="adm-label">Venmo Handle</label>
+                          <input
+                            type="text"
+                            value={venmoForm.venmo_handle}
+                            onChange={(e) => setVenmoForm({ ...venmoForm, venmo_handle: e.target.value })}
+                            placeholder="@handle"
+                            className="adm-input"
+                          />
+                        </div>
+                        <div>
+                          <label className="adm-label">Venmo URL</label>
+                          <input
+                            type="text"
+                            value={venmoForm.venmo_url}
+                            onChange={(e) => setVenmoForm({ ...venmoForm, venmo_url: e.target.value })}
+                            placeholder="https://venmo.com/username"
+                            className="adm-input"
+                          />
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <button type="submit" disabled={venmoSaving} className="adm-btn">
+                            {venmoSaving ? "Saving…" : "Save Venmo"}
+                          </button>
+                          {venmoSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace" }}>Saved ✓</span>}
+                        </div>
+                      </form>
+                      <div style={{ marginTop: 24, padding: "14px 16px", background: "var(--surface-2)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                          Cash App handle ($AcaciaOSU) is hardcoded — contact the developer to update it.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
             </>
