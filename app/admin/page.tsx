@@ -71,6 +71,51 @@ const SP_REASONS: SocialProbationReason[] = [
   "Other",
 ];
 
+const FINE_DESCRIPTIONS: Partial<Record<FineType, string>> = {
+  "Conduct Unbecoming (§11-010)": "Conduct unbecoming a member of Acacia Fraternity",
+  "General Misconduct (§11-020)": "General misconduct in violation of chapter standards",
+  "Misconduct Under Influence (§11-030)": "Misconduct while under the influence of alcohol or substances",
+  "Missing Security at Function (§11-050)": "Failed to fulfill assigned security duty at a chapter function",
+  "Missing Required Event (§11-060)": "Failed to attend a required chapter event",
+  "Missing Recruitment/Work Week (§11-070)": "Failed to participate in recruitment or work week",
+  "Removal/Damage to House Property (§11-080)": "Removed or caused damage to house property",
+  "Removal/Damage to Personal Property (§11-090)": "Removed or caused damage to another member's personal property",
+  "Missing Chapter Meeting (§11-100)": "Failed to attend a required chapter meeting",
+  "Missing Exec Meeting (§11-110)": "Failed to attend a required executive board meeting",
+  "Missing Yearbook/Composite (§11-120)": "Failed to appear for yearbook or composite photo",
+  "Kitchen Duties (§11-130)": "Failed to complete assigned kitchen duties",
+  "House Clean (§11-140)": "Failed to participate in scheduled house clean",
+  "Event House Clean (§11-150)": "Failed to participate in post-event house clean",
+  "Chores (§11-160)": "Failed to complete assigned chores",
+  "Missing Philanthropy Event (§11-170)": "Failed to attend a required philanthropy event",
+  "Smoking (§11-190)": "Smoking in violation of chapter policy",
+  "Fire Alarm (§11-200)": "Caused or contributed to a false fire alarm",
+  "Drop Testing Cleanup (§11-210)": "Failed to assist with drop testing cleanup",
+  "Unauthorized Weapon Use (§11-220)": "Unauthorized possession or use of a weapon on chapter property",
+  "Sexual Relations on Sleeping Porch (§11-230)": "Violation of sleeping porch conduct policy",
+  "Formal Dinner Attire (§11-240)": "Failed to meet formal dinner dress code requirements",
+  "Grazers (§11-250)": "Eating outside of designated meal times without authorization",
+  "Social Probation Violation (§11-260)": "Violated terms of active social probation",
+  "Missing House Philanthropy Event (§11-270)": "Failed to attend a required house philanthropy event",
+  "Missing Signed-Up Philanthropy Event (§11-280)": "Failed to attend a philanthropy event they signed up for",
+  "Bathroom Trash Violation (§11-290)": "Left trash or violation of bathroom cleanliness standards",
+  "Physical Violence (§11-300)": "Engaged in physical violence or threatening behavior",
+  "Committee Meeting Absence (§7-005)": "Failed to attend an assigned committee meeting",
+  "Missing JP Meeting (§10-220)": "Failed to appear at a scheduled JP meeting",
+  "Cell Phone in Exec Meeting (§8-060)": "Used cell phone during an executive board meeting",
+  "Grievance Committee No-Show (§7-030)": "Failed to appear before the grievance committee",
+  "Guest Misconduct (§12-030)": "Guest caused misconduct or violated chapter rules",
+  "Breathalyzer Misuse (§12-080)": "Misuse or tampering with chapter breathalyzer equipment",
+  "Silent Sleeping Porch Violation (§18-350)": "Violated quiet hours policy on the sleeping porch",
+  "Missing Blood Drive (§16-010)": "Failed to attend the required blood drive",
+  "Missing Philanthropy Hours (§16-010)": "Failed to complete required philanthropy service hours",
+  "Vacant Room (§17-020)": "Left room vacant without proper notification",
+  "Room Improvement Removal (§17-240)": "Removed chapter-approved room improvements without authorization",
+  "Inadequate Room Space (§17-360)": "Failed to maintain adequate room space per chapter standards",
+  "Failure to Vacate Room (§17-370)": "Failed to vacate room by the required date",
+  "Other": "",
+};
+
 function getTermOptions(): string[] {
   const year = new Date().getFullYear();
   return [`Winter ${year}`, `Spring ${year}`, `Summer ${year}`, `Fall ${year}`];
@@ -1029,7 +1074,10 @@ export default function AdminPage() {
                           <label className="adm-label">Fine Type <span className="adm-req">*</span></label>
                           <select
                             value={fineForm.fine_type}
-                            onChange={(e) => setFineForm({ ...fineForm, fine_type: e.target.value as FineType })}
+                            onChange={(e) => {
+                              const type = e.target.value as FineType;
+                              setFineForm({ ...fineForm, fine_type: type, description: FINE_DESCRIPTIONS[type] ?? "" });
+                            }}
                             className="adm-input"
                           >
                             {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -1262,7 +1310,7 @@ export default function AdminPage() {
 
                           <div style={{ gridColumn: "span 2" }}>
                             <label className="adm-label">Fine Type <span className="adm-req">*</span></label>
-                            <select value={outForm.fine_type} onChange={(e) => setOutForm({ ...outForm, fine_type: e.target.value as FineType })} className="adm-input" style={{ width: "100%" }}>
+                            <select value={outForm.fine_type} onChange={(e) => { const type = e.target.value as FineType; setOutForm({ ...outForm, fine_type: type, description: FINE_DESCRIPTIONS[type] ?? "" }); }} className="adm-input" style={{ width: "100%" }}>
                               {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                             </select>
                           </div>
