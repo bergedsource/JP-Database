@@ -475,7 +475,7 @@ export default function Home() {
           flex-shrink: 0;
         }
         .pay-btn-icon-cashapp { background: transparent; }
-        .pay-btn-icon-venmo   { background: #008CFF; }
+        .pay-btn-icon-venmo   { background: transparent; }
         .pay-btn-name {
           font-size: 13px;
           font-weight: 700;
@@ -705,7 +705,8 @@ export default function Home() {
                           </a>
                           <a href="https://venmo.com/Dillon-Berge" target="_blank" rel="noopener noreferrer" className="pay-btn pay-btn-venmo">
                             <div className="pay-btn-icon pay-btn-icon-venmo">
-                              <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M18.5 3.5c.6 1 .9 2.1.9 3.3 0 3.3-2.8 7.6-5.1 10.6H9.6L7 4.1l4.7-.5 1.3 10.4c1.2-2 2.7-5.2 2.7-7.3 0-1.2-.2-2-.5-2.7l3.3-.5z"/></svg>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src="/venmo-logo.png" alt="Venmo" width={48} height={48} style={{ borderRadius: 12, display: "block" }} />
                             </div>
                             <span className="pay-btn-name">Venmo</span>
                             <span className="pay-btn-handle">@Dillon-Berge</span>
