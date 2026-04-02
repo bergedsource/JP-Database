@@ -71,6 +71,20 @@ const SP_REASONS: SocialProbationReason[] = [
   "Other",
 ];
 
+function getTermOptions(): string[] {
+  const year = new Date().getFullYear();
+  return [`Winter ${year}`, `Spring ${year}`, `Summer ${year}`, `Fall ${year}`];
+}
+
+function getCurrentTerm(): string {
+  const month = new Date().getMonth() + 1; // 1-12
+  const year = new Date().getFullYear();
+  if (month <= 3) return `Winter ${year}`;
+  if (month <= 6) return `Spring ${year}`;
+  if (month <= 8) return `Summer ${year}`;
+  return `Fall ${year}`;
+}
+
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
   const [members, setMembers] = useState<Member[]>([]);
@@ -86,7 +100,7 @@ export default function AdminPage() {
     fine_type: "General Misconduct" as FineType,
     description: "",
     amount: "",
-    term: "",
+    term: getCurrentTerm(),
     date_issued: new Date().toISOString().split("T")[0],
     notes: "",
   });
@@ -110,7 +124,7 @@ export default function AdminPage() {
     fine_type: "General Misconduct (§11-020)" as FineType,
     description: "",
     amount: "",
-    term: "",
+    term: getCurrentTerm(),
     date_issued: new Date().toISOString().split("T")[0],
     notes: "",
     place_on_soc_pro: false,
@@ -361,7 +375,7 @@ export default function AdminPage() {
       fine_type: "General Misconduct (§11-020)",
       description: "",
       amount: "",
-      term: "",
+      term: getCurrentTerm(),
       date_issued: new Date().toISOString().split("T")[0],
       notes: "",
       place_on_soc_pro: false,
@@ -408,7 +422,7 @@ export default function AdminPage() {
         fine_type: "General Misconduct (§11-020)",
         description: "",
         amount: "",
-        term: "",
+        term: getCurrentTerm(),
         date_issued: new Date().toISOString().split("T")[0],
         notes: "",
       });
@@ -1049,14 +1063,16 @@ export default function AdminPage() {
 
                         <div>
                           <label className="adm-label">Term <span className="adm-req">*</span></label>
-                          <input
-                            type="text"
+                          <select
                             value={fineForm.term}
                             onChange={(e) => setFineForm({ ...fineForm, term: e.target.value })}
                             required
-                            placeholder="e.g. Spring 2026"
                             className="adm-input"
-                          />
+                          >
+                            {getTermOptions().map((t) => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>
@@ -1262,7 +1278,16 @@ export default function AdminPage() {
                           </div>
                           <div>
                             <label className="adm-label">Term <span className="adm-req">*</span></label>
-                            <input type="text" value={outForm.term} onChange={(e) => setOutForm({ ...outForm, term: e.target.value })} required placeholder="e.g. Spring 2026" className="adm-input" />
+                            <select
+                              value={outForm.term}
+                              onChange={(e) => setOutForm({ ...outForm, term: e.target.value })}
+                              required
+                              className="adm-input"
+                            >
+                              {getTermOptions().map((t) => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
                           </div>
 
                           <div>
