@@ -25,6 +25,7 @@ export default function Home() {
   const [selected, setSelected] = useState<Member | null>(null);
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(false);
+  const [venmo, setVenmo] = useState({ handle: "@Dillon-Berge", url: "https://venmo.com/Dillon-Berge" });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +36,10 @@ export default function Home() {
       }
     }
     document.addEventListener("mousedown", handleClick);
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" }))
+      .catch(() => {});
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
@@ -697,13 +702,13 @@ export default function Home() {
                             <span className="pay-btn-name">Cash App</span>
                             <span className="pay-btn-handle">$AcaciaOSU</span>
                           </a>
-                          <a href="https://venmo.com/Dillon-Berge" target="_blank" rel="noopener noreferrer" className="pay-btn pay-btn-venmo">
+                          <a href={venmo.url} target="_blank" rel="noopener noreferrer" className="pay-btn pay-btn-venmo">
                             <div className="pay-btn-icon pay-btn-icon-venmo">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src="/venmo-logo.png" alt="Venmo" width={48} height={48} style={{ borderRadius: 12, display: "block" }} />
                             </div>
                             <span className="pay-btn-name">Venmo</span>
-                            <span className="pay-btn-handle">@Dillon-Berge</span>
+                            <span className="pay-btn-handle">{venmo.handle}</span>
                           </a>
                         </div>
                       </div>
