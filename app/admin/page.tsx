@@ -1407,7 +1407,7 @@ export default function AdminPage() {
                   {isPrivileged && (
                     <div className="adm-card">
                       <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span className="adm-card-title">Custom Bylaws</span>
+                        <span className="adm-card-title">Add New Bylaw</span>
                         <button className="adm-btn" style={{ padding: "4px 14px", fontSize: 13 }} onClick={() => { setShowAddBylaw((v) => !v); setBylawError(""); }}>
                           {showAddBylaw ? "Cancel" : "+ Add Bylaw"}
                         </button>
