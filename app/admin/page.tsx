@@ -160,6 +160,7 @@ export default function AdminPage() {
     term: getCurrentTerm(),
     date_issued: new Date().toISOString().split("T")[0],
     notes: "",
+    fining_officer: "",
   });
   const [selectedMembers, setSelectedMembers] = useState<Member[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
@@ -549,6 +550,7 @@ export default function AdminPage() {
       term: fineForm.term,
       date_issued: fineForm.date_issued,
       notes: fineForm.notes || null,
+      fining_officer: fineForm.fining_officer || null,
     }));
 
     const { error } = await supabase.from("fines").insert(rows);
@@ -565,6 +567,7 @@ export default function AdminPage() {
         term: getCurrentTerm(),
         date_issued: new Date().toISOString().split("T")[0],
         notes: "",
+        fining_officer: "",
       });
       setSelectedMembers([]);
       setMemberSearch("");
@@ -1277,6 +1280,23 @@ export default function AdminPage() {
                             placeholder="Any additional context"
                             className="adm-input"
                           />
+                        </div>
+
+                        <div>
+                          <label className="adm-label">Fining Officer <span className="adm-opt">optional</span></label>
+                          <select
+                            value={fineForm.fining_officer}
+                            onChange={(e) => setFineForm({ ...fineForm, fining_officer: e.target.value })}
+                            className="adm-input"
+                          >
+                            <option value="">— Select member —</option>
+                            {members
+                              .filter((m) => m.status === "active" || m.status === "pledge")
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map((m) => (
+                                <option key={m.id} value={m.name}>{m.name}</option>
+                              ))}
+                          </select>
                         </div>
 
                         {fineError && (

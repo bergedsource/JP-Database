@@ -94,5 +94,6 @@ export interface Fine {
   date_issued: string;
   date_resolved: string | null;
   notes: string | null;
+  fining_officer: string | null;
   created_at: string;
 }
