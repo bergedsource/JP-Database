@@ -158,6 +158,13 @@ export default function AdminPage() {
   const [showExportHelp, setShowExportHelp] = useState(false);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
+  // Custom fine types
+  const [customFineTypes, setCustomFineTypes] = useState<{ id: string; name: string; bylaw_number: string; default_amount: number | null; description: string | null }[]>([]);
+  const [showAddBylaw, setShowAddBylaw] = useState(false);
+  const [bylawForm, setBylawForm] = useState({ name: "", bylaw_number: "", default_amount: "", description: "" });
+  const [bylawSubmitting, setBylawSubmitting] = useState(false);
+  const [bylawError, setBylawError] = useState("");
+
   // Fine form state
   const [fineForm, setFineForm] = useState({
     fine_type: "General Misconduct" as FineType,
@@ -231,7 +238,15 @@ export default function AdminPage() {
       .then((r) => r.json())
       .then((d) => { setUserRole(d.role ?? null); setCurrentUserId(d.userId ?? null); })
       .catch(() => {});
+    loadCustomFineTypes();
   }, []);
+
+  async function loadCustomFineTypes() {
+    fetch("/api/admin/fine-types")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setCustomFineTypes(d); })
+      .catch(() => {});
+  }
 
   async function loadData() {
     setLoading(true);
@@ -1245,11 +1260,24 @@ export default function AdminPage() {
                             value={fineForm.fine_type}
                             onChange={(e) => {
                               const type = e.target.value as FineType;
-                              setFineForm({ ...fineForm, fine_type: type, description: FINE_DESCRIPTIONS[type] ?? "" });
+                              const custom = customFineTypes.find((c) => `${c.name} (§${c.bylaw_number})` === type);
+                              const desc = custom?.description ?? FINE_DESCRIPTIONS[type] ?? "";
+                              const amount = custom?.default_amount != null ? String(custom.default_amount) : fineForm.amount;
+                              setFineForm({ ...fineForm, fine_type: type, description: desc, amount });
                             }}
                             className="adm-input"
                           >
-                            {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                            <optgroup label="Standard Bylaws">
+                              {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                            </optgroup>
+                            {customFineTypes.length > 0 && (
+                              <optgroup label="Custom Bylaws">
+                                {customFineTypes.map((c) => {
+                                  const label = `${c.name} (§${c.bylaw_number})`;
+                                  return <option key={c.id} value={label}>{label}</option>;
+                                })}
+                              </optgroup>
+                            )}
                           </select>
                         </div>
 
@@ -1379,6 +1407,103 @@ export default function AdminPage() {
                       </form>
                     </div>
                   </div>}
+
+                  {/* Add Custom Bylaw */}
+                  {isPrivileged && (
+                    <div className="adm-card">
+                      <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span className="adm-card-title">Custom Bylaws</span>
+                        <button className="adm-btn" style={{ padding: "4px 14px", fontSize: 13 }} onClick={() => { setShowAddBylaw((v) => !v); setBylawError(""); }}>
+                          {showAddBylaw ? "Cancel" : "+ Add Bylaw"}
+                        </button>
+                      </div>
+                      {showAddBylaw && (
+                        <div className="adm-card-body">
+                          <form
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              setBylawSubmitting(true);
+                              setBylawError("");
+                              const res = await fetch("/api/admin/fine-types", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  name: bylawForm.name,
+                                  bylaw_number: bylawForm.bylaw_number,
+                                  default_amount: bylawForm.default_amount ? parseFloat(bylawForm.default_amount) : null,
+                                  description: bylawForm.description,
+                                }),
+                              });
+                              const data = await res.json();
+                              setBylawSubmitting(false);
+                              if (!res.ok) { setBylawError(data.error ?? "Failed to add bylaw"); return; }
+                              setCustomFineTypes((prev) => [...prev, data]);
+                              setBylawForm({ name: "", bylaw_number: "", default_amount: "", description: "" });
+                              setShowAddBylaw(false);
+                            }}
+                            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+                          >
+                            <div>
+                              <label className="adm-label">Fine Name <span className="adm-req">*</span></label>
+                              <input className="adm-input" required value={bylawForm.name} onChange={(e) => setBylawForm({ ...bylawForm, name: e.target.value })} placeholder="e.g. Missing Study Hours" />
+                            </div>
+                            <div>
+                              <label className="adm-label">Bylaw # <span className="adm-req">*</span></label>
+                              <input className="adm-input" required value={bylawForm.bylaw_number} onChange={(e) => setBylawForm({ ...bylawForm, bylaw_number: e.target.value })} placeholder="e.g. 11-310" />
+                            </div>
+                            <div>
+                              <label className="adm-label">Default Fine Amount <span className="adm-opt">optional</span></label>
+                              <input className="adm-input" type="number" min="0" step="0.01" value={bylawForm.default_amount} onChange={(e) => setBylawForm({ ...bylawForm, default_amount: e.target.value })} placeholder="0.00" />
+                            </div>
+                            <div>
+                              <label className="adm-label">Description <span className="adm-opt">optional</span></label>
+                              <input className="adm-input" value={bylawForm.description} onChange={(e) => setBylawForm({ ...bylawForm, description: e.target.value })} placeholder="Brief description of the offense" />
+                            </div>
+                            {bylawError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{bylawError}</p>}
+                            <div style={{ gridColumn: "span 2" }}>
+                              <button type="submit" disabled={bylawSubmitting} className="adm-btn">{bylawSubmitting ? "Adding…" : "Add Bylaw"}</button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
+                      {customFineTypes.length > 0 && (
+                        <div className="adm-card-body" style={{ paddingTop: showAddBylaw ? 0 : undefined }}>
+                          <table className="adm-table">
+                            <thead>
+                              <tr>
+                                <th>Fine Name</th>
+                                <th>Bylaw #</th>
+                                <th>Default Amount</th>
+                                <th>Description</th>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {customFineTypes.map((c) => (
+                                <tr key={c.id}>
+                                  <td style={{ fontWeight: 500 }}>{c.name}</td>
+                                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>§{c.bylaw_number}</td>
+                                  <td>{c.default_amount != null ? `$${Number(c.default_amount).toFixed(2)}` : <span style={{ color: "var(--text-dim)" }}>—</span>}</td>
+                                  <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{c.description ?? <span style={{ color: "var(--text-dim)" }}>—</span>}</td>
+                                  <td>
+                                    <button
+                                      className="adm-btn-danger"
+                                      style={{ padding: "2px 10px", fontSize: 12 }}
+                                      onClick={async () => {
+                                        if (!confirm(`Remove "${c.name} (§${c.bylaw_number})" from the fine list?`)) return;
+                                        await fetch("/api/admin/fine-types", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id }) });
+                                        setCustomFineTypes((prev) => prev.filter((x) => x.id !== c.id));
+                                      }}
+                                    >Remove</button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Filters */}
                   <div className="adm-filters">
