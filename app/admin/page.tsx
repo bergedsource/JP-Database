@@ -2236,6 +2236,23 @@ export default function AdminPage() {
                                   <a href={h.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 5, padding: "3px 8px", textDecoration: "none", fontFamily: "'IBM Plex Sans', sans-serif" }}>
                                     Open ↗
                                   </a>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      if (!confirm(`Remove the saved link for "${h.term}"? This won't delete the actual spreadsheet.`)) return;
+                                      const updated = exportHistory.filter((_, idx) => idx !== i);
+                                      setExportHistory(updated);
+                                      await fetch("/api/admin/settings", {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ key: "export_history", value: JSON.stringify(updated) }),
+                                      });
+                                    }}
+                                    className="adm-delete-btn"
+                                    style={{ fontSize: 11, padding: "3px 8px" }}
+                                  >
+                                    Remove
+                                  </button>
                                 </div>
                               </div>
                             ))}
