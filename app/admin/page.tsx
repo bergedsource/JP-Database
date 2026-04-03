@@ -155,6 +155,7 @@ export default function AdminPage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportResult, setExportResult] = useState<{ ok: boolean; msg: string; url?: string } | null>(null);
   const [exportHistory, setExportHistory] = useState<{ spreadsheetId: string; term: string; date: string; url: string }[]>([]);
+  const [showExportHelp, setShowExportHelp] = useState(false);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Fine form state
@@ -2191,8 +2192,26 @@ export default function AdminPage() {
                           className="adm-input"
                         />
                         <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
-                          Leave blank to use the default sheet. To use a new sheet: create a blank Google Sheet, share it with <span style={{ color: "var(--text-muted)" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span> as Editor, then paste its ID here.
+                          Leave blank to use the default sheet.{" "}
+                          <button type="button" onClick={() => setShowExportHelp(!showExportHelp)} style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                            How to use a new sheet {showExportHelp ? "▲" : "▼"}
+                          </button>
                         </p>
+                        {showExportHelp && (
+                          <div style={{ marginTop: 8, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.8 }}>
+                            <p style={{ fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>Setting up a new Google Sheet:</p>
+                            <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+                              <li>Go to <a href="https://sheets.google.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)" }}>sheets.google.com</a> and create a blank spreadsheet</li>
+                              <li>Click <strong style={{ color: "var(--text)" }}>Share</strong> (top right) and add this email as <strong style={{ color: "var(--text)" }}>Editor</strong>:<br />
+                                <span style={{ color: "var(--gold)", userSelect: "all" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span>
+                              </li>
+                              <li>Copy the ID from the URL — it{"'"}s the long string between <strong style={{ color: "var(--text)" }}>/d/</strong> and <strong style={{ color: "var(--text)" }}>/edit</strong><br />
+                                <span style={{ color: "var(--text-dim)" }}>e.g. docs.google.com/spreadsheets/d/<strong style={{ color: "var(--gold)" }}>1BxiM...abc</strong>/edit</span>
+                              </li>
+                              <li>Paste that ID into the field above</li>
+                            </ol>
+                          </div>
+                        )}
                       </div>
 
                       {exportHistory.length > 0 && (
