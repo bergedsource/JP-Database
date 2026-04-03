@@ -154,6 +154,7 @@ export default function AdminPage() {
   const [exportSheetId, setExportSheetId] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
   const [exportResult, setExportResult] = useState<{ ok: boolean; msg: string; url?: string } | null>(null);
+  const [exportHistory, setExportHistory] = useState<{ spreadsheetId: string; term: string; date: string; url: string }[]>([]);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Fine form state
@@ -367,6 +368,7 @@ export default function AdminPage() {
     const data = await res.json();
     if (res.ok) {
       setExportResult({ ok: true, msg: `Exported ${data.count} fine${data.count !== 1 ? "s" : ""} to "${data.tab}"`, url: data.url });
+      await loadVenmoSettings(); // refresh history
     } else {
       setExportResult({ ok: false, msg: data.error ?? "Export failed" });
     }
@@ -378,6 +380,9 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       setVenmoForm({ venmo_handle: data.venmo_handle ?? "", venmo_url: data.venmo_url ?? "" });
+      try {
+        setExportHistory(data.export_history ? JSON.parse(data.export_history) : []);
+      } catch { setExportHistory([]); }
     }
   }
 
@@ -2189,6 +2194,35 @@ export default function AdminPage() {
                           Leave blank to use the default sheet. To use a new sheet: create a blank Google Sheet, share it with <span style={{ color: "var(--text-muted)" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span> as Editor, then paste its ID here.
                         </p>
                       </div>
+
+                      {exportHistory.length > 0 && (
+                        <div style={{ marginTop: 16 }}>
+                          <p className="adm-label" style={{ marginBottom: 8 }}>Past Exports</p>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {exportHistory.map((h, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border)", gap: 12 }}>
+                                <div style={{ minWidth: 0 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "'IBM Plex Mono', monospace" }}>{h.term}</span>
+                                  <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginLeft: 8 }}>{h.date}</span>
+                                  <div style={{ fontSize: 10, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.spreadsheetId}</div>
+                                </div>
+                                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setExportSheetId(h.spreadsheetId); setExportResult(null); }}
+                                    style={{ fontSize: 11, background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}
+                                  >
+                                    Use
+                                  </button>
+                                  <a href={h.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 5, padding: "3px 8px", textDecoration: "none", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                                    Open ↗
+                                  </a>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {exportResult && (
                         <div style={{ marginTop: 10 }}>
                           <p style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: exportResult.ok ? "#34D399" : "var(--red)" }}>

@@ -122,6 +122,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Save to export history
+    const { data: histSetting } = await service.from("settings").select("value").eq("key", "export_history").single();
+    const history: { spreadsheetId: string; term: string; date: string; url: string }[] = histSetting?.value
+      ? JSON.parse(histSetting.value)
+      : [];
+    // Add new entry (avoid duplicates for same spreadsheetId+term)
+    const filtered = history.filter((h) => !(h.spreadsheetId === spreadsheetId && h.term === term));
+    filtered.unshift({ spreadsheetId, term, date: new Date().toLocaleDateString("en-US"), url: spreadsheetUrl });
+    await service.from("settings").upsert({ key: "export_history", value: JSON.stringify(filtered.slice(0, 20)), updated_at: new Date().toISOString() });
+
     return NextResponse.json({ success: true, count: rows.length, tab: tabName, url: spreadsheetUrl, isCustom: !!customId });
   } catch (err) {
     console.error("Bulk export error:", err instanceof Error ? err.message : "unknown");

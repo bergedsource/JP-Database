@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "key and value are required" }, { status: 400 });
   }
 
-  const ALLOWED_KEYS = ["venmo_handle", "venmo_url"];
+  const ALLOWED_KEYS = ["venmo_handle", "venmo_url", "export_history"];
   if (!ALLOWED_KEYS.includes(key)) {
     return NextResponse.json({ error: "Unknown setting key" }, { status: 400 });
   }
