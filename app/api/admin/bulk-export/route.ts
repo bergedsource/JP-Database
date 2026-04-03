@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const HEADERS = ["Who?", "Roll #", "Why", "Amount", "Fining Officer", "Passed?", "Fining Date", "Budget", "Relevant Bylaw", "Notes", "Minutes", "Paid?"];
 
-  const rows = (fines as {
+  const rows = (fines as unknown as {
     fine_type: string;
     description: string;
     amount: number | null;
