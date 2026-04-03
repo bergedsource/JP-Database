@@ -58,7 +58,7 @@ const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: str
   labor:     { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
 };
 
-type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "transition";
+type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "transition" | "creator log";
 
 const SP_REASONS: SocialProbationReason[] = [
   "Outstanding Fines (§10-270)",
@@ -138,6 +138,7 @@ export default function AdminPage() {
   const [filterMember, setFilterMember] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [creatorLogs, setCreatorLogs] = useState<AuditLog[]>([]);
   const [adminEmail, setAdminEmail] = useState("");
   const [userRole, setUserRole] = useState<"owner" | "admin" | "creator" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -514,7 +515,17 @@ export default function AdminPage() {
   }
 
   async function log(action: string, details: string) {
-    await supabase.from("audit_logs").insert({ admin_email: adminEmail, action, details });
+    const table = userRole === "creator" ? "creator_audit_logs" : "audit_logs";
+    await supabase.from(table).insert({ admin_email: adminEmail, action, details });
+  }
+
+  async function loadCreatorLogs() {
+    const { data } = await supabase
+      .from("creator_audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setCreatorLogs(data ?? []);
   }
 
   async function signOut() {
@@ -1102,6 +1113,14 @@ export default function AdminPage() {
                 onClick={() => { setTab("transition"); loadAdminUsers(); loadVenmoSettings(); }}
               >
                 Transition
+              </button>
+            )}
+            {userRole === "creator" && (
+              <button
+                className={`adm-tab${tab === "creator log" ? " active" : ""}`}
+                onClick={() => { setTab("creator log"); loadCreatorLogs(); }}
+              >
+                creator log
               </button>
             )}
           </div>
@@ -1854,6 +1873,39 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{log.admin_email}</td>
+                            <td style={{ fontWeight: 500, whiteSpace: "nowrap" }}>{log.action}</td>
+                            <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{log.details}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+
+              {/* CREATOR LOG TAB */}
+              {tab === "creator log" && userRole === "creator" && (
+                <div className="adm-card">
+                  {creatorLogs.length === 0 ? (
+                    <p className="adm-empty">No creator actions recorded yet.</p>
+                  ) : (
+                    <table className="adm-table">
+                      <thead>
+                        <tr>
+                          <th>When</th>
+                          <th>Action</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {creatorLogs.map((log) => (
+                          <tr key={log.id}>
+                            <td style={{ whiteSpace: "nowrap", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+                              {new Date(log.created_at).toLocaleDateString()}{" "}
+                              <span style={{ color: "var(--text-dim)" }}>
+                                {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </td>
                             <td style={{ fontWeight: 500, whiteSpace: "nowrap" }}>{log.action}</td>
                             <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{log.details}</td>
                           </tr>
