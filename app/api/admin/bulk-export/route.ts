@@ -67,10 +67,14 @@ export async function POST(req: NextRequest) {
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+      scopes: [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+      ],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
+    const drive = google.drive({ version: "v3", auth });
     const tabName = `${term} Fines`;
     let spreadsheetId = SPREADSHEET_ID;
     let spreadsheetUrl: string | null = null;
@@ -87,6 +91,13 @@ export async function POST(req: NextRequest) {
       spreadsheetId = created.data.spreadsheetId!;
       spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
       sheetId = 0;
+
+      // Share with the owner email so they can access it
+      await drive.permissions.create({
+        fileId: spreadsheetId,
+        requestBody: { type: "user", role: "writer", emailAddress: "bergedillon@gmail.com" },
+        sendNotificationEmail: false,
+      });
     } else {
       // Use existing spreadsheet — check if tab already exists
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
