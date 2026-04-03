@@ -1451,8 +1451,8 @@ export default function AdminPage() {
                               <input className="adm-input" type="number" min="0" step="0.01" value={bylawForm.default_amount} onChange={(e) => setBylawForm({ ...bylawForm, default_amount: e.target.value })} placeholder="0.00" />
                             </div>
                             <div>
-                              <label className="adm-label">Description <span className="adm-opt">optional</span></label>
-                              <input className="adm-input" value={bylawForm.description} onChange={(e) => setBylawForm({ ...bylawForm, description: e.target.value })} placeholder="Brief description of the offense" />
+                              <label className="adm-label">Summary of New Bylaw <span className="adm-req">*</span></label>
+                              <input className="adm-input" required value={bylawForm.description} onChange={(e) => setBylawForm({ ...bylawForm, description: e.target.value })} placeholder="Summary of new bylaw" />
                             </div>
                             {bylawError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{bylawError}</p>}
                             <div style={{ gridColumn: "span 2" }}>
