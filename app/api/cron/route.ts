@@ -2,11 +2,10 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "noreply@jp-database.vercel.app";
-
 async function sendEmail(to: string[], subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) return;
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "noreply@jp-database.vercel.app";
   await resend.emails.send({ from: FROM_EMAIL, to, subject, html });
 }
 
@@ -89,6 +88,48 @@ export async function GET(req: NextRequest) {
           <p style="font-size:14px;line-height:1.7;color:#E6EDF3;margin-top:16px;">
             The database is now ready for the new year. Member records and audit logs have been preserved.
           </p>
+          <div style="margin-top:28px;padding:16px;background:#161B22;border-radius:8px;border:1px solid #30363D;">
+            <p style="margin:0;font-size:12px;color:#8B949E;">This is an automated message from the JP Database.</p>
+          </div>
+        </div>`
+      );
+    }
+  }
+
+  // --- Term rollover reminders ---
+  // Winter: Jan 5 (day after cleanup), Spring: Apr 1, Summer: Jul 1, Fall: Sep 1
+  const termRollover: Record<string, string> = {
+    "1-5":  "Winter",
+    "4-1":  "Spring",
+    "7-1":  "Summer",
+    "9-1":  "Fall",
+  };
+  const termName = termRollover[`${month}-${day}`];
+  if (termName) {
+    const year = now.getUTCFullYear();
+    const prevTermNames: Record<string, string> = {
+      Winter: `Fall ${year - 1}`,
+      Spring: `Winter ${year}`,
+      Summer: `Spring ${year}`,
+      Fall:   `Summer ${year}`,
+    };
+    const prevTerm = prevTermNames[termName];
+    const emails = await getAdminEmails(service);
+    if (emails.length > 0) {
+      await sendEmail(
+        emails,
+        `📋 JP Database — ${termName} ${year} term has started`,
+        `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0D1117;color:#E6EDF3;border-radius:12px;">
+          <div style="width:3px;height:28px;background:#CFB53B;border-radius:2px;margin-bottom:20px;"></div>
+          <h2 style="font-size:20px;font-weight:700;margin:0 0 8px;color:#E6EDF3;">${termName} ${year} Term Started</h2>
+          <p style="color:#8B949E;font-size:13px;margin:0 0 20px;">Acacia Fraternity · Oregon State Chapter</p>
+          <p style="font-size:14px;line-height:1.7;color:#E6EDF3;">
+            A new term has begun. Before issuing new fines, make sure last term's records are exported.
+          </p>
+          <div style="margin-top:16px;padding:16px;background:#161B22;border-radius:8px;border:1px solid rgba(207,181,59,0.3);">
+            <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#CFB53B;">Action required</p>
+            <p style="margin:0;font-size:13px;color:#E6EDF3;">Export <strong>${prevTerm}</strong> fines to Google Sheets using the <strong>Term Export</strong> feature in the Transition tab if you haven't already.</p>
+          </div>
           <div style="margin-top:28px;padding:16px;background:#161B22;border-radius:8px;border:1px solid #30363D;">
             <p style="margin:0;font-size:12px;color:#8B949E;">This is an automated message from the JP Database.</p>
           </div>
