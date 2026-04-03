@@ -51,8 +51,9 @@ const FINE_TYPES: FineType[] = [
 ];
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
-  pending:   { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
-  upheld:    { bg: "rgba(239,68,68,0.1)",    color: "#F87171", border: "rgba(239,68,68,0.3)" },
+  pending:    { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
+  upheld:     { bg: "rgba(239,68,68,0.1)",    color: "#F87171", border: "rgba(239,68,68,0.3)" },
+  overturned: { bg: "rgba(251,146,60,0.1)",   color: "#FB923C", border: "rgba(251,146,60,0.3)" },
   dismissed: { bg: "rgba(52,211,153,0.1)",   color: "#34D399", border: "rgba(52,211,153,0.3)" },
   paid:      { bg: "rgba(96,165,250,0.1)",   color: "#60A5FA", border: "rgba(96,165,250,0.3)" },
   labor:     { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
@@ -1512,6 +1513,7 @@ export default function AdminPage() {
                       <option value="pending">Pending</option>
                       <option value="upheld">Upheld</option>
                       <option value="dismissed">Dismissed</option>
+                      <option value="overturned">Overturned</option>
                       <option value="paid">Paid</option>
                       <option value="labor">Labor</option>
                     </select>
@@ -1573,6 +1575,7 @@ export default function AdminPage() {
                                   <option value="pending">Pending</option>
                                   <option value="upheld">Upheld</option>
                                   <option value="dismissed">Dismissed</option>
+                                  <option value="overturned">Overturned</option>
                                   <option value="paid">Paid</option>
                                   <option value="labor">Labor</option>
                                 </select>

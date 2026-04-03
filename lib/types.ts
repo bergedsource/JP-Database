@@ -1,4 +1,4 @@
-export type FineStatus = "pending" | "upheld" | "dismissed" | "paid" | "labor";
+export type FineStatus = "pending" | "upheld" | "dismissed" | "paid" | "labor" | "overturned";
 
 export type SocialProbationReason =
   | "Outstanding Fines (§10-270)"

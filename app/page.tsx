@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import type { Fine, Member } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string }> = {
-  pending:   { bg: "#FEF3C7", color: "#78350F", border: "#F59E0B" },
-  upheld:    { bg: "#FEE2E2", color: "#7F1D1D", border: "#EF4444" },
-  dismissed: { bg: "#D1FAE5", color: "#064E3B", border: "#10B981" },
-  paid:      { bg: "#DBEAFE", color: "#1E3A5F", border: "#3B82F6" },
-  labor:     { bg: "#EDE9FE", color: "#4C1D95", border: "#8B5CF6" },
+  pending:    { bg: "#FEF3C7", color: "#78350F", border: "#F59E0B" },
+  upheld:     { bg: "#FEE2E2", color: "#7F1D1D", border: "#EF4444" },
+  dismissed:  { bg: "#D1FAE5", color: "#064E3B", border: "#10B981" },
+  overturned: { bg: "#FFEDD5", color: "#7C2D12", border: "#F97316" },
+  paid:       { bg: "#DBEAFE", color: "#1E3A5F", border: "#3B82F6" },
+  labor:      { bg: "#EDE9FE", color: "#4C1D95", border: "#8B5CF6" },
 };
 
 function AcaciaCrest() {
@@ -77,7 +78,7 @@ export default function Home() {
   }
 
   const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
-  const pastFines = fines.filter((f) => ["dismissed", "paid", "labor"].includes(f.status));
+  const pastFines = fines.filter((f) => ["dismissed", "overturned", "paid", "labor"].includes(f.status));
   const totalOwed = currentFines
     .filter((f) => f.status === "upheld" && f.amount)
     .reduce((sum, f) => sum + (f.amount ?? 0), 0);
