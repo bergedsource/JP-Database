@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const ids = (overdue as { id: string }[]).map((f) => f.id);
     await service.from("fines").update({ status: "upheld" }).in("id", ids);
 
-    for (const fine of overdue as { id: string; fine_type: string; members?: { name: string } }[]) {
+    for (const fine of overdue as unknown as { id: string; fine_type: string; members?: { name: string } }[]) {
       await service.from("audit_logs").insert({
         admin_email: "system",
         action: "Auto-Escalated Fine",
