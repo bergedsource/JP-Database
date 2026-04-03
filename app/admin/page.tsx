@@ -151,7 +151,7 @@ export default function AdminPage() {
   const [venmoSaving, setVenmoSaving] = useState(false);
   const [venmoSaved, setVenmoSaved] = useState(false);
   const [exportTerm, setExportTerm] = useState("");
-  const [exportCreateNew, setExportCreateNew] = useState(false);
+  const [exportSheetId, setExportSheetId] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
   const [exportResult, setExportResult] = useState<{ ok: boolean; msg: string; url?: string } | null>(null);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
@@ -362,7 +362,7 @@ export default function AdminPage() {
     const res = await fetch("/api/admin/bulk-export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ term: exportTerm, createNew: exportCreateNew }),
+      body: JSON.stringify({ term: exportTerm, spreadsheetId: exportSheetId }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -2176,17 +2176,18 @@ export default function AdminPage() {
                           {exportLoading ? "Exporting…" : "Export to Sheets"}
                         </button>
                       </div>
-                      <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ marginTop: 12 }}>
+                        <label className="adm-label">Custom Spreadsheet ID <span className="adm-opt">optional</span></label>
                         <input
-                          type="checkbox"
-                          id="exportCreateNew"
-                          checked={exportCreateNew}
-                          onChange={(e) => { setExportCreateNew(e.target.checked); setExportResult(null); }}
-                          style={{ accentColor: "var(--gold)", width: 14, height: 14, cursor: "pointer" }}
+                          type="text"
+                          value={exportSheetId}
+                          onChange={(e) => { setExportSheetId(e.target.value); setExportResult(null); }}
+                          placeholder="Paste a spreadsheet ID to export there instead"
+                          className="adm-input"
                         />
-                        <label htmlFor="exportCreateNew" style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer" }}>
-                          Create new spreadsheet
-                        </label>
+                        <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
+                          Leave blank to use the default sheet. To use a new sheet: create a blank Google Sheet, share it with <span style={{ color: "var(--text-muted)" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span> as Editor, then paste its ID here.
+                        </p>
                       </div>
                       {exportResult && (
                         <div style={{ marginTop: 10 }}>

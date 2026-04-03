@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const denied = await requireOwner();
   if (denied) return denied;
 
-  const { term, createNew } = await req.json();
+  const { term, spreadsheetId: customId } = await req.json();
   if (!term || typeof term !== "string") {
     return NextResponse.json({ error: "term is required" }, { status: 400 });
   }
@@ -67,38 +67,17 @@ export async function POST(req: NextRequest) {
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
       },
-      scopes: [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-      ],
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-    const drive = google.drive({ version: "v3", auth });
     const tabName = `${term} Fines`;
-    let spreadsheetId = SPREADSHEET_ID;
-    let spreadsheetUrl: string | null = null;
+    const spreadsheetId = (typeof customId === "string" && customId.trim()) ? customId.trim() : SPREADSHEET_ID;
+    const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
     let sheetId: number = 0;
 
-    if (createNew) {
-      // Create a brand new spreadsheet
-      const created = await sheets.spreadsheets.create({
-        requestBody: {
-          properties: { title: `${term} Fines — Acacia OSU` },
-          sheets: [{ properties: { title: tabName, sheetId: 0 } }],
-        },
-      });
-      spreadsheetId = created.data.spreadsheetId!;
-      spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
-      sheetId = 0;
-
-      // Share with anyone who has the link
-      await drive.permissions.create({
-        fileId: spreadsheetId,
-        requestBody: { type: "anyone", role: "writer" },
-      });
-    } else {
-      // Use existing spreadsheet — check if tab already exists
+    {
+      // Check if tab already exists
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const existing = spreadsheet.data.sheets?.find((s) => s.properties?.title === tabName);
 
@@ -143,7 +122,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, count: rows.length, tab: tabName, url: spreadsheetUrl });
+    return NextResponse.json({ success: true, count: rows.length, tab: tabName, url: spreadsheetUrl, isCustom: !!customId });
   } catch (err) {
     console.error("Bulk export error:", err instanceof Error ? err.message : "unknown");
     return NextResponse.json({ error: "Export failed" }, { status: 500 });
