@@ -1267,17 +1267,12 @@ export default function AdminPage() {
                             }}
                             className="adm-input"
                           >
-                            <optgroup label="Standard Bylaws">
-                              {FINE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                            </optgroup>
-                            {customFineTypes.length > 0 && (
-                              <optgroup label="Custom Bylaws">
-                                {customFineTypes.map((c) => {
-                                  const label = `${c.name} (§${c.bylaw_number})`;
-                                  return <option key={c.id} value={label}>{label}</option>;
-                                })}
-                              </optgroup>
-                            )}
+                            {[
+                              ...FINE_TYPES.map((t) => ({ label: t, value: t })),
+                              ...customFineTypes.map((c) => ({ label: `${c.name} (§${c.bylaw_number})`, value: `${c.name} (§${c.bylaw_number})` })),
+                            ]
+                              .sort((a, b) => a.label === "Other" ? 1 : b.label === "Other" ? -1 : a.label.localeCompare(b.label))
+                              .map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                           </select>
                         </div>
 
