@@ -538,6 +538,7 @@ export default function AdminPage() {
   async function submitFine(e: React.FormEvent) {
     e.preventDefault();
     if (selectedMembers.length === 0) { setFineError("Select at least one member."); return; }
+    if (!fineForm.fining_officer) { setFineError("Select a fining officer."); return; }
     setFineSubmitting(true);
     setFineError("");
 
@@ -1283,10 +1284,11 @@ export default function AdminPage() {
                         </div>
 
                         <div>
-                          <label className="adm-label">Fining Officer <span className="adm-opt">optional</span></label>
+                          <label className="adm-label">Fining Officer <span className="adm-req">*</span></label>
                           <select
                             value={fineForm.fining_officer}
                             onChange={(e) => setFineForm({ ...fineForm, fining_officer: e.target.value })}
+                            required
                             className="adm-input"
                           >
                             <option value="">— Select member —</option>
