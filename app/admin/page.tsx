@@ -150,6 +150,9 @@ export default function AdminPage() {
   const [venmoForm, setVenmoForm] = useState({ venmo_handle: "", venmo_url: "" });
   const [venmoSaving, setVenmoSaving] = useState(false);
   const [venmoSaved, setVenmoSaved] = useState(false);
+  const [exportTerm, setExportTerm] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportResult, setExportResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Fine form state
@@ -349,6 +352,24 @@ export default function AdminPage() {
   async function loadAdminUsers() {
     const res = await fetch("/api/admin/users");
     if (res.ok) setAdminUsers(await res.json());
+  }
+
+  async function bulkExport() {
+    if (!exportTerm) return;
+    setExportLoading(true);
+    setExportResult(null);
+    const res = await fetch("/api/admin/bulk-export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ term: exportTerm }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setExportResult({ ok: true, msg: `Exported ${data.count} fine${data.count !== 1 ? "s" : ""} to "${data.tab}"` });
+    } else {
+      setExportResult({ ok: false, msg: data.error ?? "Export failed" });
+    }
+    setExportLoading(false);
   }
 
   async function loadVenmoSettings() {
@@ -2121,6 +2142,44 @@ export default function AdminPage() {
                           Cash App handle ($AcaciaOSU) is hardcoded — contact the developer to update it.
                         </p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Term Export */}
+                  <div className="adm-card">
+                    <div className="adm-card-header">
+                      <span className="adm-card-title">Term Export</span>
+                    </div>
+                    <div className="adm-card-body">
+                      <p className="adm-label" style={{ marginBottom: 12 }}>Export all fines for a term to Google Sheets</p>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, minWidth: 160 }}>
+                          <label className="adm-label">Term</label>
+                          <select
+                            value={exportTerm}
+                            onChange={(e) => { setExportTerm(e.target.value); setExportResult(null); }}
+                            className="adm-input"
+                          >
+                            <option value="">— Select term —</option>
+                            {[...new Set(fines.map((f) => f.term))].sort().reverse().map((t) => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={bulkExport}
+                          disabled={!exportTerm || exportLoading}
+                          className="adm-btn"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          {exportLoading ? "Exporting…" : "Export to Sheets"}
+                        </button>
+                      </div>
+                      {exportResult && (
+                        <p style={{ marginTop: 12, fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: exportResult.ok ? "#34D399" : "var(--red)" }}>
+                          {exportResult.msg}
+                        </p>
+                      )}
                     </div>
                   </div>
 
