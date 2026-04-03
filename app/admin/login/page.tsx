@@ -9,6 +9,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -26,6 +28,17 @@ export default function LoginPage() {
       router.push("/admin");
       router.refresh();
     }
+  }
+
+  async function forgotPassword() {
+    if (!email.trim()) { setError("Enter your email first."); return; }
+    setResetLoading(true);
+    setError("");
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/admin/reset-password`,
+    });
+    setResetLoading(false);
+    setResetSent(true);
   }
 
   return (
@@ -143,6 +156,32 @@ export default function LoginPage() {
         }
         .login-btn:hover { opacity: 0.85; }
         .login-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .forgot-btn {
+          background: none;
+          border: none;
+          color: var(--text-dim);
+          font-size: 11px;
+          font-family: 'IBM Plex Mono', monospace;
+          cursor: pointer;
+          padding: 0;
+          margin-top: 12px;
+          display: block;
+          width: 100%;
+          text-align: center;
+          transition: color 0.15s;
+        }
+        .forgot-btn:hover { color: var(--gold); }
+        .forgot-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .reset-success {
+          font-size: 12px;
+          color: #34D399;
+          margin-top: 14px;
+          font-family: 'IBM Plex Mono', monospace;
+          text-align: center;
+          line-height: 1.5;
+        }
       `}</style>
 
       <div className="login-page">
@@ -172,6 +211,12 @@ export default function LoginPage() {
             <button type="submit" disabled={loading} className="login-btn">
               {loading ? "Signing in…" : "Sign In"}
             </button>
+            <button type="button" onClick={forgotPassword} disabled={resetLoading} className="forgot-btn">
+              {resetLoading ? "Sending…" : "Forgot password?"}
+            </button>
+            {resetSent && (
+              <p className="reset-success">Reset link sent — check your email.</p>
+            )}
           </form>
         </div>
       </div>
