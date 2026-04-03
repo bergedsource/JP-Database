@@ -30,7 +30,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (targetRole?.role === "owner") {
+  if (targetRole?.role === "owner" && current?.role !== "root") {
     const { count } = await service
       .from("admin_roles")
       .select("*", { count: "exact", head: true })
