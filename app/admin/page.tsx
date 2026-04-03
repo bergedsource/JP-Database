@@ -1593,88 +1593,110 @@ export default function AdminPage() {
                   </div>
 
                   {/* Fines List */}
-                  <div className="adm-card">
-                    {filteredFines.length === 0 ? (
-                      <p className="adm-empty">No fines found.</p>
-                    ) : (
-                      filteredFines.map((fine) => {
-                        const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
-                        return (
-                          <div
-                            key={fine.id}
-                            className="adm-fine-row"
-                            style={{ borderLeftColor: sc.color }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                <span className="adm-fine-member">{fine.member_name}</span>
-                                <span style={{ color: "var(--text-dim)" }}>·</span>
-                                <span className="adm-fine-type">{fine.fine_type}</span>
-                              </div>
-                              <p className="adm-fine-desc">{fine.description}</p>
-                              {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
-                              <p className="adm-fine-meta">
-                                {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
-                                {editingAmountId === fine.id ? (
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
-                                    · $<input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      value={editingAmountValue}
-                                      onChange={(e) => setEditingAmountValue(e.target.value)}
-                                      autoFocus
-                                      style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "'IBM Plex Mono', monospace" }}
-                                    />
-                                    <button onClick={() => updateFineAmount(fine.id, editingAmountValue ? parseFloat(editingAmountValue) : null)} style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✓</button>
-                                    <button onClick={() => { setEditingAmountId(null); setEditingAmountValue(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✗</button>
-                                  </span>
-                                ) : (
-                                  <>
-                                    {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
-                                    {(isPrivileged || fine.created_by_user_id === currentUserId) && (
-                                      <button
-                                        onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
-                                        style={{ background: "rgba(207,181,59,0.12)", border: "1px solid rgba(207,181,59,0.35)", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace" }}
-                                        title="Edit amount"
-                                      >✎ edit</button>
-                                    )}
-                                  </>
-                                )}
-                              </p>
+                  {(() => {
+                    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+                    const recentFines = filteredFines.filter((f) => new Date(f.created_at) >= cutoff);
+                    const olderFines = filteredFines.filter((f) => new Date(f.created_at) < cutoff);
+
+                    const renderFineCard = (fine: Fine) => {
+                      const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+                      return (
+                        <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span className="adm-fine-member">{fine.member_name}</span>
+                              <span style={{ color: "var(--text-dim)" }}>·</span>
+                              <span className="adm-fine-type">{fine.fine_type}</span>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-                              <span
-                                className="adm-status-badge"
-                                style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}
-                              >
-                                {fine.status}
-                              </span>
-                              {isPrivileged ? (
-                                <select
-                                  value={fine.status}
-                                  onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
-                                  className="adm-status-select"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="upheld">Upheld</option>
-                                  <option value="dismissed">Dismissed</option>
-                                  <option value="overturned">Overturned</option>
-                                  <option value="paid">Paid</option>
-                                  <option value="labor">Labor</option>
-                                </select>
+                            <p className="adm-fine-desc">{fine.description}</p>
+                            {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                            <p className="adm-fine-meta">
+                              {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                              {editingAmountId === fine.id ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+                                  · $<input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editingAmountValue}
+                                    onChange={(e) => setEditingAmountValue(e.target.value)}
+                                    autoFocus
+                                    style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "'IBM Plex Mono', monospace" }}
+                                  />
+                                  <button onClick={() => updateFineAmount(fine.id, editingAmountValue ? parseFloat(editingAmountValue) : null)} style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✓</button>
+                                  <button onClick={() => { setEditingAmountId(null); setEditingAmountValue(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✗</button>
+                                </span>
                               ) : (
-                                <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
+                                <>
+                                  {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                  {(isPrivileged || fine.created_by_user_id === currentUserId) && (
+                                    <button
+                                      onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
+                                      style={{ background: "rgba(207,181,59,0.12)", border: "1px solid rgba(207,181,59,0.35)", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace" }}
+                                      title="Edit amount"
+                                    >✎ edit</button>
+                                  )}
+                                </>
                               )}
-                              {isPrivileged && (
-                                <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
-                              )}
-                            </div>
+                            </p>
                           </div>
-                        );
-                      })
-                    )}
-                  </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                            <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+                              {fine.status}
+                            </span>
+                            {isPrivileged ? (
+                              <select
+                                value={fine.status}
+                                onChange={(e) => updateFineStatus(fine.id, e.target.value as FineStatus)}
+                                className="adm-status-select"
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="upheld">Upheld</option>
+                                <option value="dismissed">Dismissed</option>
+                                <option value="overturned">Overturned</option>
+                                <option value="paid">Paid</option>
+                                <option value="labor">Labor</option>
+                              </select>
+                            ) : (
+                              <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
+                            )}
+                            {isPrivileged && (
+                              <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    if (filteredFines.length === 0) {
+                      return <div className="adm-card"><p className="adm-empty">No fines found.</p></div>;
+                    }
+
+                    return (
+                      <>
+                        {recentFines.length > 0 && (
+                          <div className="adm-card">
+                            <div className="adm-card-header">
+                              <span className="adm-card-title" style={{ fontSize: 13 }}>Recent — last 14 days</span>
+                              <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{recentFines.length} fine{recentFines.length !== 1 ? "s" : ""}</span>
+                            </div>
+                            {recentFines.map(renderFineCard)}
+                          </div>
+                        )}
+                        {olderFines.length > 0 && (
+                          <div className="adm-card">
+                            {recentFines.length > 0 && (
+                              <div className="adm-card-header">
+                                <span className="adm-card-title" style={{ fontSize: 13, color: "var(--text-dim)" }}>Older</span>
+                                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{olderFines.length} fine{olderFines.length !== 1 ? "s" : ""}</span>
+                              </div>
+                            )}
+                            {olderFines.map(renderFineCard)}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
