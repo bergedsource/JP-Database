@@ -2027,6 +2027,14 @@ export default function AdminPage() {
               {tab === "transition" && isPrivileged && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
+                  {/* Transition Guide */}
+                  <div style={{ padding: "12px 16px", background: "rgba(207,181,59,0.07)", border: "1px solid rgba(207,181,59,0.2)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>New to this site? Read the handoff guide before getting started.</span>
+                    <a href="https://docs.google.com/document/d/1dn5JJvAwGOMYLNr0q-QoH2RwRXcIZPsRHoVo6Cx7azY/edit?tab=t.0" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#CFB53B", whiteSpace: "nowrap", marginLeft: 16, textDecoration: "none" }}>
+                      Transition Guide →
+                    </a>
+                  </div>
+
                   {/* User Management */}
                   <div className="adm-card">
                     <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
