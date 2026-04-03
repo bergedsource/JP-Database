@@ -1635,9 +1635,9 @@ export default function AdminPage() {
                                     {(isPrivileged || fine.created_by_user_id === currentUserId) && (
                                       <button
                                         onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
-                                        style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 2, fontFamily: "'IBM Plex Mono', monospace" }}
+                                        style={{ background: "rgba(207,181,59,0.12)", border: "1px solid rgba(207,181,59,0.35)", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace" }}
                                         title="Edit amount"
-                                      >edit</button>
+                                      >✎ edit</button>
                                     )}
                                   </>
                                 )}
