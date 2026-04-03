@@ -92,11 +92,10 @@ export async function POST(req: NextRequest) {
       spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
       sheetId = 0;
 
-      // Share with the owner email so they can access it
+      // Share with anyone who has the link
       await drive.permissions.create({
         fileId: spreadsheetId,
-        requestBody: { type: "user", role: "writer", emailAddress: "bergedillon@gmail.com" },
-        sendNotificationEmail: false,
+        requestBody: { type: "anyone", role: "writer" },
       });
     } else {
       // Use existing spreadsheet — check if tab already exists
