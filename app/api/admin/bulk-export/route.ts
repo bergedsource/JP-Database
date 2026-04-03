@@ -11,12 +11,12 @@ function extractBylaw(fineType: string): string {
   return match ? match[1] : "";
 }
 
-// POST /api/admin/bulk-export — export all fines for a term to a new Google Sheet tab
+// POST /api/admin/bulk-export — export all fines for a term to Google Sheets
 export async function POST(req: NextRequest) {
   const denied = await requireOwner();
   if (denied) return denied;
 
-  const { term } = await req.json();
+  const { term, createNew } = await req.json();
   if (!term || typeof term !== "string") {
     return NextResponse.json({ error: "term is required" }, { status: 400 });
   }
@@ -72,34 +72,41 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
     const tabName = `${term} Fines`;
+    let spreadsheetId = SPREADSHEET_ID;
+    let spreadsheetUrl: string | null = null;
+    let sheetId: number = 0;
 
-    // Check if tab already exists
-    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
-    const existing = spreadsheet.data.sheets?.find((s) => s.properties?.title === tabName);
-
-    let sheetId: number;
-
-    if (existing) {
-      sheetId = existing.properties!.sheetId!;
-      // Clear existing content
-      await sheets.spreadsheets.values.clear({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${tabName}'!A:L`,
-      });
-    } else {
-      // Create new tab
-      const addRes = await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: SPREADSHEET_ID,
+    if (createNew) {
+      // Create a brand new spreadsheet
+      const created = await sheets.spreadsheets.create({
         requestBody: {
-          requests: [{ addSheet: { properties: { title: tabName } } }],
+          properties: { title: `${term} Fines — Acacia OSU` },
+          sheets: [{ properties: { title: tabName, sheetId: 0 } }],
         },
       });
-      sheetId = addRes.data.replies?.[0]?.addSheet?.properties?.sheetId ?? 0;
+      spreadsheetId = created.data.spreadsheetId!;
+      spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+      sheetId = 0;
+    } else {
+      // Use existing spreadsheet — check if tab already exists
+      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+      const existing = spreadsheet.data.sheets?.find((s) => s.properties?.title === tabName);
+
+      if (existing) {
+        sheetId = existing.properties!.sheetId!;
+        await sheets.spreadsheets.values.clear({ spreadsheetId, range: `'${tabName}'!A:L` });
+      } else {
+        const addRes = await sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: { requests: [{ addSheet: { properties: { title: tabName } } }] },
+        });
+        sheetId = addRes.data.replies?.[0]?.addSheet?.properties?.sheetId ?? 0;
+      }
     }
 
     // Write headers + data
     await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       range: `'${tabName}'!A1`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [HEADERS, ...rows] },
@@ -107,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     // Apply checkbox formatting to columns F (index 5) and L (index 11)
     await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId,
       requestBody: {
         requests: [
           {
@@ -126,7 +133,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, count: rows.length, tab: tabName });
+    return NextResponse.json({ success: true, count: rows.length, tab: tabName, url: spreadsheetUrl });
   } catch (err) {
     console.error("Bulk export error:", err instanceof Error ? err.message : "unknown");
     return NextResponse.json({ error: "Export failed" }, { status: 500 });

@@ -151,8 +151,9 @@ export default function AdminPage() {
   const [venmoSaving, setVenmoSaving] = useState(false);
   const [venmoSaved, setVenmoSaved] = useState(false);
   const [exportTerm, setExportTerm] = useState("");
+  const [exportCreateNew, setExportCreateNew] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  const [exportResult, setExportResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [exportResult, setExportResult] = useState<{ ok: boolean; msg: string; url?: string } | null>(null);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Fine form state
@@ -361,11 +362,11 @@ export default function AdminPage() {
     const res = await fetch("/api/admin/bulk-export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ term: exportTerm }),
+      body: JSON.stringify({ term: exportTerm, createNew: exportCreateNew }),
     });
     const data = await res.json();
     if (res.ok) {
-      setExportResult({ ok: true, msg: `Exported ${data.count} fine${data.count !== 1 ? "s" : ""} to "${data.tab}"` });
+      setExportResult({ ok: true, msg: `Exported ${data.count} fine${data.count !== 1 ? "s" : ""} to "${data.tab}"`, url: data.url });
     } else {
       setExportResult({ ok: false, msg: data.error ?? "Export failed" });
     }
@@ -2175,10 +2176,29 @@ export default function AdminPage() {
                           {exportLoading ? "Exporting…" : "Export to Sheets"}
                         </button>
                       </div>
+                      <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                        <input
+                          type="checkbox"
+                          id="exportCreateNew"
+                          checked={exportCreateNew}
+                          onChange={(e) => { setExportCreateNew(e.target.checked); setExportResult(null); }}
+                          style={{ accentColor: "var(--gold)", width: 14, height: 14, cursor: "pointer" }}
+                        />
+                        <label htmlFor="exportCreateNew" style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer" }}>
+                          Create new spreadsheet
+                        </label>
+                      </div>
                       {exportResult && (
-                        <p style={{ marginTop: 12, fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: exportResult.ok ? "#34D399" : "var(--red)" }}>
-                          {exportResult.msg}
-                        </p>
+                        <div style={{ marginTop: 10 }}>
+                          <p style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: exportResult.ok ? "#34D399" : "var(--red)" }}>
+                            {exportResult.msg}
+                          </p>
+                          {exportResult.url && (
+                            <a href={exportResult.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace", textDecoration: "none", display: "inline-block", marginTop: 6 }}>
+                              Open new sheet ↗
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
