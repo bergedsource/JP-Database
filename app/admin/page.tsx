@@ -58,7 +58,7 @@ const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: str
   labor:     { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
 };
 
-type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "transition" | "creator log";
+type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "transition" | "events";
 
 const SP_REASONS: SocialProbationReason[] = [
   "Outstanding Fines (§10-270)",
@@ -138,11 +138,11 @@ export default function AdminPage() {
   const [filterMember, setFilterMember] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [creatorLogs, setCreatorLogs] = useState<AuditLog[]>([]);
+  const [eventLog, setCreatorLogs] = useState<AuditLog[]>([]);
   const [adminEmail, setAdminEmail] = useState("");
-  const [userRole, setUserRole] = useState<"owner" | "admin" | "creator" | null>(null);
+  const [userRole, setUserRole] = useState<"owner" | "admin" | "root" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const isPrivileged = userRole === "owner" || userRole === "creator";
+  const isPrivileged = userRole === "owner" || userRole === "root";
   const [adminUsers, setAdminUsers] = useState<{ user_id: string; email: string; role: string; created_at: string }[]>([]);
   const [newUserForm, setNewUserForm] = useState({ email: "", password: "", role: "admin" });
   const [newUserSubmitting, setNewUserSubmitting] = useState(false);
@@ -515,13 +515,13 @@ export default function AdminPage() {
   }
 
   async function log(action: string, details: string) {
-    const table = userRole === "creator" ? "creator_audit_logs" : "audit_logs";
+    const table = userRole === "root" ? "system_events" : "audit_logs";
     await supabase.from(table).insert({ admin_email: adminEmail, action, details });
   }
 
-  async function loadCreatorLogs() {
+  async function loadEventLog() {
     const { data } = await supabase
-      .from("creator_audit_logs")
+      .from("system_events")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(200);
@@ -1115,10 +1115,10 @@ export default function AdminPage() {
                 Transition
               </button>
             )}
-            {userRole === "creator" && (
+            {userRole === "root" && (
               <button
-                className={`adm-tab${tab === "creator log" ? " active" : ""}`}
-                onClick={() => { setTab("creator log"); loadCreatorLogs(); }}
+                className={`adm-tab${tab === "events" ? " active" : ""}`}
+                onClick={() => { setTab("events"); loadEventLog(); }}
               >
                 creator log
               </button>
@@ -1883,10 +1883,10 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* CREATOR LOG TAB */}
-              {tab === "creator log" && userRole === "creator" && (
+              {/* EVENTS TAB */}
+              {tab === "events" && userRole === "root" && (
                 <div className="adm-card">
-                  {creatorLogs.length === 0 ? (
+                  {eventLog.length === 0 ? (
                     <p className="adm-empty">No creator actions recorded yet.</p>
                   ) : (
                     <table className="adm-table">
@@ -1898,7 +1898,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {creatorLogs.map((log) => (
+                        {eventLog.map((log) => (
                           <tr key={log.id}>
                             <td style={{ whiteSpace: "nowrap", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
                               {new Date(log.created_at).toLocaleDateString()}{" "}
@@ -1952,7 +1952,7 @@ export default function AdminPage() {
                                 {new Date(u.created_at).toLocaleDateString()}
                               </td>
                               <td style={{ textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                {u.role === "admin" && userRole !== "creator" && (
+                                {u.role === "admin" && userRole !== "root" && (
                                   <button
                                     onClick={() => transferOwnership(u.user_id, u.email)}
                                     style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif" }}

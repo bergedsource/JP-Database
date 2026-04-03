@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading Detail — JP Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
+  :root { --black:#0A0A0A; --gold:#CFB53B; --gold-light:#E2CC6A; --gold-dim:#8A7520; --cream:#F0E8D0; --cream-dim:#A89870; --border:#2A2A2A; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#111; font-family:'Lato',sans-serif; color:var(--cream); padding:48px 20px; }
+  h1 { font-family:'Cormorant Garamond',serif; font-size:26px; color:var(--gold); text-align:center; margin-bottom:6px; }
+  .sub { text-align:center; color:var(--cream-dim); font-size:12px; letter-spacing:1px; margin-bottom:48px; }
+
+  .scene {
+    max-width: 540px;
+    margin: 0 auto;
+    background: radial-gradient(ellipse at 30% 0%, rgba(207,181,59,0.07) 0%, transparent 55%), #0A0A0A;
+    border-radius: 20px;
+    padding: 40px 32px;
+    border: 1px solid var(--border);
+  }
+
+  /* member header */
+  .member-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:32px; }
+  .member-name { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:600; color:var(--cream); }
+  .member-status { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-top:4px; }
+  .back-btn { background:transparent; border:1px solid var(--border); border-radius:7px; padding:7px 14px; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cream-dim); cursor:pointer; }
+
+  /* loading state */
+  .loading-area { display:flex; flex-direction:column; align-items:center; padding:48px 0 52px; gap:20px; }
+
+  @keyframes barSweep {
+    0%   { left: -45%; width: 40%; }
+    50%  { width: 55%; }
+    100% { left: 110%; width: 40%; }
+  }
+  @keyframes fadeInLoad {
+    from { opacity:0; transform:translateY(8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .bar-wrap {
+    width: 200px; height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInLoad 0.4s ease both;
+  }
+  .bar {
+    position: absolute; top:0; height:100%;
+    background: linear-gradient(90deg, transparent, var(--gold-light), var(--gold), var(--gold-light), transparent);
+    animation: barSweep 1.3s ease-in-out infinite;
+  }
+  .load-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--cream-dim);
+    animation: fadeInLoad 0.4s 0.1s ease both;
+  }
+
+  /* variants label */
+  .variants { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; max-width:540px; margin:32px auto 0; }
+  .v { background:#161616; border:1px solid var(--border); border-radius:10px; padding:20px 16px; display:flex; flex-direction:column; align-items:center; gap:14px; cursor:pointer; transition:border-color .2s; }
+  .v:hover { border-color:var(--gold); }
+  .v.active { border-color:var(--gold); box-shadow:0 0 0 2px rgba(207,181,59,0.15); }
+  .v-label { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold-dim); }
+
+  /* bar width variants */
+  .bar-wrap.narrow { width:120px; }
+  .bar-wrap.wide   { width:260px; }
+
+  /* thickness variants */
+  .bar-wrap.thin   { height:1px; }
+  .bar-wrap.thick  { height:3px; }
+
+  /* replay */
+  .replay { display:block; margin:36px auto 0; background:transparent; border:1px solid var(--gold-dim); color:var(--gold); padding:9px 26px; border-radius:7px; font-family:'Lato',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:background .2s; }
+  .replay:hover { background:rgba(207,181,59,0.08); }
+</style>
+</head>
+<body>
+
+<h1>Fine Records Loading State</h1>
+<p class="sub">What members see after selecting their name</p>
+
+<div class="scene">
+  <div class="member-header">
+    <div>
+      <div class="member-name">John Smith</div>
+      <div class="member-status">Active</div>
+    </div>
+    <button class="back-btn">← Back</button>
+  </div>
+
+  <div class="loading-area" id="loadArea">
+    <div class="bar-wrap" id="mainBar"><div class="bar"></div></div>
+    <p class="load-text">Retrieving records…</p>
+  </div>
+</div>
+
+<div style="max-width:540px;margin:32px auto 0;">
+  <p style="text-align:center;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:16px;">BAR WIDTH — PICK ONE</p>
+  <div class="variants">
+    <div class="v" onclick="setWidth('narrow',this)">
+      <div class="bar-wrap narrow"><div class="bar"></div></div>
+      <span class="v-label">Narrow · 120px</span>
+    </div>
+    <div class="v active" onclick="setWidth('medium',this)">
+      <div class="bar-wrap"><div class="bar"></div></div>
+      <span class="v-label">Medium · 200px ★</span>
+    </div>
+    <div class="v" onclick="setWidth('wide',this)">
+      <div class="bar-wrap wide"><div class="bar"></div></div>
+      <span class="v-label">Wide · 260px</span>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin:28px 0 16px;">BAR THICKNESS — PICK ONE</p>
+  <div class="variants">
+    <div class="v" onclick="setThick('thin',this)">
+      <div class="bar-wrap thin" style="width:160px"><div class="bar"></div></div>
+      <span class="v-label">Thin · 1px</span>
+    </div>
+    <div class="v active" onclick="setThick('medium',this)">
+      <div class="bar-wrap" style="width:160px"><div class="bar"></div></div>
+      <span class="v-label">Medium · 2px ★</span>
+    </div>
+    <div class="v" onclick="setThick('thick',this)">
+      <div class="bar-wrap thick" style="width:160px"><div class="bar"></div></div>
+      <span class="v-label">Thick · 3px</span>
+    </div>
+  </div>
+</div>
+
+<button class="replay" onclick="replay()">↺ Replay</button>
+
+<script>
+  let currentWidth = 200, currentHeight = 2;
+
+  function setWidth(size, el) {
+    document.querySelectorAll('.variants')[0].querySelectorAll('.v').forEach(v=>v.classList.remove('active'));
+    el.classList.add('active');
+    if(size==='narrow') currentWidth=120;
+    else if(size==='wide') currentWidth=260;
+    else currentWidth=200;
+    document.getElementById('mainBar').style.width = currentWidth+'px';
+  }
+  function setThick(size, el) {
+    document.querySelectorAll('.variants')[1].querySelectorAll('.v').forEach(v=>v.classList.remove('active'));
+    el.classList.add('active');
+    if(size==='thin') currentHeight=1;
+    else if(size==='thick') currentHeight=3;
+    else currentHeight=2;
+    document.getElementById('mainBar').style.height = currentHeight+'px';
+  }
+  function replay() {
+    const area = document.getElementById('loadArea');
+    area.style.opacity='0';
+    setTimeout(()=>{
+      area.style.transition='';
+      area.style.opacity='1';
+    },300);
+  }
+</script>
+</body>
+</html>

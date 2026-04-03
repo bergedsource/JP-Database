@@ -26,7 +26,7 @@ export async function DELETE(
     .eq("user_id", id)
     .single();
 
-  if (targetRole?.role === "creator") {
+  if (targetRole?.role === "root") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

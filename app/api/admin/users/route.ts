@@ -17,8 +17,8 @@ export async function GET() {
     .order("created_at");
 
   // Owners cannot see creator entries; creators can see their own entry
-  if (current?.role !== "creator") {
-    query = query.neq("role", "creator");
+  if (current?.role !== "root") {
+    query = query.neq("role", "root");
   }
 
   const { data, error } = await query;

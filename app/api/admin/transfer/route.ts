@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const current = await getCurrentRole();
   if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (current.role === "creator") {
+  if (current.role === "root") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

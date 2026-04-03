@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type AdminRole = "owner" | "admin" | "creator" | null;
+export type AdminRole = "owner" | "admin" | "root" | null;
 
 /**
  * Get the current logged-in user's role from admin_roles.
@@ -22,12 +22,12 @@ export async function getCurrentRole(): Promise<{ userId: string; role: AdminRol
 }
 
 /**
- * Require owner or creator role. Returns 403 response if neither.
+ * Require elevated role. Returns 403 response if not authorized.
  * Usage: const check = await requireOwner(); if (check) return check;
  */
 export async function requireOwner(): Promise<Response | null> {
   const current = await getCurrentRole();
-  if (!current || (current.role !== "owner" && current.role !== "creator")) {
+  if (!current || (current.role !== "owner" && current.role !== "root")) {
     return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
   }
   return null;
