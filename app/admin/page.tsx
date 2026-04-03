@@ -197,6 +197,10 @@ export default function AdminPage() {
   const [showExportHelp, setShowExportHelp] = useState(false);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
+  // Amount editing state
+  const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
+  const [editingAmountValue, setEditingAmountValue] = useState<string>("");
+
   // Custom fine types
   const [customFineTypes, setCustomFineTypes] = useState<{ id: string; name: string; bylaw_number: string; default_amount: number | null; description: string | null }[]>([]);
   const [showAddBylaw, setShowAddBylaw] = useState(false);
@@ -554,6 +558,7 @@ export default function AdminPage() {
       term: outForm.term,
       date_issued: outForm.date_issued,
       notes: outForm.notes || null,
+      created_by_user_id: currentUserId,
     });
 
     if (error) {
@@ -636,6 +641,7 @@ export default function AdminPage() {
       date_issued: fineForm.date_issued,
       notes: fineForm.notes || null,
       fining_officer: fineForm.fining_officer || null,
+      created_by_user_id: currentUserId,
     }));
 
     const { error } = await supabase.from("fines").insert(rows);
@@ -690,6 +696,20 @@ export default function AdminPage() {
         });
       }
     }
+    await loadData();
+  }
+
+  async function updateFineAmount(id: string, newAmount: number | null) {
+    const fine = fines.find((f) => f.id === id);
+    await supabase.from("fines").update({ amount: newAmount }).eq("id", id);
+    if (fine) {
+      await log(
+        "Adjusted Fine Amount",
+        `${fine.member_name ?? "Unknown"} — ${fine.fine_type}: amount changed to ${newAmount != null ? `$${newAmount.toFixed(2)}` : "none"}`
+      );
+    }
+    setEditingAmountId(null);
+    setEditingAmountValue("");
     await loadData();
   }
 
@@ -1595,7 +1615,32 @@ export default function AdminPage() {
                               {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
                               <p className="adm-fine-meta">
                                 {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
-                                {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                {editingAmountId === fine.id ? (
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+                                    · $<input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={editingAmountValue}
+                                      onChange={(e) => setEditingAmountValue(e.target.value)}
+                                      autoFocus
+                                      style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "'IBM Plex Mono', monospace" }}
+                                    />
+                                    <button onClick={() => updateFineAmount(fine.id, editingAmountValue ? parseFloat(editingAmountValue) : null)} style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✓</button>
+                                    <button onClick={() => { setEditingAmountId(null); setEditingAmountValue(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✗</button>
+                                  </span>
+                                ) : (
+                                  <>
+                                    {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                    {(isPrivileged || fine.created_by_user_id === currentUserId) && (
+                                      <button
+                                        onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
+                                        style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 2, fontFamily: "'IBM Plex Mono', monospace" }}
+                                        title="Edit amount"
+                                      >edit</button>
+                                    )}
+                                  </>
+                                )}
                               </p>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
@@ -1800,7 +1845,32 @@ export default function AdminPage() {
                                   {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
                                   <p className="adm-fine-meta">
                                     {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
-                                    {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                    {editingAmountId === fine.id ? (
+                                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+                                        · $<input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={editingAmountValue}
+                                          onChange={(e) => setEditingAmountValue(e.target.value)}
+                                          autoFocus
+                                          style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "'IBM Plex Mono', monospace" }}
+                                        />
+                                        <button onClick={() => updateFineAmount(fine.id, editingAmountValue ? parseFloat(editingAmountValue) : null)} style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✓</button>
+                                        <button onClick={() => { setEditingAmountId(null); setEditingAmountValue(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✗</button>
+                                      </span>
+                                    ) : (
+                                      <>
+                                        {fine.amount != null && ` · $${fine.amount.toFixed(2)}`}
+                                        {(isPrivileged || fine.created_by_user_id === currentUserId) && (
+                                          <button
+                                            onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
+                                            style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 2, fontFamily: "'IBM Plex Mono', monospace" }}
+                                            title="Edit amount"
+                                          >edit</button>
+                                        )}
+                                      </>
+                                    )}
                                   </p>
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
