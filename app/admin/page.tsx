@@ -72,6 +72,44 @@ const SP_REASONS: SocialProbationReason[] = [
   "Other",
 ];
 
+const FINE_DEFAULT_AMOUNTS: Partial<Record<string, number>> = {
+  "General Misconduct (§11-020)":                    10,
+  "Misconduct Under Influence (§11-030)":             5,
+  "Missing Security at Function (§11-050)":           25,
+  "Missing Required Event (§11-060)":                 10,
+  "Missing Recruitment/Work Week (§11-070)":          35,
+  "Missing Chapter Meeting (§11-100)":                10,
+  "Missing Exec Meeting (§11-110)":                   5,
+  "Missing Yearbook/Composite (§11-120)":             25,
+  "Kitchen Duties (§11-130)":                         35,
+  "House Clean (§11-140)":                            10,
+  "Event House Clean (§11-150)":                      10,
+  "Chores (§11-160)":                                 10,
+  "Missing Philanthropy Event (§11-170)":             5,
+  "Smoking (§11-190)":                                25,
+  "Fire Alarm (§11-200)":                             25,
+  "Drop Testing Cleanup (§11-210)":                   1,
+  "Unauthorized Weapon Use (§11-220)":                5,
+  "Sexual Relations on Sleeping Porch (§11-230)":     10,
+  "Formal Dinner Attire (§11-240)":                   5,
+  "Grazers (§11-250)":                                5,
+  "Social Probation Violation (§11-260)":             15,
+  "Missing House Philanthropy Event (§11-270)":       50,
+  "Missing Signed-Up Philanthropy Event (§11-280)":   25,
+  "Bathroom Trash Violation (§11-290)":               5,
+  "Physical Violence (§11-300)":                      15,
+  "Committee Meeting Absence (§7-005)":               10,
+  "Missing JP Meeting (§10-220)":                     15,
+  "Cell Phone in Exec Meeting (§8-060)":              5,
+  "Grievance Committee No-Show (§7-030)":             25,
+  "Guest Misconduct (§12-030)":                       10,
+  "Breathalyzer Misuse (§12-080)":                    10,
+  "Silent Sleeping Porch Violation (§18-350)":        5,
+  "Room Improvement Removal (§17-240)":               60,
+  "Inadequate Room Space (§17-360)":                  10,
+  "Failure to Vacate Room (§17-370)":                 5,
+};
+
 const FINE_DESCRIPTIONS: Partial<Record<FineType, string>> = {
   "Conduct Unbecoming (§11-010)": "Conduct unbecoming a member of Acacia Fraternity",
   "General Misconduct (§11-020)": "General misconduct in violation of chapter standards",
@@ -1263,7 +1301,8 @@ export default function AdminPage() {
                               const type = e.target.value as FineType;
                               const custom = customFineTypes.find((c) => `${c.name} (§${c.bylaw_number})` === type);
                               const desc = custom?.description ?? FINE_DESCRIPTIONS[type] ?? "";
-                              const amount = custom?.default_amount != null ? String(custom.default_amount) : fineForm.amount;
+                              const defaultAmt = custom?.default_amount != null ? custom.default_amount : FINE_DEFAULT_AMOUNTS[type] ?? null;
+                              const amount = defaultAmt != null ? String(defaultAmt) : "";
                               setFineForm({ ...fineForm, fine_type: type, description: desc, amount });
                             }}
                             className="adm-input"
