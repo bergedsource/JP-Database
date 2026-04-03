@@ -1685,12 +1685,10 @@ export default function AdminPage() {
                         )}
                         {olderFines.length > 0 && (
                           <div className="adm-card">
-                            {recentFines.length > 0 && (
-                              <div className="adm-card-header">
-                                <span className="adm-card-title" style={{ fontSize: 13, color: "var(--text-dim)" }}>Older</span>
-                                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{olderFines.length} fine{olderFines.length !== 1 ? "s" : ""}</span>
-                              </div>
-                            )}
+                            <div className="adm-card-header">
+                              <span className="adm-card-title" style={{ fontSize: 13, color: "var(--text-dim)" }}>Older than 14 days</span>
+                              <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{olderFines.length} fine{olderFines.length !== 1 ? "s" : ""}</span>
+                            </div>
                             {olderFines.map(renderFineCard)}
                           </div>
                         )}
