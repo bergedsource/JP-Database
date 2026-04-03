@@ -167,6 +167,8 @@ export default function AdminPage() {
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false);
   const [fineSubmitting, setFineSubmitting] = useState(false);
   const [fineError, setFineError] = useState("");
+  const [officerSearch, setOfficerSearch] = useState("");
+  const [showOfficerSuggestions, setShowOfficerSuggestions] = useState(false);
 
   // Member form state
   const [memberForm, setMemberForm] = useState({
@@ -570,6 +572,7 @@ export default function AdminPage() {
         notes: "",
         fining_officer: "",
       });
+      setOfficerSearch("");
       setSelectedMembers([]);
       setMemberSearch("");
       await loadData();
@@ -1283,22 +1286,55 @@ export default function AdminPage() {
                           />
                         </div>
 
-                        <div>
-                          <label className="adm-label">Fining Officer <span className="adm-req">*</span></label>
-                          <select
-                            value={fineForm.fining_officer}
-                            onChange={(e) => setFineForm({ ...fineForm, fining_officer: e.target.value })}
-                            required
+                        <div style={{ position: "relative" }}>
+                          <label className="adm-label">
+                            Fining Officer <span className="adm-req">*</span>
+                            {fineForm.fining_officer && (
+                              <span style={{ color: "var(--gold)", marginLeft: 6, fontWeight: 600 }}>
+                                {fineForm.fining_officer}
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            value={fineForm.fining_officer ? fineForm.fining_officer : officerSearch}
+                            onChange={(e) => {
+                              setFineForm({ ...fineForm, fining_officer: "" });
+                              setOfficerSearch(e.target.value);
+                              setShowOfficerSuggestions(true);
+                            }}
+                            onFocus={() => { if (!fineForm.fining_officer) setShowOfficerSuggestions(true); }}
+                            onBlur={() => setTimeout(() => setShowOfficerSuggestions(false), 150)}
+                            placeholder="Search member…"
+                            autoComplete="off"
                             className="adm-input"
-                          >
-                            <option value="">— Select member —</option>
-                            {members
-                              .filter((m) => m.status === "active" || m.status === "pledge")
-                              .sort((a, b) => a.name.localeCompare(b.name))
-                              .map((m) => (
-                                <option key={m.id} value={m.name}>{m.name}</option>
-                              ))}
-                          </select>
+                          />
+                          {showOfficerSuggestions && officerSearch.trim() && !fineForm.fining_officer && (
+                            <ul className="adm-suggestions">
+                              {members
+                                .filter((m) =>
+                                  (m.status === "active" || m.status === "pledge") &&
+                                  m.name.toLowerCase().includes(officerSearch.toLowerCase())
+                                )
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((m) => (
+                                  <li key={m.id}>
+                                    <button
+                                      type="button"
+                                      onMouseDown={() => {
+                                        setFineForm({ ...fineForm, fining_officer: m.name });
+                                        setOfficerSearch("");
+                                        setShowOfficerSuggestions(false);
+                                      }}
+                                      className="adm-suggestion-btn"
+                                    >
+                                      <span className="adm-suggestion-name">{m.name}</span>
+                                      <span className="adm-suggestion-status">{m.status}</span>
+                                    </button>
+                                  </li>
+                                ))}
+                            </ul>
+                          )}
                         </div>
 
                         {fineError && (
