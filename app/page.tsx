@@ -745,6 +745,9 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
               <div>
                 <p className="fine-type">{fine.fine_type}</p>
                 <p className="fine-desc">{fine.description}</p>
+                {fine.fining_officer && (
+                  <p className="fine-notes">Fining Officer: {fine.fining_officer}</p>
+                )}
               </div>
               <div className="fine-right">
                 <span

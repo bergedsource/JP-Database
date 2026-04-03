@@ -16,7 +16,7 @@ export async function GET(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("fines")
-    .select("id, member_id, fine_type, description, amount, status, term, date_issued, date_resolved, created_at")
+    .select("id, member_id, fine_type, description, amount, status, term, date_issued, date_resolved, fining_officer, created_at")
     .eq("member_id", id)
     .order("date_issued", { ascending: false });
 
