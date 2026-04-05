@@ -2138,6 +2138,7 @@ export default function AdminPage() {
                       {activeSP.length === 0 ? (
                         <p className="adm-empty">No members on social probation.</p>
                       ) : (
+                        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                         <table className="adm-table">
                           <thead>
                             <tr>
@@ -2180,6 +2181,7 @@ export default function AdminPage() {
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       )}
                     </div>
                   </div>
