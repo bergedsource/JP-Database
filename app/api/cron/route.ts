@@ -62,6 +62,10 @@ export async function GET(req: NextRequest) {
       .from("fines")
       .select("*", { count: "exact", head: true });
 
+    // Delete JP session records in FK-safe order (changes → fines → sessions)
+    await service.from("jp_session_changes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await service.from("jp_session_fines").delete().neq("session_id", "00000000-0000-0000-0000-000000000000");
+    await service.from("jp_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     // Delete all auto soc pro entries (manual ones are preserved)
     await service.from("social_probation").delete().eq("source", "auto");
     // Delete all fines
