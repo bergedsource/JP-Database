@@ -187,6 +187,7 @@ export default function AdminPage() {
   const [newSessionDate, setNewSessionDate] = useState(new Date().toISOString().split("T")[0]);
   const [newSessionSubmitting, setNewSessionSubmitting] = useState(false);
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
+  const [sessionError, setSessionError] = useState("");
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [eventLog, setCreatorLogs] = useState<AuditLog[]>([]);
@@ -464,47 +465,69 @@ export default function AdminPage() {
 
   async function loadSessions() {
     setSessionLoading(true);
+    setSessionError("");
     const res = await fetch("/api/admin/sessions");
     if (res.ok) setSessions(await res.json());
+    else setSessionError("Failed to load sessions.");
     setSessionLoading(false);
   }
 
   async function createSession(e: React.FormEvent) {
     e.preventDefault();
     setNewSessionSubmitting(true);
-    await fetch("/api/admin/sessions", {
+    setSessionError("");
+    const res = await fetch("/api/admin/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date_held: newSessionDate }),
     });
-    await loadSessions();
+    if (res.ok) {
+      const data = await res.json();
+      setNewSessionDate(new Date().toISOString().split("T")[0]);
+      await loadSessionDetail(data.id);
+    } else {
+      setSessionError("Failed to create session.");
+    }
     setNewSessionSubmitting(false);
   }
 
   async function loadSessionDetail(id: string) {
     setSessionDetailLoading(true);
+    setSessionError("");
     const res = await fetch(`/api/admin/sessions/${id}`);
     if (res.ok) {
       setSessionDetail(await res.json());
       setSessionView("detail");
+    } else {
+      setSessionError("Failed to load session.");
     }
     setSessionDetailLoading(false);
   }
 
   async function closeSession(id: string) {
     if (!confirm("Close this session? Owner and root can still make changes after closing.")) return;
-    await fetch(`/api/admin/sessions/${id}/close`, { method: "POST" });
-    await loadSessionDetail(id);
-    await loadSessions();
+    setSessionError("");
+    const res = await fetch(`/api/admin/sessions/${id}/close`, { method: "POST" });
+    if (res.ok) {
+      await loadSessionDetail(id);
+      await loadSessions();
+    } else {
+      setSessionError("Failed to close session.");
+    }
   }
 
   async function updateSessionFineStatus(sessionId: string, fineId: string, newStatus: FineStatus) {
-    await fetch(`/api/admin/sessions/${sessionId}/update-fine`, {
+    setSessionError("");
+    const res = await fetch(`/api/admin/sessions/${sessionId}/update-fine`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fine_id: fineId, new_status: newStatus }),
     });
-    await loadSessionDetail(sessionId);
+    if (res.ok) {
+      await loadSessionDetail(sessionId);
+    } else {
+      setSessionError("Failed to update fine status.");
+    }
   }
 
   async function createAdminUser(e: React.FormEvent) {
@@ -2375,6 +2398,8 @@ export default function AdminPage() {
               {tab === "sessions" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
+                  {sessionError && <p className="adm-error">{sessionError}</p>}
+
                   {/* New Session — owner/root only */}
                   {isPrivileged && sessionView === "list" && (
                     <div className="adm-card">
@@ -2486,95 +2511,100 @@ export default function AdminPage() {
                         )}
                       </div>
 
-                      {sessionDetailLoading && <p className="adm-empty">Loading…</p>}
-
-                      {/* Fines in this session */}
-                      <div className="adm-card">
-                        <div className="adm-card-header">
-                          <span className="adm-card-title">Fines in This Session</span>
-                          <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
-                            {sessionDetail.fines.length} fine{sessionDetail.fines.length !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        {sessionDetail.fines.length === 0 ? (
-                          <p className="adm-empty">No fines were pending when this session was created.</p>
-                        ) : (
-                          sessionDetail.fines.map((fine) => {
-                            const sc = STATUS_COLORS[fine.status as FineStatus] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
-                            return (
-                              <div key={fine.fine_id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                    <span className="adm-fine-member">{fine.member_name}</span>
-                                    <span style={{ color: "var(--text-dim)" }}>·</span>
-                                    <span className="adm-fine-type">{fine.fine_type}</span>
-                                  </div>
-                                  <p className="adm-fine-desc">{fine.description}</p>
-                                  {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
-                                  <p className="adm-fine-meta">
-                                    {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
-                                    {fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
-                                    {fine.amount != null ? ` · $${fine.amount.toFixed(2)}` : ""}
-                                  </p>
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-                                  <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
-                                    {fine.status}
-                                  </span>
-                                  {isPrivileged ? (
-                                    <select
-                                      value={fine.status}
-                                      onChange={(e) => updateSessionFineStatus(sessionDetail.session.id, fine.fine_id, e.target.value as FineStatus)}
-                                      className="adm-status-select"
-                                    >
-                                      <option value="pending">Pending</option>
-                                      <option value="upheld">Upheld</option>
-                                      <option value="dismissed">Dismissed</option>
-                                      <option value="overturned">Overturned</option>
-                                      <option value="paid">Paid</option>
-                                      <option value="labor">Labor</option>
-                                    </select>
-                                  ) : (
-                                    <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-
-                      {/* Changes log */}
-                      <div className="adm-card">
-                        <div className="adm-card-header">
-                          <span className="adm-card-title">Changes This Session</span>
-                        </div>
-                        <div className="adm-card-body">
-                          {sessionDetail.changes.length === 0 ? (
-                            <p style={{ fontSize: 13, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>No changes recorded yet.</p>
-                          ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                              {sessionDetail.changes.map((c) => (
-                                <div key={c.id} style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: "var(--text-muted)", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                                  <span style={{ color: "var(--text)", fontWeight: 600 }}>{c.member_name}</span>
-                                  {" · "}
-                                  <span>{c.fine_type}</span>
-                                  {" · "}
-                                  <span style={{ color: "var(--text-dim)" }}>{c.old_status}</span>
-                                  {" → "}
-                                  <span style={{ color: "var(--gold)" }}>{c.new_status}</span>
-                                  {" · by "}
-                                  <span>{c.changed_by_email}</span>
-                                  {" · "}
-                                  <span style={{ color: "var(--text-dim)" }}>
-                                    {new Date(c.changed_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                                  </span>
-                                </div>
-                              ))}
+                      {sessionDetailLoading ? (
+                        <p className="adm-empty">Loading…</p>
+                      ) : (
+                        <>
+                          {/* Fines in this session */}
+                          <div className="adm-card">
+                            <div className="adm-card-header">
+                              <span className="adm-card-title">Fines in This Session</span>
+                              <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                                {sessionDetail.fines.length} fine{sessionDetail.fines.length !== 1 ? "s" : ""}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                            {sessionDetail.fines.length === 0 ? (
+                              <p className="adm-empty">No fines were pending when this session was created.</p>
+                            ) : (
+                              sessionDetail.fines.map((fine) => {
+                                const sc = STATUS_COLORS[fine.status as FineStatus] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+                                return (
+                                  <div key={fine.fine_id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                        <span className="adm-fine-member">{fine.member_name}</span>
+                                        <span style={{ color: "var(--text-dim)" }}>·</span>
+                                        <span className="adm-fine-type">{fine.fine_type}</span>
+                                      </div>
+                                      <p className="adm-fine-desc">{fine.description}</p>
+                                      {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                                      <p className="adm-fine-meta">
+                                        {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                                        {fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
+                                        {fine.amount != null ? ` · $${fine.amount.toFixed(2)}` : ""}
+                                      </p>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                                      <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
+                                        {fine.status}
+                                      </span>
+                                      {isPrivileged ? (
+                                        <select
+                                          value={fine.status}
+                                          onChange={(e) => updateSessionFineStatus(sessionDetail.session.id, fine.fine_id, e.target.value as FineStatus)}
+                                          className="adm-status-select"
+                                          disabled={!!sessionDetail.session.closed_at}
+                                        >
+                                          <option value="pending">Pending</option>
+                                          <option value="upheld">Upheld</option>
+                                          <option value="dismissed">Dismissed</option>
+                                          <option value="overturned">Overturned</option>
+                                          <option value="paid">Paid</option>
+                                          <option value="labor">Labor</option>
+                                        </select>
+                                      ) : (
+                                        <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+
+                          {/* Changes log */}
+                          <div className="adm-card">
+                            <div className="adm-card-header">
+                              <span className="adm-card-title">Changes This Session</span>
+                            </div>
+                            <div className="adm-card-body">
+                              {sessionDetail.changes.length === 0 ? (
+                                <p style={{ fontSize: 13, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>No changes recorded yet.</p>
+                              ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  {sessionDetail.changes.map((c) => (
+                                    <div key={c.id} style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: "var(--text-muted)", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                                      <span style={{ color: "var(--text)", fontWeight: 600 }}>{c.member_name}</span>
+                                      {" · "}
+                                      <span>{c.fine_type}</span>
+                                      {" · "}
+                                      <span style={{ color: "var(--text-dim)" }}>{c.old_status}</span>
+                                      {" → "}
+                                      <span style={{ color: "var(--gold)" }}>{c.new_status}</span>
+                                      {" · by "}
+                                      <span>{c.changed_by_email}</span>
+                                      {" · "}
+                                      <span style={{ color: "var(--text-dim)" }}>
+                                        {new Date(c.changed_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
 
