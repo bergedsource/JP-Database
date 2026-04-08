@@ -175,6 +175,7 @@ export default function AdminPage() {
   const [fines, setFines] = useState<Fine[]>([]);
   const [filterStatus, setFilterStatus] = useState<FineStatus | "all">("all");
   const [filterMember, setFilterMember] = useState<string>("all");
+  const [filterOfficer, setFilterOfficer] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [eventLog, setCreatorLogs] = useState<AuditLog[]>([]);
@@ -764,9 +765,12 @@ export default function AdminPage() {
     await loadData();
   }
 
+  const uniqueOfficers = Array.from(new Set(fines.map((f) => f.fining_officer).filter(Boolean))) as string[];
+
   const filteredFines = fines.filter((f) => {
     if (filterStatus !== "all" && f.status !== filterStatus) return false;
     if (filterMember !== "all" && f.member_id !== filterMember) return false;
+    if (filterOfficer !== "all" && f.fining_officer !== filterOfficer) return false;
     return true;
   });
 
@@ -1587,6 +1591,17 @@ export default function AdminPage() {
                         <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
                     </select>
+                    <select
+                      value={filterOfficer}
+                      onChange={(e) => setFilterOfficer(e.target.value)}
+                      className="adm-input"
+                      style={{ width: "auto" }}
+                    >
+                      <option value="all">All officers</option>
+                      {uniqueOfficers.sort().map((officer) => (
+                        <option key={officer} value={officer}>{officer}</option>
+                      ))}
+                    </select>
                     <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
                       {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
                     </span>
@@ -1611,7 +1626,7 @@ export default function AdminPage() {
                             <p className="adm-fine-desc">{fine.description}</p>
                             {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
                             <p className="adm-fine-meta">
-                              {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                              {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}{fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
                               {editingAmountId === fine.id ? (
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
                                   · $<input
