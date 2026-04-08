@@ -13,6 +13,15 @@ export async function POST(
   const { id } = await params;
   const service = createServiceClient();
 
+  const { data: session } = await service
+    .from("jp_sessions")
+    .select("closed_at")
+    .eq("id", id)
+    .single();
+
+  if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  if (session.closed_at !== null) return NextResponse.json({ success: true }); // already closed
+
   const { error } = await service
     .from("jp_sessions")
     .update({ closed_at: new Date().toISOString() })

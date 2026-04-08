@@ -1,4 +1,4 @@
-import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
+import { getCurrentRole } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,8 +7,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const denied = await requireOwner();
-  if (denied) return denied;
+  const current = await getCurrentRole();
+  if (!current || (current.role !== "owner" && current.role !== "root")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id: session_id } = await params;
   const { fine_id, new_status } = await req.json();
@@ -21,9 +23,6 @@ export async function POST(
   if (!VALID_STATUSES.includes(new_status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
-
-  const current = await getCurrentRole();
-  if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const service = createServiceClient();
 
@@ -59,7 +58,7 @@ export async function POST(
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
   // Log to jp_session_changes
-  await service.from("jp_session_changes").insert({
+  const { error: changeError } = await service.from("jp_session_changes").insert({
     session_id,
     fine_id,
     changed_by_user_id: current.userId,
@@ -67,6 +66,7 @@ export async function POST(
     old_status,
     new_status,
   });
+  if (changeError) return NextResponse.json({ error: changeError.message }, { status: 500 });
 
   // Log to audit_logs (consistent with existing audit trail)
   await service.from("audit_logs").insert({
