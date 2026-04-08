@@ -64,13 +64,16 @@ export async function POST(req: NextRequest) {
     .eq("status", "pending");
 
   if (pendingFines && pendingFines.length > 0) {
-    await service.from("jp_session_fines").insert(
+    const { error: insertError } = await service.from("jp_session_fines").insert(
       pendingFines.map((f) => ({
         session_id: session.id,
         fine_id: f.id,
         snapshot_status: "pending",
       }))
     );
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ id: session.id, fine_count: pendingFines?.length ?? 0 });
