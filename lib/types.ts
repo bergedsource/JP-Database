@@ -98,3 +98,43 @@ export interface Fine {
   created_by_user_id: string | null;
   created_at: string;
 }
+
+export interface JpSession {
+  id: string;
+  date_held: string;       // "YYYY-MM-DD"
+  closed_at: string | null;
+  created_at: string;
+  fine_count?: number;     // populated by list route via count join
+}
+
+export interface JpSessionFine {
+  session_id: string;
+  fine_id: string;
+  snapshot_status: string;
+  // joined fine fields:
+  fine_type: string;
+  description: string;
+  amount: number | null;
+  status: string;          // current status (may differ from snapshot)
+  term: string;
+  date_issued: string;
+  fining_officer: string | null;
+  notes: string | null;
+  created_by_user_id: string | null;
+  member_id: string;
+  member_name: string;
+}
+
+export interface JpSessionChange {
+  id: string;
+  session_id: string;
+  fine_id: string;
+  changed_by_user_id: string;
+  changed_by_email: string;
+  old_status: string;
+  new_status: string;
+  changed_at: string;
+  // joined fine fields for display:
+  member_name?: string;
+  fine_type?: string;
+}
