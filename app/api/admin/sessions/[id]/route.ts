@@ -1,4 +1,5 @@
 import { requireAuth } from "@/lib/admin-auth";
+import type { JpSessionFine, JpSessionChange } from "@/lib/types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -32,7 +33,6 @@ export async function GET(
       fine_id,
       snapshot_status,
       fines (
-        id,
         member_id,
         fine_type,
         description,
@@ -53,7 +53,7 @@ export async function GET(
   }
 
   // Flatten the joined data
-  const fines = (sessionFines ?? []).map((row: any) => ({
+  const fines: JpSessionFine[] = (sessionFines ?? []).map((row: any) => ({
     session_id: row.session_id,
     fine_id: row.fine_id,
     snapshot_status: row.snapshot_status,
@@ -87,7 +87,7 @@ export async function GET(
     .eq("session_id", id)
     .order("changed_at", { ascending: true });
 
-  const changeLog = (changes ?? []).map((c: any) => ({
+  const changeLog: JpSessionChange[] = (changes ?? []).map((c: any) => ({
     id: c.id,
     session_id: c.session_id,
     fine_id: c.fine_id,
