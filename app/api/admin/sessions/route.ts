@@ -16,10 +16,12 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Get fine counts per session
-  const { data: counts } = await service
-    .from("jp_session_fines")
-    .select("session_id");
+  // Get fine counts per session (scoped to fetched sessions only)
+  const sessionIds = (sessions ?? []).map((s) => s.id);
+  const { data: counts, error: countsError } = sessionIds.length > 0
+    ? await service.from("jp_session_fines").select("session_id").in("session_id", sessionIds)
+    : { data: [], error: null };
+  if (countsError) return NextResponse.json({ error: countsError.message }, { status: 500 });
 
   const countMap: Record<string, number> = {};
   for (const row of counts ?? []) {
@@ -40,8 +42,8 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
 
   const { date_held } = await req.json();
-  if (!date_held || typeof date_held !== "string") {
-    return NextResponse.json({ error: "date_held is required" }, { status: 400 });
+  if (!date_held || typeof date_held !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date_held)) {
+    return NextResponse.json({ error: "date_held must be a YYYY-MM-DD date string" }, { status: 400 });
   }
 
   const service = createServiceClient();
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
       }))
     );
     if (insertError) {
+      // Compensate: delete the orphaned session row
+      await service.from("jp_sessions").delete().eq("id", session.id);
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
   }
