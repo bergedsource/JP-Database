@@ -2572,6 +2572,35 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                  {/* Change Budget Sheet */}
+                  <div className="adm-card">
+                    <div className="adm-card-header">
+                      <span className="adm-card-title">Change Budget Sheet</span>
+                    </div>
+                    <div className="adm-card-body">
+                      <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.6 }}>
+                        When fines are marked as <strong style={{ color: "var(--text)" }}>paid</strong>, they export to a Google Sheet defined by an environment variable in Vercel.
+                        If the chapter gets a new budget spreadsheet, follow these steps to point exports there permanently.
+                      </p>
+                      <div style={{ padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.9 }}>
+                        <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 8, fontSize: 12 }}>Steps:</p>
+                        <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                          <li>Open the new budget spreadsheet in Google Sheets</li>
+                          <li>Click <strong style={{ color: "var(--text)" }}>Share</strong> (top right) and add this email as <strong style={{ color: "var(--text)" }}>Editor</strong>:<br />
+                            <span style={{ color: "var(--gold)", userSelect: "all" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span>
+                          </li>
+                          <li>Copy the spreadsheet ID from the URL — the long string between <strong style={{ color: "var(--text)" }}>/d/</strong> and <strong style={{ color: "var(--text)" }}>/edit</strong><br />
+                            <span style={{ color: "var(--text-dim)" }}>e.g. docs.google.com/spreadsheets/d/<strong style={{ color: "var(--gold)" }}>1BxiM...abc</strong>/edit</span>
+                          </li>
+                          <li>Go to <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)" }}>vercel.com</a> → JP Database project → <strong style={{ color: "var(--text)" }}>Settings → Environment Variables</strong></li>
+                          <li>Find <strong style={{ color: "var(--gold)" }}>GOOGLE_SPREADSHEET_ID</strong> and update its value to the new ID</li>
+                          <li>Go to the <strong style={{ color: "var(--text)" }}>Deployments</strong> tab, click the three dots on the latest deployment, and select <strong style={{ color: "var(--text)" }}>Redeploy</strong></li>
+                        </ol>
+                        <p style={{ marginTop: 10, color: "var(--text-dim)" }}>After redeployment, all paid fine exports will go to the new sheet. The old sheet will no longer receive exports.</p>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
             </>
