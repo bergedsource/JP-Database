@@ -1,9 +1,10 @@
 import { requireOwner } from "@/lib/admin-auth";
 import { isRateLimited, getIP } from "@/lib/rate-limit";
+import { createServiceClient } from "@/lib/supabase/service";
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 
-const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID ?? "17C4lp6_ZSaxi7bb58upLxrfUrtNuRKiiy_VpVWbuIQ0";
+const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID ?? "17C4lp6_ZSaxi7bb58upLxrfUrtNuRKiiy_VpVWbuIQ0";
 const SHEET_NAME = "Fine Processing Form";
 
 const MAX_NAME_LEN = 100;
@@ -21,6 +22,10 @@ export async function POST(req: NextRequest) {
   // Auth: session-based owner check — no secret token needed in the client
   const denied = await requireOwner();
   if (denied) return denied;
+
+  const service = createServiceClient();
+  const { data: sheetSetting } = await service.from("settings").select("value").eq("key", "google_spreadsheet_id").single();
+  const SPREADSHEET_ID = sheetSetting?.value?.trim() || FALLBACK_SPREADSHEET_ID;
 
   let body: Record<string, unknown>;
   try {

@@ -190,6 +190,10 @@ export default function AdminPage() {
   const [venmoForm, setVenmoForm] = useState({ venmo_handle: "", venmo_url: "" });
   const [venmoSaving, setVenmoSaving] = useState(false);
   const [venmoSaved, setVenmoSaved] = useState(false);
+  const [defaultSheetId, setDefaultSheetId] = useState("");
+  const [defaultSheetSaving, setDefaultSheetSaving] = useState(false);
+  const [defaultSheetSaved, setDefaultSheetSaved] = useState(false);
+  const [showSheetHelp, setShowSheetHelp] = useState(false);
   const [exportTerm, setExportTerm] = useState("");
   const [exportSheetId, setExportSheetId] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
@@ -440,6 +444,7 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       setVenmoForm({ venmo_handle: data.venmo_handle ?? "", venmo_url: data.venmo_url ?? "" });
+      setDefaultSheetId(data.google_spreadsheet_id ?? "");
       try {
         setExportHistory(data.export_history ? JSON.parse(data.export_history) : []);
       } catch { setExportHistory([]); }
@@ -500,6 +505,19 @@ export default function AdminPage() {
     setVenmoSaving(false);
     setVenmoSaved(true);
     setTimeout(() => setVenmoSaved(false), 2500);
+  }
+
+  async function saveDefaultSheet(e: React.FormEvent) {
+    e.preventDefault();
+    setDefaultSheetSaving(true);
+    await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "google_spreadsheet_id", value: defaultSheetId.trim() }),
+    });
+    setDefaultSheetSaving(false);
+    setDefaultSheetSaved(true);
+    setTimeout(() => setDefaultSheetSaved(false), 2500);
   }
 
   async function addSocialProbation(e: React.FormEvent) {
@@ -2575,29 +2593,47 @@ export default function AdminPage() {
                   {/* Change Budget Sheet */}
                   <div className="adm-card">
                     <div className="adm-card-header">
-                      <span className="adm-card-title">Change Budget Sheet</span>
+                      <span className="adm-card-title">Default Budget Sheet</span>
                     </div>
                     <div className="adm-card-body">
                       <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.6 }}>
-                        When fines are marked as <strong style={{ color: "var(--text)" }}>paid</strong>, they export to a Google Sheet defined by an environment variable in Vercel.
-                        If the chapter gets a new budget spreadsheet, follow these steps to point exports there permanently.
+                        Paste the spreadsheet ID for the chapter budget sheet here. All paid fine exports will go to this sheet permanently — no Vercel access needed.
                       </p>
-                      <div style={{ padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.9 }}>
-                        <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 8, fontSize: 12 }}>Steps:</p>
-                        <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 6 }}>
-                          <li>Open the new budget spreadsheet in Google Sheets</li>
-                          <li>Click <strong style={{ color: "var(--text)" }}>Share</strong> (top right) and add this email as <strong style={{ color: "var(--text)" }}>Editor</strong>:<br />
-                            <span style={{ color: "var(--gold)", userSelect: "all" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span>
-                          </li>
-                          <li>Copy the spreadsheet ID from the URL — the long string between <strong style={{ color: "var(--text)" }}>/d/</strong> and <strong style={{ color: "var(--text)" }}>/edit</strong><br />
-                            <span style={{ color: "var(--text-dim)" }}>e.g. docs.google.com/spreadsheets/d/<strong style={{ color: "var(--gold)" }}>1BxiM...abc</strong>/edit</span>
-                          </li>
-                          <li>Go to <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)" }}>vercel.com</a> → JP Database project → <strong style={{ color: "var(--text)" }}>Settings → Environment Variables</strong></li>
-                          <li>Find <strong style={{ color: "var(--gold)" }}>GOOGLE_SPREADSHEET_ID</strong> and update its value to the new ID</li>
-                          <li>Go to the <strong style={{ color: "var(--text)" }}>Deployments</strong> tab, click the three dots on the latest deployment, and select <strong style={{ color: "var(--text)" }}>Redeploy</strong></li>
-                        </ol>
-                        <p style={{ marginTop: 10, color: "var(--text-dim)" }}>After redeployment, all paid fine exports will go to the new sheet. The old sheet will no longer receive exports.</p>
-                      </div>
+                      <form onSubmit={saveDefaultSheet} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
+                        <div>
+                          <label className="adm-label">Spreadsheet ID</label>
+                          <input
+                            type="text"
+                            value={defaultSheetId}
+                            onChange={(e) => setDefaultSheetId(e.target.value)}
+                            placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+                            className="adm-input"
+                          />
+                          <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
+                            The long string between <strong style={{ color: "var(--text)" }}>/d/</strong> and <strong style={{ color: "var(--text)" }}>/edit</strong> in the sheet URL.{" "}
+                            <button type="button" onClick={() => setShowSheetHelp(!showSheetHelp)} style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                              How to set it up {showSheetHelp ? "▲" : "▼"}
+                            </button>
+                          </p>
+                          {showSheetHelp && (
+                            <div style={{ marginTop: 8, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.8 }}>
+                              <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+                                <li>Open the budget spreadsheet in Google Sheets</li>
+                                <li>Click <strong style={{ color: "var(--text)" }}>Share</strong> and add this email as <strong style={{ color: "var(--text)" }}>Editor</strong>:<br />
+                                  <span style={{ color: "var(--gold)", userSelect: "all" }}>acacia-jp-sheets@jp-database-491921.iam.gserviceaccount.com</span>
+                                </li>
+                                <li>Copy the ID from the URL and paste it above</li>
+                              </ol>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <button type="submit" disabled={defaultSheetSaving} className="adm-btn">
+                            {defaultSheetSaving ? "Saving…" : "Save Sheet"}
+                          </button>
+                          {defaultSheetSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace" }}>Saved ✓</span>}
+                        </div>
+                      </form>
                     </div>
                   </div>
 
