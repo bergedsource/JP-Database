@@ -68,8 +68,9 @@ export async function POST(
   });
   if (changeError) return NextResponse.json({ error: changeError.message }, { status: 500 });
 
-  // Log to audit_logs (consistent with existing audit trail)
-  await service.from("audit_logs").insert({
+  // Log to the appropriate audit table based on role
+  const auditTable = current.role === "root" ? "system_events" : "audit_logs";
+  await service.from(auditTable).insert({
     admin_email: current.email,
     action: "Fine Status Updated (JP Session)",
     details: `Fine ${fine_id} changed from ${old_status} to ${new_status} during session ${session_id}`,
