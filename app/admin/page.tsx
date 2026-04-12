@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import type { AuditLog, Fine, FineStatus, JpSession, JpSessionChange, JpSessionFine, Member, SocialProbation, SocialProbationReason } from "@/lib/types";
 import FinesTab from "./components/FinesTab";
 import OutstandingTab from "./components/OutstandingTab";
+import MembersTab from "./components/MembersTab";
+import SocialProbationTab from "./components/SocialProbationTab";
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
   pending:    { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
@@ -19,16 +21,6 @@ const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: str
 
 type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events";
 
-const SP_REASONS: SocialProbationReason[] = [
-  "Outstanding Fines (§10-270)",
-  "Academic - GPA Below 3.0 (§14-020)",
-  "Academic - Cumulative GPA Below 2.0 (§14-060)",
-  "Financial - Unpaid Dues (§9-140)",
-  "Failure to Attend Ritual (§15-010)",
-  "Failure to Complete Service Hours (§16-010)",
-  "Missing House Philanthropy Event (§11-270)",
-  "Other",
-];
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
@@ -72,28 +64,8 @@ export default function AdminPage() {
   const [showExportHelp, setShowExportHelp] = useState(false);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
-  // Member form state
-  const [memberForm, setMemberForm] = useState({
-    name: "",
-    status: "active" as Member["status"],
-    roll: "",
-  });
-  const [memberSubmitting, setMemberSubmitting] = useState(false);
-  const [memberError, setMemberError] = useState("");
 
-  // Social probation state
   const [socialProbations, setSocialProbations] = useState<SocialProbation[]>([]);
-  const [spForm, setSpForm] = useState({
-    reason: "Outstanding Fines (§10-270)" as SocialProbationReason,
-    notes: "",
-    start_date: new Date().toISOString().split("T")[0],
-    end_date: "",
-  });
-  const [spMemberSearch, setSpMemberSearch] = useState("");
-  const [spSelectedMember, setSpSelectedMember] = useState<Member | null>(null);
-  const [showSpSuggestions, setShowSpSuggestions] = useState(false);
-  const [spSubmitting, setSpSubmitting] = useState(false);
-  const [spError, setSpError] = useState("");
 
   const router = useRouter();
   const supabase = createClient();
@@ -308,48 +280,6 @@ export default function AdminPage() {
     setTimeout(() => setDefaultSheetSaved(false), 2500);
   }
 
-  async function addSocialProbation(e: React.FormEvent) {
-    e.preventDefault();
-    if (!spSelectedMember) { setSpError("Select a member."); return; }
-    setSpSubmitting(true);
-    setSpError("");
-
-    const { error } = await supabase.from("social_probation").insert({
-      member_id: spSelectedMember.id,
-      reason: spForm.reason,
-      notes: spForm.notes || null,
-      start_date: spForm.start_date,
-      end_date: spForm.end_date || null,
-      source: "manual",
-    });
-
-    if (error) {
-      setSpError(error.message);
-    } else {
-      await supabase.from("audit_logs").insert({
-        admin_email: adminEmail,
-        action: "Added Social Probation",
-        details: `${spSelectedMember.name} — ${spForm.reason}`,
-      });
-      setSpSelectedMember(null);
-      setSpMemberSearch("");
-      setSpForm({ reason: "Outstanding Fines (§10-270)", notes: "", start_date: new Date().toISOString().split("T")[0], end_date: "" });
-      await loadData();
-    }
-    setSpSubmitting(false);
-  }
-
-  async function removeSocialProbation(id: string, memberName: string, reason: string) {
-    const today = new Date().toISOString().split("T")[0];
-    await supabase.from("social_probation").update({ end_date: today }).eq("id", id);
-    await supabase.from("audit_logs").insert({
-      admin_email: adminEmail,
-      action: "Removed Social Probation",
-      details: `${memberName} — ${reason} lifted`,
-    });
-    await loadData();
-  }
-
   async function log(action: string, details: string) {
     const table = userRole === "root" ? "system_events" : "audit_logs";
     await supabase.from(table).insert({ admin_email: adminEmail, action, details });
@@ -368,47 +298,6 @@ export default function AdminPage() {
     await supabase.auth.signOut();
     router.push("/admin/login");
     router.refresh();
-  }
-
-  async function submitMember(e: React.FormEvent) {
-    e.preventDefault();
-    setMemberSubmitting(true);
-    setMemberError("");
-
-    const { error } = await supabase.from("members").insert({
-      name: memberForm.name.trim(),
-      status: memberForm.status,
-      roll: memberForm.roll ? parseInt(memberForm.roll) : null,
-    });
-
-    if (error) {
-      setMemberError(error.message);
-    } else {
-      await log("Added Member", `${memberForm.name.trim()} (${memberForm.status})${memberForm.roll ? ` — Roll ${memberForm.roll}` : ""}`);
-      setMemberForm({ name: "", status: "active", roll: "" });
-      await loadData();
-    }
-    setMemberSubmitting(false);
-  }
-
-  async function updateMemberStatus(id: string, status: Member["status"]) {
-    const member = members.find((m) => m.id === id);
-    await supabase.from("members").update({ status }).eq("id", id);
-    if (member) {
-      await log("Updated Member Status", `${member.name} changed from "${member.status}" to "${status}"`);
-    }
-    await loadData();
-  }
-
-  async function deleteMember(id: string) {
-    if (!confirm("Delete this member and all their fines?")) return;
-    const member = members.find((m) => m.id === id);
-    await supabase.from("fines").delete().eq("member_id", id);
-    await supabase.from("members").delete().eq("id", id);
-    if (member) {
-      await log("Deleted Member", `${member.name} (${member.status})`);
-    }
-    await loadData();
   }
 
   return (
@@ -503,268 +392,14 @@ export default function AdminPage() {
 
               {/* MEMBERS TAB */}
               {tab === "members" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {isPrivileged && <div className="adm-card">
-                    <div className="adm-card-header">
-                      <span className="adm-card-title">Add Member</span>
-                    </div>
-                    <div className="adm-card-body">
-                      <form onSubmit={submitMember} style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
-                        <div style={{ flex: 1, minWidth: 200 }}>
-                          <label className="adm-label">Full Name</label>
-                          <input
-                            type="text"
-                            value={memberForm.name}
-                            onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-                            required
-                            placeholder="First Last"
-                            className="adm-input"
-                          />
-                        </div>
-                        <div>
-                          <label className="adm-label">Roll #</label>
-                          <input
-                            type="number"
-                            value={memberForm.roll}
-                            onChange={(e) => setMemberForm({ ...memberForm, roll: e.target.value })}
-                            placeholder="e.g. 1391"
-                            className="adm-input"
-                            style={{ width: 120 }}
-                          />
-                        </div>
-                        <div>
-                          <label className="adm-label">Status</label>
-                          <select
-                            value={memberForm.status}
-                            onChange={(e) => setMemberForm({ ...memberForm, status: e.target.value as Member["status"] })}
-                            className="adm-input"
-                            style={{ width: "auto" }}
-                          >
-                            <option value="active">Active</option>
-                            <option value="pledge">Pledge</option>
-                            <option value="alumni">Alumni</option>
-                            <option value="inactive">Inactive</option>
-                          </select>
-                        </div>
-                        {memberError && <p className="adm-error">{memberError}</p>}
-                        {isPrivileged && (
-                          <button type="submit" disabled={memberSubmitting} className="adm-btn">
-                            {memberSubmitting ? "Adding…" : "Add Member"}
-                          </button>
-                        )}
-                      </form>
-                    </div>
-                  </div>}
-
-                  <div className="adm-card">
-                    {members.length === 0 ? (
-                      <p className="adm-empty">No members yet.</p>
-                    ) : (
-                      <table className="adm-table">
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Roll #</th>
-                            <th>Status</th>
-                            <th>Fines</th>
-                            <th />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {members.map((m) => {
-                            const memberFines = fines.filter((f) => f.member_id === m.id);
-                            const open = memberFines.filter((f) => ["pending", "upheld"].includes(f.status)).length;
-                            return (
-                              <tr key={m.id}>
-                                <td style={{ fontWeight: 500 }}>{m.name}</td>
-                                <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: m.roll ? "var(--gold)" : "var(--text-dim)" }}>
-                                  {m.roll ?? "—"}
-                                </td>
-                                <td>
-                                  {isPrivileged ? (
-                                    <select
-                                      value={m.status}
-                                      onChange={(e) => updateMemberStatus(m.id, e.target.value as Member["status"])}
-                                      className="adm-status-select"
-                                    >
-                                      <option value="active">Active</option>
-                                      <option value="pledge">Pledge</option>
-                                      <option value="alumni">Alumni</option>
-                                      <option value="inactive">Inactive</option>
-                                    </select>
-                                  ) : (
-                                    <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{m.status}</span>
-                                  )}
-                                </td>
-                                <td>
-                                  {open > 0 ? (
-                                    <span style={{ color: "var(--red)", fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
-                                      {open} open
-                                    </span>
-                                  ) : (
-                                    <span style={{ color: "var(--text-dim)", fontSize: 12 }}>—</span>
-                                  )}
-                                  {memberFines.length > 0 && (
-                                    <span style={{ color: "var(--text-dim)", fontSize: 11, marginLeft: 6 }}>
-                                      ({memberFines.length} total)
-                                    </span>
-                                  )}
-                                </td>
-                                <td style={{ textAlign: "right" }}>
-                                  {isPrivileged && (
-                                    <button onClick={() => deleteMember(m.id)} className="adm-delete-btn">Delete</button>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
+                <MembersTab members={members} fines={fines} isPrivileged={isPrivileged} refresh={loadData} />
               )}
 
               {/* SOCIAL PROBATION TAB */}
-              {tab === "soc pro" && (() => {
-                const activeSP = socialProbations.filter((sp) => !sp.end_date);
-                const spMemberSuggestions = members
-                  .filter((m) => ["active", "pledge"].includes(m.status) && m.name.toLowerCase().includes(spMemberSearch.toLowerCase()))
-                  .slice(0, 8);
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                    {/* Add form — owner only */}
-                    {isPrivileged && <div className="adm-card">
-                      <div className="adm-card-header">
-                        <span className="adm-card-title">Add to Social Probation</span>
-                      </div>
-                      <div className="adm-card-body">
-                        <form onSubmit={addSocialProbation} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                          <div style={{ position: "relative", gridColumn: "span 2" }}>
-                            <label className="adm-label">Member <span className="adm-req">*</span></label>
-                            {spSelectedMember ? (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ background: "rgba(207,181,59,0.15)", color: "var(--gold)", border: "1px solid rgba(207,181,59,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 13, fontWeight: 500 }}>
-                                  {spSelectedMember.name}
-                                </span>
-                                <button type="button" onClick={() => { setSpSelectedMember(null); setSpMemberSearch(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
-                              </div>
-                            ) : (
-                              <>
-                                <input
-                                  type="text"
-                                  value={spMemberSearch}
-                                  onChange={(e) => { setSpMemberSearch(e.target.value); setShowSpSuggestions(true); }}
-                                  onFocus={() => setShowSpSuggestions(true)}
-                                  onBlur={() => setTimeout(() => setShowSpSuggestions(false), 150)}
-                                  placeholder="Type a name…"
-                                  className="adm-input"
-                                  autoComplete="off"
-                                />
-                                {showSpSuggestions && spMemberSearch && spMemberSuggestions.length > 0 && (
-                                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 8, zIndex: 10, marginTop: 2, overflow: "hidden" }}>
-                                    {spMemberSuggestions.map((m) => (
-                                      <div key={m.id} onMouseDown={() => { setSpSelectedMember(m); setSpMemberSearch(""); setShowSpSuggestions(false); }} style={{ padding: "8px 14px", cursor: "pointer", fontSize: 13 }} className="adm-suggestion">
-                                        {m.name}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
+              {tab === "soc pro" && (
+                <SocialProbationTab members={members} socialProbations={socialProbations} isPrivileged={isPrivileged} refresh={loadData} />
+              )}
 
-                          <div style={{ gridColumn: "span 2" }}>
-                            <label className="adm-label">Reason <span className="adm-req">*</span></label>
-                            <select value={spForm.reason} onChange={(e) => setSpForm({ ...spForm, reason: e.target.value as SocialProbationReason })} className="adm-input" style={{ width: "100%" }}>
-                              {SP_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="adm-label">Start Date</label>
-                            <input type="date" value={spForm.start_date} onChange={(e) => setSpForm({ ...spForm, start_date: e.target.value })} className="adm-input" />
-                          </div>
-                          <div>
-                            <label className="adm-label">End Date <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>(optional)</span></label>
-                            <input type="date" value={spForm.end_date} onChange={(e) => setSpForm({ ...spForm, end_date: e.target.value })} className="adm-input" />
-                          </div>
-
-                          <div style={{ gridColumn: "span 2" }}>
-                            <label className="adm-label">Notes <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>(optional)</span></label>
-                            <input type="text" value={spForm.notes} onChange={(e) => setSpForm({ ...spForm, notes: e.target.value })} placeholder="Additional context…" className="adm-input" />
-                          </div>
-
-                          {spError && <p className="adm-error" style={{ gridColumn: "span 2" }}>{spError}</p>}
-                          {isPrivileged && (
-                            <button type="submit" disabled={spSubmitting} className="adm-btn">
-                              {spSubmitting ? "Adding…" : "Add to Social Probation"}
-                            </button>
-                          )}
-                        </form>
-                      </div>
-                    </div>}
-
-                    {/* Active list */}
-                    <div className="adm-card">
-                      <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span className="adm-card-title">Currently on Social Probation</span>
-                        <span style={{ color: activeSP.length > 0 ? "var(--red)" : "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, fontWeight: 600 }}>
-                          {activeSP.length} active
-                        </span>
-                      </div>
-                      {activeSP.length === 0 ? (
-                        <p className="adm-empty">No members on social probation.</p>
-                      ) : (
-                        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                        <table className="adm-table">
-                          <thead>
-                            <tr>
-                              <th>Member</th>
-                              <th>Reason</th>
-                              <th>Since</th>
-                              <th>Source</th>
-                              <th>Notes</th>
-                              <th />
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {activeSP.map((sp) => (
-                              <tr key={sp.id}>
-                                <td style={{ fontWeight: 600 }}>{sp.member_name ?? "Unknown"}</td>
-                                <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{sp.reason}</td>
-                                <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>{sp.start_date}</td>
-                                <td>
-                                  <span style={{
-                                    fontSize: 11,
-                                    fontFamily: "'IBM Plex Mono', monospace",
-                                    padding: "2px 8px",
-                                    borderRadius: 4,
-                                    background: sp.source === "auto" ? "rgba(251,191,36,0.1)" : "rgba(96,165,250,0.1)",
-                                    color: sp.source === "auto" ? "#FCD34D" : "#60A5FA",
-                                    border: `1px solid ${sp.source === "auto" ? "rgba(251,191,36,0.3)" : "rgba(96,165,250,0.3)"}`,
-                                  }}>
-                                    {sp.source}
-                                  </span>
-                                </td>
-                                <td style={{ fontSize: 12, color: "var(--text-dim)" }}>{sp.notes ?? "—"}</td>
-                                <td style={{ textAlign: "right" }}>
-                                  {isPrivileged && (
-                                    <button onClick={() => removeSocialProbation(sp.id, sp.member_name ?? "Unknown", sp.reason)} className="adm-delete-btn">
-                                      Lift
-                                    </button>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* AUDIT LOG TAB */}
               {tab === "audit" && isPrivileged && (
