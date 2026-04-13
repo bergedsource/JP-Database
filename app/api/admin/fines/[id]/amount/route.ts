@@ -11,7 +11,15 @@ export async function PUT(
 
   const { id } = await params;
   const { amount } = await req.json();
-  const newAmount = amount != null && amount !== "" ? parseFloat(amount) : null;
+
+  let newAmount: number | null = null;
+  if (amount != null && amount !== "") {
+    const parsed = parseFloat(amount);
+    if (!isFinite(parsed) || parsed < 0 || parsed > 10000) {
+      return NextResponse.json({ error: "Amount must be between $0 and $10,000" }, { status: 400 });
+    }
+    newAmount = Math.round(parsed * 100) / 100;
+  }
 
   const service = createServiceClient();
 

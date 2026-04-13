@@ -20,11 +20,20 @@ export async function POST(req: NextRequest) {
 
   const service = createServiceClient();
 
+  let parsedAmount: number | null = null;
+  if (amount != null && amount !== "") {
+    const n = parseFloat(amount);
+    if (!isFinite(n) || n < 0 || n > 10000) {
+      return NextResponse.json({ error: "Amount must be between $0 and $10,000" }, { status: 400 });
+    }
+    parsedAmount = Math.round(n * 100) / 100;
+  }
+
   const rows = members.map((m: { id: string; name: string }) => ({
     member_id: m.id,
     fine_type,
     description,
-    amount: amount ? parseFloat(amount) : null,
+    amount: parsedAmount,
     status: "pending",
     term,
     date_issued,

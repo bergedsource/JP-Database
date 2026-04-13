@@ -15,13 +15,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "member_id, fine_type, description, term, and date_issued are required" }, { status: 400 });
   }
 
+  let parsedAmount: number | null = null;
+  if (amount != null && amount !== "") {
+    const n = parseFloat(amount);
+    if (!isFinite(n) || n < 0 || n > 10000) {
+      return NextResponse.json({ error: "Amount must be between $0 and $10,000" }, { status: 400 });
+    }
+    parsedAmount = Math.round(n * 100) / 100;
+  }
+
   const service = createServiceClient();
 
   const { error } = await service.from("fines").insert({
     member_id,
     fine_type,
     description,
-    amount: amount ? parseFloat(amount) : null,
+    amount: parsedAmount,
     status: "upheld",
     term,
     date_issued,
