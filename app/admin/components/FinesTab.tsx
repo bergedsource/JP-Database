@@ -41,6 +41,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
   const [filterStatus, setFilterStatus] = useState<FineStatus | "all">("all");
   const [filterMember, setFilterMember] = useState<string>("all");
   const [filterOfficer, setFilterOfficer] = useState<string>("all");
+  const [filterTerm, setFilterTerm] = useState<string>("all");
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
@@ -157,6 +158,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
     if (filterStatus !== "all" && f.status !== filterStatus) return false;
     if (filterMember !== "all" && f.member_id !== filterMember) return false;
     if (filterOfficer !== "all" && f.fining_officer !== filterOfficer) return false;
+    if (filterTerm !== "all" && f.term !== filterTerm) return false;
     return true;
   });
 
@@ -592,6 +594,15 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
           {uniqueOfficers.sort().map((officer) => (
             <option key={officer} value={officer}>{officer}</option>
           ))}
+        </select>
+        <select
+          value={filterTerm}
+          onChange={(e) => setFilterTerm(e.target.value)}
+          className="adm-input"
+          style={{ width: "auto" }}
+        >
+          <option value="all">All terms</option>
+          {getTermOptions().map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
           {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
