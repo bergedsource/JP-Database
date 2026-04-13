@@ -1,5 +1,6 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { exportFineToSheets } from "@/lib/export-to-sheets";
 import { NextRequest, NextResponse } from "next/server";
 
 const VALID_STATUSES = ["pending", "upheld", "dismissed", "overturned", "paid", "labor"];
@@ -51,17 +52,12 @@ export async function PUT(
 
     if (status === "paid") {
       try {
-        const baseUrl = req.nextUrl.origin;
-        await fetch(`${baseUrl}/api/admin/export-fine`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            member_name: memberName,
-            fine_type: fine.fine_type,
-            description: fine.description,
-            amount: fine.amount,
-            date_resolved: dateResolved,
-          }),
+        await exportFineToSheets({
+          member_name: memberName,
+          fine_type: fine.fine_type,
+          description: fine.description,
+          amount: fine.amount,
+          date_resolved: dateResolved,
         });
       } catch {
         // Export failure should not fail the status update
