@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
-import { isRateLimited, getIP } from "@/lib/rate-limit";
+import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 
 const DEFAULTS = {
   venmo_handle: "@Dillon-Berge",
@@ -9,7 +9,7 @@ const DEFAULTS = {
 
 // GET /api/settings — public venmo info for the public-facing page
 export async function GET(req: Request) {
-  if (isRateLimited(getIP(req), { maxRequests: 60, windowMs: 60_000 })) {
+  if (await isRateLimited(publicLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

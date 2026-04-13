@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
-import { isRateLimited, getIP } from "@/lib/rate-limit";
+import { isRateLimited, getIP, exportLimiter } from "@/lib/rate-limit";
 
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID ?? "17C4lp6_ZSaxi7bb58upLxrfUrtNuRKiiy_VpVWbuIQ0";
 const SHEET_NAME = "Fine Processing Form";
@@ -13,7 +13,7 @@ const MAX_DATE_LEN = 50;
 
 export async function POST(req: NextRequest) {
   // Rate limit: 20 exports per minute per IP
-  if (isRateLimited(getIP(req), { maxRequests: 20, windowMs: 60_000 })) {
+  if (await isRateLimited(exportLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

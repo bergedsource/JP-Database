@@ -1,52 +1,45 @@
-// Simple in-memory rate limiter. Per-instance (Vercel serverless), so limits
-// are per function cold-start — appropriate for this scale. For stricter
-// limits, replace with an Upstash Redis-backed limiter.
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-const store = new Map<string, RateLimitEntry>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-// Clean up expired entries every 5 minutes to prevent memory leak
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of store) {
-    if (now >= entry.resetAt) store.delete(key);
-  }
-}, 5 * 60 * 1000);
+// Public endpoints — member search, fine lookup
+export const publicLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, "1 m"),
+  prefix: "rl:public",
+});
 
-export interface RateLimitOptions {
-  maxRequests: number; // max requests per window
-  windowMs: number;   // window size in milliseconds
-}
+// Admin export endpoint
+export const exportLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, "1 m"),
+  prefix: "rl:export",
+});
 
 /**
  * Returns true if the request should be blocked (limit exceeded).
- * key is typically the IP address.
+ * Pass a Ratelimit instance and an IP string.
  */
-export function isRateLimited(key: string, opts: RateLimitOptions): boolean {
-  const now = Date.now();
-  const entry = store.get(key);
-
-  if (!entry || now >= entry.resetAt) {
-    store.set(key, { count: 1, resetAt: now + opts.windowMs });
-    return false;
-  }
-
-  entry.count += 1;
-  if (entry.count > opts.maxRequests) return true;
-  return false;
+export async function isRateLimited(
+  limiter: Ratelimit,
+  ip: string
+): Promise<boolean> {
+  const { success } = await limiter.limit(ip);
+  return !success;
 }
 
 /**
  * Extract IP from a Next.js request.
- * Falls back to "unknown" if no IP is available.
+ * x-real-ip is set by Vercel's edge and cannot be spoofed by clients.
  */
 export function getIP(req: Request): string {
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     "unknown"
   );
 }

@@ -1,11 +1,11 @@
 import { requireOwner } from "@/lib/admin-auth";
-import { isRateLimited, getIP } from "@/lib/rate-limit";
+import { isRateLimited, getIP, exportLimiter } from "@/lib/rate-limit";
 import { exportFineToSheets } from "@/lib/export-to-sheets";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/export-fine — export a paid fine to Google Sheets (owner only)
 export async function POST(req: NextRequest) {
-  if (isRateLimited(getIP(req), { maxRequests: 20, windowMs: 60_000 })) {
+  if (await isRateLimited(exportLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

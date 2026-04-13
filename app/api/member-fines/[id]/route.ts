@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { isRateLimited, getIP } from "@/lib/rate-limit";
+import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (isRateLimited(getIP(_req), { maxRequests: 30, windowMs: 60_000 })) {
+  if (await isRateLimited(publicLimiter, getIP(_req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
