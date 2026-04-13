@@ -53,6 +53,9 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   const [outSubmitting, setOutSubmitting] = useState(false);
   const [outError, setOutError] = useState("");
 
+  // Filter state
+  const [filterTerm, setFilterTerm] = useState<string>("all");
+
   // Amount editing state
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
   const [editingAmountValue, setEditingAmountValue] = useState<string>("");
@@ -121,7 +124,11 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
     await refresh();
   }
 
-  const outstandingFines = fines.filter((f) => f.status === "pending" || f.status === "upheld");
+  const outstandingFines = fines.filter((f) => {
+    if (f.status !== "pending" && f.status !== "upheld") return false;
+    if (filterTerm !== "all" && f.term !== filterTerm) return false;
+    return true;
+  });
   const byMember = members
     .map((m) => {
       const mFines = outstandingFines.filter((f) => f.member_id === m.id);
@@ -247,9 +254,25 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
         </div>
       </div>}
 
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <label style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>Term</label>
+          <select
+            value={filterTerm}
+            onChange={(e) => setFilterTerm(e.target.value)}
+            className="adm-input"
+            style={{ padding: "4px 8px", fontSize: 12, width: "auto" }}
+          >
+            <option value="all">All Terms</option>
+            {getTermOptions().map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+      </div>
+
       <div className="adm-summary">
         <span style={{ color: "var(--text-muted)" }}>
           {outstandingFines.length} outstanding fine{outstandingFines.length !== 1 ? "s" : ""} · {byMember.length} member{byMember.length !== 1 ? "s" : ""}
+          {filterTerm !== "all" && <span style={{ color: "var(--gold)", marginLeft: 6 }}>· {filterTerm}</span>}
         </span>
         {grandTotal > 0 && (
           <span style={{ color: "var(--red)", fontWeight: 600 }}>
@@ -285,7 +308,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                     <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.description}</p>
                     {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
                     <p className="adm-fine-meta">
-                      {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                      {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}{fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
                       {editingAmountId === fine.id ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
                           · $<input
