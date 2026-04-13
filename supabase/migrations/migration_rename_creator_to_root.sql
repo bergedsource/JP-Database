@@ -1,28 +1,28 @@
 -- Rename creator role to root, rename creator_audit_logs to system_events
--- Run this in the Supabase SQL Editor
+-- Run each step separately in the Supabase SQL Editor
 
--- Step 1: Update the CHECK constraint to use 'root' instead of 'creator'
+-- STEP 1: Drop the old check constraint
 DO $$
 DECLARE
   constraint_name TEXT;
 BEGIN
   SELECT conname INTO constraint_name
   FROM pg_constraint
-  WHERE conrelid = 'public.admin_roles'::regclass
-    AND contype = 'c';
+  WHERE conrelid = 'public.admin_roles'::regclass AND contype = 'c';
   IF constraint_name IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.admin_roles DROP CONSTRAINT ' || quote_ident(constraint_name);
   END IF;
 END $$;
 
+-- STEP 2: Update role value BEFORE adding new constraint
+UPDATE public.admin_roles SET role = 'root' WHERE role = 'creator';
+
+-- STEP 3: Add new constraint that includes 'root'
 ALTER TABLE public.admin_roles
   ADD CONSTRAINT admin_roles_role_check
   CHECK (role IN ('owner', 'admin', 'root'));
 
--- Step 2: Update the role value in the table
-UPDATE public.admin_roles SET role = 'root' WHERE role = 'creator';
-
--- Step 3: Update the trigger function to reference 'root'
+-- STEP 4: Update the trigger function
 CREATE OR REPLACE FUNCTION public.protect_creator_role()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -36,27 +36,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Step 4: Rename creator_audit_logs to system_events
+-- STEP 5: Rename table and fix RLS policies
 ALTER TABLE IF EXISTS public.creator_audit_logs RENAME TO system_events;
 
--- Step 5: Update RLS policies on system_events
 DROP POLICY IF EXISTS "creator_can_read_creator_logs" ON public.system_events;
 DROP POLICY IF EXISTS "creator_can_insert_creator_logs" ON public.system_events;
 
 CREATE POLICY "root_can_read_system_events" ON public.system_events
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.admin_roles
-      WHERE user_id = auth.uid() AND role = 'root'
-    )
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.admin_roles WHERE user_id = auth.uid() AND role = 'root')
   );
 
 CREATE POLICY "root_can_insert_system_events" ON public.system_events
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.admin_roles
-      WHERE user_id = auth.uid() AND role = 'root'
-    )
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.admin_roles WHERE user_id = auth.uid() AND role = 'root')
   );

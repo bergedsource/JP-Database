@@ -25,20 +25,32 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginPage = request.nextUrl.pathname === "/admin/login";
+  const { pathname } = request.nextUrl;
 
-  if (isAdminRoute && !isLoginPage && !user) {
+  // API routes: return 401 JSON, not a redirect
+  if (pathname.startsWith("/api/admin/")) {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return supabaseResponse;
+  }
+
+  // Admin pages: redirect to login if not authenticated
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isAuthPage =
+    pathname === "/admin/login" ||
+    pathname.startsWith("/admin/reset-password");
+
+  if (isAdminRoute && !isAuthPage && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     return NextResponse.redirect(url);
   }
 
-  if (isLoginPage && user) {
+  // Already logged in — don't let them hit /admin/login again
+  if (pathname === "/admin/login" && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin";
     return NextResponse.redirect(url);
@@ -48,5 +60,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
