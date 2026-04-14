@@ -22,5 +22,7 @@ export async function GET(
 
   // notes is intentionally excluded from the select above
   if (error) return NextResponse.json([], { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json(data ?? [], {
+    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+  });
 }
