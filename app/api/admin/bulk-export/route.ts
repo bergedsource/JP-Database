@@ -3,7 +3,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 
-const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID ?? "17C4lp6_ZSaxi7bb58upLxrfUrtNuRKiiy_VpVWbuIQ0";
+const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
+if (!FALLBACK_SPREADSHEET_ID) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
 
 // Extract §XX-XXX from fine_type e.g. "Missing Chapter Meeting (§11-100)" → "§11-100"
 function extractBylaw(fineType: string): string {

@@ -1,11 +1,16 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (await isRateLimited(adminLimiter, getIP(_req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const denied = await requireOwner();
   if (denied) return denied;
 

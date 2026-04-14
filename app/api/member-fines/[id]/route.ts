@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 
@@ -13,7 +13,7 @@ export async function GET(
   const { id } = await params;
   if (!id) return NextResponse.json([], { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("fines")
     .select("id, member_id, fine_type, description, amount, status, term, date_issued, date_resolved, fining_officer, created_at")

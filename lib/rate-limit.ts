@@ -20,6 +20,13 @@ export const exportLimiter = new Ratelimit({
   prefix: "rl:export",
 });
 
+// Admin write endpoints — per-IP cap on destructive operations
+export const adminLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  prefix: "rl:admin",
+});
+
 /**
  * Returns true if the request should be blocked (limit exceeded).
  * Pass a Ratelimit instance and an IP string.

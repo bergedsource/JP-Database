@@ -1,7 +1,8 @@
 import { google } from "googleapis";
 import { createServiceClient } from "@/lib/supabase/service";
 
-const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID ?? "17C4lp6_ZSaxi7bb58upLxrfUrtNuRKiiy_VpVWbuIQ0";
+const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
+if (!FALLBACK_SPREADSHEET_ID) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
 const SHEET_NAME = "Fine Processing Form";
 
 const MAX_NAME_LEN = 100;

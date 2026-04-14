@@ -13,6 +13,7 @@ import AuditTab from "./components/AuditTab";
 import EventsTab from "./components/EventsTab";
 import SessionsTab from "./components/SessionsTab";
 import TransitionTab from "./components/TransitionTab";
+import LoadingSkeleton from "./components/LoadingSkeleton";
 
 type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events";
 
@@ -158,7 +159,7 @@ export default function AdminPage() {
           </div>
 
           {loading ? (
-            <p className="adm-loading">Loading records…</p>
+            <div className="adm-card"><LoadingSkeleton /></div>
           ) : (
             <>
               {tab === "fines" && (

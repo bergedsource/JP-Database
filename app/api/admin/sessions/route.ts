@@ -1,5 +1,6 @@
 import { requireAuth, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/admin/sessions — list all sessions with fine count, newest first
@@ -38,6 +39,10 @@ export async function GET() {
 
 // POST /api/admin/sessions — create a new session, snapshot all pending fines
 export async function POST(req: NextRequest) {
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const denied = await requireOwner();
   if (denied) return denied;
 

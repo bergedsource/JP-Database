@@ -378,6 +378,39 @@
 
         .adm-error { font-size: 12px; color: var(--red); margin-top: 4px; }
         .adm-loading { color: var(--text-muted); font-size: 13px; padding: 64px 0; text-align: center; font-style: italic; }
+
+        @keyframes skel-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        .skel-block {
+          background: var(--surface-2);
+          border-radius: 4px;
+          animation: skel-pulse 1.6s ease-in-out infinite;
+        }
+
+        .skel-list { }
+
+        .skel-fine-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 20px;
+          border-bottom: 1px solid var(--border-light);
+        }
+        .skel-fine-row:last-child { border-bottom: none; }
+
+        .skel-fine-left { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+        .skel-fine-right { display: flex; flex-direction: column; gap: 7px; align-items: flex-end; flex-shrink: 0; }
+
+        .skel-name   { height: 14px; width: 130px; }
+        .skel-type   { height: 11px; width: 80px; animation-delay: 0.1s; }
+        .skel-desc   { height: 12px; width: 220px; animation-delay: 0.2s; }
+        .skel-meta   { height: 10px; width: 160px; animation-delay: 0.3s; }
+        .skel-amount { height: 16px; width: 48px; animation-delay: 0.1s; }
+        .skel-badge  { height: 18px; width: 70px; border-radius: 4px; animation-delay: 0.2s; }
         .adm-empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 40px 0; }
 
         .adm-view-only-banner {

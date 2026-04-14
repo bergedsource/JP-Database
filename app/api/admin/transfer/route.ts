@@ -45,5 +45,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: demoteError.message }, { status: 500 });
   }
 
+  await service.from("audit_logs").insert({
+    admin_email: current.email,
+    action: "Ownership Transfer",
+    details: `Ownership transferred from ${current.email} to user ID ${targetUserId}`,
+  });
+
   return NextResponse.json({ success: true });
 }

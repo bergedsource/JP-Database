@@ -1,8 +1,13 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const denied = await requireOwner();
   if (denied) return denied;
 
@@ -13,6 +18,11 @@ export async function POST(req: NextRequest) {
 
   if (!Array.isArray(members) || members.length === 0) {
     return NextResponse.json({ error: "At least one member is required" }, { status: 400 });
+  }
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!members.every((m: { id: string }) => typeof m.id === "string" && UUID_RE.test(m.id))) {
+    return NextResponse.json({ error: "Invalid member ID format" }, { status: 400 });
   }
   if (!fine_type || !description || !term || !date_issued) {
     return NextResponse.json({ error: "fine_type, description, term, and date_issued are required" }, { status: 400 });
