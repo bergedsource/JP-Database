@@ -21,13 +21,13 @@ function AcaciaCrest() {
 
 export default function Home() {
   const [query, setQuery] = useState("");
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [suggestions, setSuggestions] = useState<Member[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(false);
   const [venmo, setVenmo] = useState({ handle: "@Dillon-Berge", url: "https://venmo.com/Dillon-Berge" });
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +37,10 @@ export default function Home() {
       }
     }
     document.addEventListener("mousedown", handleClick);
+    fetch("/api/members")
+      .then((r) => r.json())
+      .then((d: Member[]) => setAllMembers(d ?? []))
+      .catch(() => {});
     fetch("/api/settings")
       .then((r) => r.json())
       .then((d) => setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" }))
@@ -44,25 +48,20 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  async function fetchSuggestions(value: string) {
-    if (!value.trim()) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    const res = await fetch(`/api/search?q=${encodeURIComponent(value.trim())}`);
-    const data = await res.json();
-    setSuggestions(data ?? []);
-    setShowSuggestions(true);
-  }
-
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     setQuery(value);
     setSelected(null);
     setFines([]);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSuggestions(value), 200);
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const q = value.trim().toLowerCase();
+    const matches = allMembers.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 8);
+    setSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
   }
 
   async function selectMember(member: Member) {
@@ -85,8 +84,10 @@ export default function Home() {
 
   return (
     <>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&display=swap" />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&display=swap');
 
         :root {
           --black: #0A0A0A;

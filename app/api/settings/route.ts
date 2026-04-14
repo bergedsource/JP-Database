@@ -22,8 +22,12 @@ export async function GET(req: Request) {
 
     const map: Record<string, string> = { ...DEFAULTS };
     for (const row of data ?? []) map[row.key] = row.value ?? map[row.key];
-    return NextResponse.json(map);
+    return NextResponse.json(map, {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+    });
   } catch {
-    return NextResponse.json(DEFAULTS);
+    return NextResponse.json(DEFAULTS, {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+    });
   }
 }
