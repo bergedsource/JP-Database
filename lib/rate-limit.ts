@@ -9,7 +9,7 @@ const redis = new Redis({
 // Public endpoints — member search, fine lookup
 export const publicLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(500, "1 m"),
+  limiter: Ratelimit.slidingWindow(30, "1 m"),
   prefix: "rl:public",
 });
 
