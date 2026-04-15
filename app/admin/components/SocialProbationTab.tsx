@@ -26,7 +26,6 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
     reason: "Outstanding Fines (§10-270)" as SocialProbationReason,
     notes: "",
     start_date: new Date().toISOString().split("T")[0],
-    end_date: "",
   });
   const [spMemberSearch, setSpMemberSearch] = useState("");
   const [spSelectedMember, setSpSelectedMember] = useState<Member | null>(null);
@@ -54,7 +53,6 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
         reason: spForm.reason,
         notes: spForm.notes,
         start_date: spForm.start_date,
-        end_date: spForm.end_date,
       }),
     });
 
@@ -64,7 +62,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
     } else {
       setSpSelectedMember(null);
       setSpMemberSearch("");
-      setSpForm({ reason: "Outstanding Fines (§10-270)", notes: "", start_date: new Date().toISOString().split("T")[0], end_date: "" });
+      setSpForm({ reason: "Outstanding Fines (§10-270)", notes: "", start_date: new Date().toISOString().split("T")[0] });
       await refresh();
     }
     setSpSubmitting(false);
@@ -128,10 +126,6 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
             <div>
               <label className="adm-label">Start Date</label>
               <input type="date" value={spForm.start_date} onChange={(e) => setSpForm({ ...spForm, start_date: e.target.value })} className="adm-input" />
-            </div>
-            <div>
-              <label className="adm-label">End Date <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>(optional)</span></label>
-              <input type="date" value={spForm.end_date} onChange={(e) => setSpForm({ ...spForm, end_date: e.target.value })} className="adm-input" />
             </div>
 
             <div style={{ gridColumn: "span 2" }}>
