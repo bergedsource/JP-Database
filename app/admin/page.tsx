@@ -46,11 +46,11 @@ export default function AdminPage() {
 
   async function loadData() {
     setLoading(true);
-    const [{ data: m }, { data: f }, { data: a }, { data: sp }] = await Promise.all([
+    const [{ data: m }, { data: f }, { data: a }, spRes] = await Promise.all([
       supabase.from("members").select("*").order("roll", { ascending: true, nullsFirst: false }).order("name"),
       supabase.from("fines").select("*, members(name)").order("date_issued", { ascending: false }),
       supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200),
-      supabase.from("social_probation").select("*, members(name)").order("created_at", { ascending: false }),
+      fetch("/api/admin/social-probation").then((r) => r.ok ? r.json() : []),
     ]);
     setMembers(m ?? []);
     setFines(
@@ -60,11 +60,11 @@ export default function AdminPage() {
       }))
     );
     setAuditLogs(a ?? []);
-    const memberNameMap = new Map((m ?? []).map((mbr) => [mbr.id, mbr.name]));
+    const sp: (SocialProbation & { members?: { name: string } })[] = Array.isArray(spRes) ? spRes : [];
     setSocialProbations(
-      (sp ?? []).map((s: SocialProbation & { members?: { name: string } }) => ({
+      sp.map((s) => ({
         ...s,
-        member_name: s.members?.name ?? memberNameMap.get(s.member_id),
+        member_name: s.members?.name,
       }))
     );
     setLoading(false);
