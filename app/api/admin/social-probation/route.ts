@@ -2,6 +2,8 @@ import { getCurrentRole, requireAuth, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const denied = await requireAuth();
   if (denied) return denied;
