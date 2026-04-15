@@ -60,10 +60,11 @@ export default function AdminPage() {
       }))
     );
     setAuditLogs(a ?? []);
+    const memberNameMap = new Map((m ?? []).map((mbr) => [mbr.id, mbr.name]));
     setSocialProbations(
       (sp ?? []).map((s: SocialProbation & { members?: { name: string } }) => ({
         ...s,
-        member_name: s.members?.name,
+        member_name: s.members?.name ?? memberNameMap.get(s.member_id),
       }))
     );
     setLoading(false);
