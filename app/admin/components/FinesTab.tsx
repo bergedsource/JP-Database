@@ -168,6 +168,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
 
   const renderFineCard = (fine: Fine) => {
     const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+    const repeatCount = fines.filter((f) => f.member_id === fine.member_id && f.fine_type === fine.fine_type).length;
     return (
       <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -175,6 +176,11 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
             <span className="adm-fine-member">{fine.member_name}</span>
             <span style={{ color: "var(--text-dim)" }}>·</span>
             <span className="adm-fine-type">{fine.fine_type}</span>
+            {repeatCount > 1 && (
+              <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", color: "var(--gold-dim)", background: "rgba(207,181,59,0.08)", border: "1px solid rgba(207,181,59,0.2)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.5px" }}>
+                ×{repeatCount} offenses
+              </span>
+            )}
           </div>
           <p className="adm-fine-desc">{fine.description}</p>
           {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
