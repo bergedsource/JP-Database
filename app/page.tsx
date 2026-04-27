@@ -769,7 +769,7 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
                 &nbsp;·&nbsp;{fine.term}
               </p>
               <a
-                href="https://docs.google.com/document/d/1zWRALtkvjH3Koyc46nlu_5EZwxMubr26-2142DOffTQ/edit"
+                href="https://docs.google.com/document/d/13aVuc4zSPj-XxPeFLaBUZ_Cns-eJGTo8/edit"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ fontSize: 11, color: "var(--gold-dim)", textDecoration: "none", fontFamily: "'Lato', sans-serif", letterSpacing: "0.5px", whiteSpace: "nowrap", transition: "color 0.2s" }}
