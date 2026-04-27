@@ -18,14 +18,19 @@ interface SocialProbationTabProps {
   members: Member[];
   socialProbations: SocialProbation[];
   isPrivileged: boolean;
+  userRole: "owner" | "admin" | "root" | null;
   refresh: () => Promise<void>;
 }
 
-export default function SocialProbationTab({ members, socialProbations, isPrivileged, refresh }: SocialProbationTabProps) {
+export default function SocialProbationTab({ members, socialProbations, isPrivileged, userRole, refresh }: SocialProbationTabProps) {
+  const canLift = userRole === "owner" || userRole === "root";
+  const today = new Date().toISOString().split("T")[0];
+
   const [spForm, setSpForm] = useState({
     reason: "Outstanding Fines (§10-270)" as SocialProbationReason,
     notes: "",
-    start_date: new Date().toISOString().split("T")[0],
+    start_date: today,
+    end_date: "",
   });
   const [spMemberSearch, setSpMemberSearch] = useState("");
   const [spSelectedMember, setSpSelectedMember] = useState<Member | null>(null);
@@ -33,7 +38,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
   const [spSubmitting, setSpSubmitting] = useState(false);
   const [spError, setSpError] = useState("");
 
-  const activeSP = socialProbations.filter((sp) => !sp.end_date);
+  const activeSP = socialProbations;
   const spMemberSuggestions = members
     .filter((m) => ["active", "pledge"].includes(m.status) && m.name.toLowerCase().includes(spMemberSearch.toLowerCase()))
     .slice(0, 8);
@@ -53,6 +58,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
         reason: spForm.reason,
         notes: spForm.notes,
         start_date: spForm.start_date,
+        end_date: spForm.end_date || null,
       }),
     });
 
@@ -62,7 +68,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
     } else {
       setSpSelectedMember(null);
       setSpMemberSearch("");
-      setSpForm({ reason: "Outstanding Fines (§10-270)", notes: "", start_date: new Date().toISOString().split("T")[0] });
+      setSpForm({ reason: "Outstanding Fines (§10-270)", notes: "", start_date: today, end_date: "" });
       await refresh();
     }
     setSpSubmitting(false);
@@ -128,6 +134,11 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
               <input type="date" value={spForm.start_date} onChange={(e) => setSpForm({ ...spForm, start_date: e.target.value })} className="adm-input" />
             </div>
 
+            <div>
+              <label className="adm-label">Expected End Date <span className="adm-opt">(optional)</span></label>
+              <input type="date" value={spForm.end_date} onChange={(e) => setSpForm({ ...spForm, end_date: e.target.value })} className="adm-input" min={spForm.start_date} />
+            </div>
+
             <div style={{ gridColumn: "span 2" }}>
               <label className="adm-label">Notes <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>(optional)</span></label>
               <input type="text" value={spForm.notes} onChange={(e) => setSpForm({ ...spForm, notes: e.target.value })} placeholder="Additional context…" className="adm-input" />
@@ -161,17 +172,30 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
                 <th>Member</th>
                 <th>Reason</th>
                 <th>Since</th>
+                <th>Expected End</th>
                 <th>Source</th>
                 <th>Notes</th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {activeSP.map((sp) => (
+              {activeSP.map((sp) => {
+                const endPassed = sp.end_date && sp.end_date < today;
+                return (
                 <tr key={sp.id}>
                   <td style={{ fontWeight: 600 }}>{sp.member_name ?? "Unknown"}</td>
                   <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{sp.reason}</td>
                   <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>{sp.start_date}</td>
+                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>
+                    {sp.end_date ? (
+                      <span style={{ color: endPassed ? "var(--text-dim)" : "var(--text-muted)" }}>
+                        {sp.end_date}
+                        {endPassed && <span style={{ marginLeft: 5, fontSize: 10, color: "var(--text-dim)" }}>(passed)</span>}
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-dim)" }}>—</span>
+                    )}
+                  </td>
                   <td>
                     <span style={{
                       fontSize: 11,
@@ -187,14 +211,15 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
                   </td>
                   <td style={{ fontSize: 12, color: "var(--text-dim)" }}>{sp.notes ?? "—"}</td>
                   <td style={{ textAlign: "right" }}>
-                    {isPrivileged && (
+                    {canLift && (
                       <button onClick={() => removeSocialProbation(sp.id)} className="adm-delete-btn">
                         Lift
                       </button>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           </div>

@@ -21,10 +21,9 @@ export async function DELETE(
     .eq("id", id)
     .single();
 
-  const today = new Date().toISOString().split("T")[0];
   const { error } = await service
     .from("social_probation")
-    .update({ end_date: today })
+    .delete()
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

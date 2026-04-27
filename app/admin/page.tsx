@@ -175,7 +175,7 @@ export default function AdminPage() {
                 <MembersTab members={members} fines={fines} isPrivileged={isPrivileged} refresh={loadData} />
               )}
               {tab === "soc pro" && (
-                <SocialProbationTab members={members} socialProbations={socialProbations} isPrivileged={isPrivileged} refresh={loadData} />
+                <SocialProbationTab members={members} socialProbations={socialProbations} isPrivileged={isPrivileged} userRole={userRole} refresh={loadData} />
               )}
               {tab === "audit" && isPrivileged && <AuditTab auditLogs={auditLogs} />}
               {tab === "events" && userRole === "root" && <EventsTab eventLog={eventLog} />}
