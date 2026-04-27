@@ -616,7 +616,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
         <>
           {recentFines.length > 0 && (
             <div className="adm-card">
-              <div className="adm-card-header">
+              <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="adm-card-title" style={{ fontSize: 13 }}>Recent — last 14 days</span>
                 <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{recentFines.length} fine{recentFines.length !== 1 ? "s" : ""}</span>
               </div>
@@ -625,7 +625,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
           )}
           {olderFines.length > 0 && (
             <div className="adm-card">
-              <div className="adm-card-header">
+              <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="adm-card-title" style={{ fontSize: 13, color: "var(--text-dim)" }}>Older than 14 days</span>
                 <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{olderFines.length} fine{olderFines.length !== 1 ? "s" : ""}</span>
               </div>
