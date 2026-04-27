@@ -117,7 +117,8 @@ export default function AdminPage() {
             <div className="adm-view-only-banner">View Only — Contact JP Chair to make changes</div>
           )}
 
-          <div className="adm-tabs">
+          <div className="adm-tabs-wrap">
+            <div className="adm-tabs">
             {(["fines", "outstanding", "members", "soc pro"] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -157,6 +158,7 @@ export default function AdminPage() {
                 creator log
               </button>
             )}
+            </div>
           </div>
 
           {loading ? (

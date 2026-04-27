@@ -80,15 +80,48 @@
           padding: 32px 24px 64px;
         }
 
+        .adm-tabs-wrap {
+          position: relative;
+          margin-bottom: 28px;
+        }
+        .adm-tabs-wrap::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 1px;
+          width: 48px;
+          background: linear-gradient(to right, transparent, var(--bg));
+          pointer-events: none;
+          z-index: 1;
+        }
+
         .adm-tabs {
           display: flex;
           border-bottom: 1px solid var(--border);
-          margin-bottom: 28px;
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
+          scroll-behavior: smooth;
         }
         .adm-tabs::-webkit-scrollbar { display: none; }
+
+        @media (max-width: 640px) {
+          .adm-table {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .adm-filters {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+          }
+          .adm-filters::-webkit-scrollbar { display: none; }
+          .adm-filters > * { flex-shrink: 0; }
+        }
 
         .adm-tab {
           background: transparent;
