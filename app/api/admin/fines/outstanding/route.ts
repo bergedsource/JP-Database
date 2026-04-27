@@ -9,10 +9,10 @@ export async function POST(req: NextRequest) {
   const current = await getCurrentRole();
   if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { member_id, member_name, fine_type, description, amount, term, date_issued, notes, place_on_soc_pro } = await req.json();
+  const { member_id, member_name, fine_type, description, amount, term, date_issued, notes, place_on_soc_pro, fining_officer } = await req.json();
 
-  if (!member_id || !fine_type || !description || !term || !date_issued) {
-    return NextResponse.json({ error: "member_id, fine_type, description, term, and date_issued are required" }, { status: 400 });
+  if (!member_id || !fine_type || !description || !term || !date_issued || !fining_officer) {
+    return NextResponse.json({ error: "member_id, fine_type, description, term, date_issued, and fining_officer are required" }, { status: 400 });
   }
 
   let parsedAmount: number | null = null;
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     term,
     date_issued,
     notes: notes || null,
+    fining_officer,
     created_by_user_id: current.userId,
   });
 

@@ -45,11 +45,14 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
     term: getCurrentTerm(),
     date_issued: new Date().toISOString().split("T")[0],
     notes: "",
+    fining_officer: "",
     place_on_soc_pro: false,
   });
   const [outMemberSearch, setOutMemberSearch] = useState("");
   const [outSelectedMember, setOutSelectedMember] = useState<Member | null>(null);
   const [showOutSuggestions, setShowOutSuggestions] = useState(false);
+  const [officerSearch, setOfficerSearch] = useState("");
+  const [showOfficerSuggestions, setShowOfficerSuggestions] = useState(false);
   const [outSubmitting, setOutSubmitting] = useState(false);
   const [outError, setOutError] = useState("");
 
@@ -63,6 +66,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   async function submitOutstandingFine(e: React.FormEvent) {
     e.preventDefault();
     if (!outSelectedMember) { setOutError("Select a member."); return; }
+    if (!outForm.fining_officer) { setOutError("Select a fining officer."); return; }
     setOutSubmitting(true);
     setOutError("");
 
@@ -78,6 +82,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
         term: outForm.term,
         date_issued: outForm.date_issued,
         notes: outForm.notes,
+        fining_officer: outForm.fining_officer,
         place_on_soc_pro: outForm.place_on_soc_pro,
       }),
     });
@@ -91,6 +96,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
 
     setOutSelectedMember(null);
     setOutMemberSearch("");
+    setOfficerSearch("");
     setOutForm({
       fine_type: "General Misconduct (§11-020)",
       description: "",
@@ -98,6 +104,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
       term: getCurrentTerm(),
       date_issued: new Date().toISOString().split("T")[0],
       notes: "",
+      fining_officer: "",
       place_on_soc_pro: false,
     });
     await refresh();
@@ -229,6 +236,64 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
             <div style={{ gridColumn: "span 2" }}>
               <label className="adm-label">Notes</label>
               <input type="text" value={outForm.notes} onChange={(e) => setOutForm({ ...outForm, notes: e.target.value })} placeholder="Additional context…" className="adm-input" />
+            </div>
+
+            <div style={{ position: "relative", gridColumn: "span 2" }}>
+              <label className="adm-label">
+                Fining Officer <span className="adm-req">*</span>
+                {outForm.fining_officer && (
+                  <span style={{ color: "var(--gold)", marginLeft: 6, fontWeight: 600 }}>
+                    {outForm.fining_officer}
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={outForm.fining_officer ? outForm.fining_officer : officerSearch}
+                onChange={(e) => {
+                  setOutForm({ ...outForm, fining_officer: "" });
+                  setOfficerSearch(e.target.value);
+                  setShowOfficerSuggestions(true);
+                }}
+                onFocus={() => { if (!outForm.fining_officer) setShowOfficerSuggestions(true); }}
+                onBlur={() => setTimeout(() => setShowOfficerSuggestions(false), 150)}
+                placeholder="Search member…"
+                autoComplete="off"
+                className="adm-input"
+              />
+              {outForm.fining_officer && (
+                <button
+                  type="button"
+                  onClick={() => { setOutForm({ ...outForm, fining_officer: "" }); setOfficerSearch(""); }}
+                  style={{ position: "absolute", right: 8, top: "50%", background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
+                >×</button>
+              )}
+              {showOfficerSuggestions && officerSearch.trim() && !outForm.fining_officer && (
+                <ul className="adm-suggestions">
+                  {members
+                    .filter((m) =>
+                      (m.status === "active" || m.status === "pledge") &&
+                      m.name.toLowerCase().includes(officerSearch.toLowerCase())
+                    )
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((m) => (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          onMouseDown={() => {
+                            setOutForm({ ...outForm, fining_officer: m.name });
+                            setOfficerSearch("");
+                            setShowOfficerSuggestions(false);
+                          }}
+                          className="adm-suggestion-btn"
+                        >
+                          <span className="adm-suggestion-name">{m.name}</span>
+                          <span className="adm-suggestion-status">{m.status}</span>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              )}
             </div>
 
             <div style={{ gridColumn: "span 2", display: "flex", alignItems: "center", gap: 10 }}>
