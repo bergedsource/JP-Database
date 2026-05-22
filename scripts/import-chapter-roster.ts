@@ -16,8 +16,8 @@ config({ path: '.env.local' });
 
 const CSV_PATH = 'scripts/data/roster.csv';
 const COMMIT = process.argv.includes('--commit');
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 type Row = {
   roll: number;
@@ -28,7 +28,7 @@ type Row = {
   notes: string | null;
 };
 
-type Issue = { roll: number | null; name: string; reason: string };
+type Issue = { roll: number; name: string; reason: string };
 
 function parseDate(raw: string | undefined): string | null {
   if (!raw) return null;
@@ -110,9 +110,12 @@ function validateBigBros(rows: Row[]): { valid: Row[]; brokenLinks: Issue[] } {
 }
 
 async function insertRows(rows: Row[]): Promise<void> {
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
+  }
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  // Idempotent: clear existing rows first.
+  // Idempotent: clear all existing rows first (roll PK is always >= 1, so .gte(0) matches everything).
   console.log('Deleting existing chapter_roster rows...');
   const { error: delErr } = await supabase.from('chapter_roster').delete().gte('roll', 0);
   if (delErr) throw new Error(`Delete failed: ${delErr.message}`);
@@ -121,7 +124,7 @@ async function insertRows(rows: Row[]): Promise<void> {
   const CHUNK = 500;
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
-    console.log(`Inserting rows ${i + 1}–${i + chunk.length} of ${rows.length}...`);
+    console.log(`Inserting rows ${i + 1}-${i + chunk.length} of ${rows.length}...`);
     const { error } = await supabase.from('chapter_roster').insert(chunk);
     if (error) throw new Error(`Insert failed at chunk starting ${i}: ${error.message}`);
   }
@@ -148,10 +151,6 @@ async function main() {
   if (!COMMIT) {
     console.log('\n[DRY RUN] Pass --commit to actually write to the database.');
     return;
-  }
-
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
   }
 
   await insertRows(valid);
