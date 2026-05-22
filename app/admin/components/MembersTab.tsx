@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Fine, Member } from "@/lib/types";
 
 interface MembersTabProps {
@@ -15,7 +15,35 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
     name: "",
     status: "active" as Member["status"],
     roll: "",
+    big_brother_roll: null as number | null,
+    big_brother_name: "" as string,
   });
+  const [bbSearch, setBbSearch] = useState("");
+  const [bbResults, setBbResults] = useState<Array<{ roll: number; name: string; initiation_class: string | null }>>([]);
+  const [showBbSuggestions, setShowBbSuggestions] = useState(false);
+
+  useEffect(() => {
+    const q = bbSearch.trim();
+    if (!q || memberForm.big_brother_roll != null) {
+      setBbResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/roster/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          setBbResults([]);
+          return;
+        }
+        const data = await res.json();
+        setBbResults(Array.isArray(data.results) ? data.results : []);
+      } catch {
+        setBbResults([]);
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [bbSearch, memberForm.big_brother_roll]);
+
   const [memberSubmitting, setMemberSubmitting] = useState(false);
   const [memberError, setMemberError] = useState("");
   const [editingRollId, setEditingRollId] = useState<string | null>(null);
@@ -68,6 +96,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
         name: memberForm.name.trim(),
         status: memberForm.status,
         roll: memberForm.roll,
+        big_brother_roll: memberForm.big_brother_roll,
       }),
     });
 
@@ -75,7 +104,9 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
       const data = await res.json();
       setMemberError(data.error ?? "Failed to add member");
     } else {
-      setMemberForm({ name: "", status: "active", roll: "" });
+      setMemberForm({ name: "", status: "active", roll: "", big_brother_roll: null, big_brother_name: "" });
+      setBbSearch("");
+      setBbResults([]);
       await refresh();
     }
     setMemberSubmitting(false);
@@ -125,6 +156,77 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                 className="adm-input"
                 style={{ width: 120 }}
               />
+            </div>
+            <div style={{ position: "relative", minWidth: 220 }}>
+              <label className="adm-label">Big Brother (optional)</label>
+              {memberForm.big_brother_roll != null ? (
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span
+                    className="adm-input"
+                    style={{ flex: 1, display: "inline-flex", alignItems: "center", paddingRight: 8 }}
+                  >
+                    {memberForm.big_brother_name} <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 12 }}>#{memberForm.big_brother_roll}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMemberForm({ ...memberForm, big_brother_roll: null, big_brother_name: "" });
+                      setBbSearch("");
+                      setBbResults([]);
+                    }}
+                    aria-label="Clear big brother"
+                    title="Clear"
+                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-dim)", padding: 4, fontSize: 16, lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={bbSearch}
+                    onChange={(e) => {
+                      setBbSearch(e.target.value);
+                      setShowBbSuggestions(true);
+                    }}
+                    onFocus={() => setShowBbSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowBbSuggestions(false), 150)}
+                    placeholder="Search roster…"
+                    className="adm-input"
+                    autoComplete="off"
+                    style={{ width: "100%" }}
+                  />
+                  {showBbSuggestions && bbResults.length > 0 && (
+                    <ul className="adm-suggestions">
+                      {bbResults.map((r) => (
+                        <li key={r.roll}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setMemberForm({
+                                ...memberForm,
+                                big_brother_roll: r.roll,
+                                big_brother_name: r.name,
+                              });
+                              setBbSearch("");
+                              setBbResults([]);
+                              setShowBbSuggestions(false);
+                            }}
+                            className="adm-suggestion-btn"
+                          >
+                            <span className="adm-suggestion-name">{r.name}</span>
+                            <span className="adm-suggestion-status">
+                              #{r.roll}{r.initiation_class ? ` · ${r.initiation_class}` : ""}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
             </div>
             <div>
               <label className="adm-label">Status</label>
