@@ -107,3 +107,26 @@ export interface ChapterRosterEntry {
   notes: string | null;
   created_at?: string;
 }
+
+export interface LeaderboardEntry {
+  id: string;
+  username: string;
+  score: number;
+  time_seconds: number;
+  created_at: string;
+}
+
+export type GameQuestionType = "bigbro" | "roll";
+
+export interface GameQuestion {
+  member_name: string;
+  type: GameQuestionType;
+  // For bigbro: 4 options pre-shuffled (correct + 3 distractors). For roll: omitted.
+  options?: Array<{ roll: number; name: string }>;
+  // Roll # of correct big bro (bigbro questions), OR the member's own roll # (roll questions).
+  correct_answer: number;
+}
+
+export interface GameStartResponse {
+  questions: GameQuestion[];
+}
