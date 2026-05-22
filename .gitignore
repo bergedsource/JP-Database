@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Roster CSV — sourced from the master spreadsheet, not version-controlled
+scripts/data/
