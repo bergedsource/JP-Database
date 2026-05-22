@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "A member cannot be their own big brother" }, { status: 400 });
   }
 
+  if (bbRoll != null && parsedRoll == null) {
+    return NextResponse.json({ error: "Roll # is required when setting a big brother" }, { status: 400 });
+  }
+
   const service = createServiceClient();
 
   if (bbRoll != null) {
