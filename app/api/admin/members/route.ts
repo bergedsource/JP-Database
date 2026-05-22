@@ -55,13 +55,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { error } = await service.from("members").insert({
-    name: name.trim(),
-    status,
-    roll: parsedRoll,
-  });
+  const { data: newMember, error } = await service
+    .from("members")
+    .insert({
+      name: name.trim(),
+      status,
+      roll: parsedRoll,
+    })
+    .select("id")
+    .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Member insert failed: ${error.message}` }, { status: 500 });
 
   let rosterAction: "none" | "inserted" | "updated_filled_null" | "updated_overwrote" = "none";
   let rosterOverwriteFrom: number | null = null;
@@ -83,6 +87,7 @@ export async function POST(req: NextRequest) {
         notes: null,
       });
       if (rosterErr) {
+        await service.from("members").delete().eq("id", newMember.id);
         return NextResponse.json({ error: `Roster write failed: ${rosterErr.message}` }, { status: 500 });
       }
       rosterAction = "inserted";
@@ -102,6 +107,7 @@ export async function POST(req: NextRequest) {
           .update({ big_brother_roll: bbRoll })
           .eq("roll", parsedRoll);
         if (rosterErr) {
+          await service.from("members").delete().eq("id", newMember.id);
           return NextResponse.json({ error: `Roster update failed: ${rosterErr.message}` }, { status: 500 });
         }
       }
