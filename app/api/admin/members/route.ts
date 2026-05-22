@@ -38,6 +38,10 @@ export async function POST(req: NextRequest) {
     bbRoll = big_brother_roll;
   }
 
+  if (bbRoll != null && parsedRoll != null && bbRoll === parsedRoll) {
+    return NextResponse.json({ error: "A member cannot be their own big brother" }, { status: 400 });
+  }
+
   const service = createServiceClient();
 
   if (bbRoll != null) {
