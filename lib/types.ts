@@ -97,3 +97,13 @@ export interface JpSessionChange {
   member_name?: string;
   fine_type?: string;
 }
+
+export interface ChapterRosterEntry {
+  roll: number;
+  name: string;
+  initiation_class: string | null;
+  initiation_date: string | null;
+  big_brother_roll: number | null;
+  notes: string | null;
+  created_at?: string;
+}
