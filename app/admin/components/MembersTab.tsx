@@ -18,6 +18,43 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
   });
   const [memberSubmitting, setMemberSubmitting] = useState(false);
   const [memberError, setMemberError] = useState("");
+  const [editingRollId, setEditingRollId] = useState<string | null>(null);
+  const [rollDraft, setRollDraft] = useState("");
+  const [rollSaving, setRollSaving] = useState(false);
+  const [rollError, setRollError] = useState("");
+
+  function startEditRoll(m: Member) {
+    setEditingRollId(m.id);
+    setRollDraft(m.roll != null ? String(m.roll) : "");
+    setRollError("");
+  }
+
+  function cancelEditRoll() {
+    setEditingRollId(null);
+    setRollDraft("");
+    setRollError("");
+  }
+
+  async function saveRoll(id: string) {
+    setRollSaving(true);
+    setRollError("");
+    const trimmed = rollDraft.trim();
+    const parsed = trimmed === "" ? null : parseInt(trimmed, 10);
+    const res = await fetch(`/api/admin/members/${id}/roll`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roll: parsed }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setRollError(data.error ?? "Failed to update Roll #");
+    } else {
+      setEditingRollId(null);
+      setRollDraft("");
+      await refresh();
+    }
+    setRollSaving(false);
+  }
 
   async function submitMember(e: React.FormEvent) {
     e.preventDefault();
@@ -135,7 +172,67 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                   <tr key={m.id}>
                     <td style={{ fontWeight: 500 }}>{m.name}</td>
                     <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: m.roll ? "var(--gold)" : "var(--text-dim)" }}>
-                      {m.roll ?? "—"}
+                      {editingRollId === m.id ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99999}
+                            value={rollDraft}
+                            onChange={(e) => setRollDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); saveRoll(m.id); }
+                              else if (e.key === "Escape") { e.preventDefault(); cancelEditRoll(); }
+                            }}
+                            disabled={rollSaving}
+                            autoFocus
+                            className="adm-input"
+                            style={{ width: 70, padding: "2px 6px", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}
+                            placeholder="—"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => saveRoll(m.id)}
+                            disabled={rollSaving}
+                            aria-label="Save Roll #"
+                            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--gold)", padding: 2, fontSize: 14, lineHeight: 1 }}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditRoll}
+                            disabled={rollSaving}
+                            aria-label="Cancel"
+                            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-dim)", padding: 2, fontSize: 14, lineHeight: 1 }}
+                          >
+                            ✕
+                          </button>
+                          {rollError && (
+                            <span className="adm-error" style={{ fontSize: 11, marginLeft: 4 }}>{rollError}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          {m.roll ?? "—"}
+                          {isPrivileged && (
+                            <button
+                              type="button"
+                              onClick={() => startEditRoll(m)}
+                              aria-label="Edit Roll #"
+                              title="Edit Roll #"
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-dim)", padding: 0, display: "inline-flex", alignItems: "center" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                              </svg>
+                            </button>
+                          )}
+                        </span>
+                      )}
                     </td>
                     <td>
                       {isPrivileged ? (
