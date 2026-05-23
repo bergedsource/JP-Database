@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { Fine, Member } from "@/lib/types";
+import type { Fine, LeaderboardEntry, Member } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string }> = {
   pending:    { bg: "#FEF3C7", color: "#78350F", border: "#F59E0B" },
@@ -29,7 +29,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [venmo, setVenmo] = useState({ handle: "@Dillon-Berge", url: "https://venmo.com/Dillon-Berge" });
   const [gameEnabled, setGameEnabled] = useState(false);
-  const [topThree, setTopThree] = useState<Array<{ id: string; username: string; score: number; time_seconds: number }>>([]);
+  const [topThree, setTopThree] = useState<LeaderboardEntry[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function Home() {
       .then((r) => r.json())
       .then((d) => {
         setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" });
-        const enabled = d.game_enabled === true || d.game_enabled === "true";
+        const enabled = d.game_enabled === "true";
         setGameEnabled(enabled);
         if (enabled) {
           fetch("/api/game/leaderboard")
