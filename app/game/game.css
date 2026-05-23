@@ -1,0 +1,137 @@
+.game-shell {
+  min-height: 100vh;
+  background: var(--bg-base, #0e0e10);
+  color: var(--text-base, #e9e3d6);
+  font-family: 'IBM Plex Mono', monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+}
+
+.game-card {
+  background: var(--surface, #1a1916);
+  border: 1px solid var(--border, #2a2820);
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+.game-title {
+  font-size: 24px;
+  color: var(--gold, #c9a85a);
+  margin: 0 0 12px;
+  letter-spacing: 0.05em;
+}
+
+.game-rules {
+  font-size: 13px;
+  color: var(--text-dim, #9a917f);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.game-input {
+  width: 100%;
+  background: var(--bg-base, #0e0e10);
+  border: 1px solid var(--border, #2a2820);
+  color: var(--text-base, #e9e3d6);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.game-btn {
+  background: var(--gold, #c9a85a);
+  color: var(--bg-base, #0e0e10);
+  border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.game-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.game-btn-ghost {
+  background: transparent;
+  color: var(--text-dim, #9a917f);
+  border: 1px solid var(--border, #2a2820);
+}
+
+.game-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-dim, #9a917f);
+}
+
+.game-question {
+  font-size: 18px;
+  margin: 16px 0 24px;
+  line-height: 1.4;
+}
+.game-question strong { color: var(--gold, #c9a85a); }
+
+.game-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.game-options button {
+  background: var(--bg-base, #0e0e10);
+  border: 1px solid var(--border, #2a2820);
+  color: var(--text-base, #e9e3d6);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  padding: 16px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.game-options button:hover:not(:disabled) {
+  border-color: var(--gold, #c9a85a);
+  background: rgba(201, 168, 90, 0.05);
+}
+.game-options button:disabled { cursor: default; }
+.game-options button.correct {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.15);
+}
+.game-options button.wrong {
+  border-color: #EF4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+@media (max-width: 480px) {
+  .game-options { grid-template-columns: 1fr; }
+}
+
+.game-feedback {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+.game-feedback.correct { background: rgba(16, 185, 129, 0.15); color: #10B981; }
+.game-feedback.wrong { background: rgba(239, 68, 68, 0.15); color: #EF4444; }
+
+.game-leaderboard {
+  margin-top: 24px;
+  font-size: 13px;
+}
+.game-leaderboard h3 { color: var(--gold, #c9a85a); margin: 0 0 8px; font-size: 14px; letter-spacing: 0.05em; }
+.game-leaderboard ol { padding: 0 0 0 24px; margin: 0; }
+.game-leaderboard li { margin: 4px 0; color: var(--text-dim, #9a917f); }
+.game-leaderboard li strong { color: var(--text-base, #e9e3d6); font-weight: 500; }
