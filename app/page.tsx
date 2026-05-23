@@ -28,6 +28,8 @@ export default function Home() {
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(false);
   const [venmo, setVenmo] = useState({ handle: "@Dillon-Berge", url: "https://venmo.com/Dillon-Berge" });
+  const [gameEnabled, setGameEnabled] = useState(false);
+  const [topThree, setTopThree] = useState<Array<{ id: string; username: string; score: number; time_seconds: number }>>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +45,17 @@ export default function Home() {
       .catch(() => {});
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" }))
+      .then((d) => {
+        setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" });
+        const enabled = d.game_enabled === true || d.game_enabled === "true";
+        setGameEnabled(enabled);
+        if (enabled) {
+          fetch("/api/game/leaderboard")
+            .then((r) => r.json())
+            .then((g) => setTopThree(Array.isArray(g.entries) ? g.entries : []))
+            .catch(() => {});
+        }
+      })
       .catch(() => {});
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
@@ -724,6 +736,51 @@ export default function Home() {
                     <p className="empty-text">No fines on record.</p>
                   )}
                 </>
+              )}
+            </div>
+          )}
+
+          {gameEnabled && (
+            <div style={{
+              marginTop: 48,
+              padding: 24,
+              borderTop: "1px solid #2a2820",
+              width: "100%",
+              maxWidth: 640,
+              fontFamily: "'IBM Plex Mono', monospace",
+              color: "#9a917f",
+            }}>
+              <a
+                href="/game"
+                style={{
+                  display: "inline-block",
+                  background: "#c9a85a",
+                  color: "#0e0e10",
+                  padding: "10px 24px",
+                  borderRadius: 4,
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  letterSpacing: "0.05em",
+                }}
+              >
+                🎮 Play Chapter Trivia
+              </a>
+              {topThree.length > 0 && (
+                <div style={{ marginTop: 16, fontSize: 13 }}>
+                  <div style={{ color: "#c9a85a", marginBottom: 6, letterSpacing: "0.05em" }}>TOP 3</div>
+                  <ol style={{ paddingLeft: 24, margin: 0 }}>
+                    {topThree.map((e) => {
+                      const m = Math.floor(e.time_seconds / 60);
+                      const s = e.time_seconds % 60;
+                      return (
+                        <li key={e.id} style={{ margin: "4px 0" }}>
+                          <strong style={{ color: "#e9e3d6", fontWeight: 500 }}>{e.username}</strong> — {e.score} pts in {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
               )}
             </div>
           )}
