@@ -2,8 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import type { GameQuestion, GameStartResponse } from "@/lib/types";
-
-const QUESTIONS_PER_GAME = 25;
+import { QUESTIONS_PER_GAME } from "@/lib/game-constants";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -16,7 +15,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 function yearOf(iso: string | null): number | null {
   if (!iso) return null;
-  const y = parseInt(iso.slice(0, 4));
+  const y = parseInt(iso.slice(0, 4), 10);
   return Number.isFinite(y) ? y : null;
 }
 

@@ -1,11 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
+import { SCORE_CAP } from "@/lib/game-constants";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9 ]{1,16}$/;
-const MAX_QUESTIONS_PER_GAME = 25;
-const MAX_POINTS_PER_QUESTION = 2;
-const SCORE_CAP = MAX_QUESTIONS_PER_GAME * MAX_POINTS_PER_QUESTION;
 
 export async function POST(req: NextRequest) {
   if (await isRateLimited(publicLimiter, getIP(req))) {
@@ -47,6 +45,7 @@ export async function POST(req: NextRequest) {
   const { count, error: rankErr } = await service
     .from("game_leaderboard")
     .select("*", { count: "exact", head: true })
+    // Safe template-string interpolation: both values validated as integers via Number.isInteger above.
     .or(`score.gt.${score},and(score.eq.${score},time_seconds.lt.${time_seconds})`);
   if (rankErr) {
     // Non-fatal — the entry is recorded, we just can't compute rank
