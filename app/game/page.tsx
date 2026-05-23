@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { GameQuestion, LeaderboardEntry } from "@/lib/types";
+import { STARTING_LIVES, FEEDBACK_DELAY_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS } from "@/lib/game-constants";
 import "./game.css";
 
 type GameState = "start" | "playing" | "over";
@@ -43,7 +44,7 @@ export default function GamePage() {
   const [questions, setQuestions] = useState<GameQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(STARTING_LIVES);
   const [startTime, setStartTime] = useState<number>(0);
   const [now, setNow] = useState<number>(0);
   const [feedback, setFeedback] = useState<{ kind: "correct" | "wrong"; text: string } | null>(null);
@@ -66,7 +67,7 @@ export default function GamePage() {
   // Timer interval (1Hz) while playing
   useEffect(() => {
     if (state !== "playing") return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(Date.now()), TIMER_TICK_MS);
     return () => clearInterval(t);
   }, [state]);
 
@@ -93,7 +94,7 @@ export default function GamePage() {
       setQuestions(data.questions);
       setIndex(0);
       setScore(0);
-      setLives(3);
+      setLives(STARTING_LIVES);
       setRollInput("");
       setFeedback(null);
       setLocked(false);
@@ -130,11 +131,11 @@ export default function GamePage() {
     const correct = pickedRoll === q.correct_answer;
     if (correct) {
       setFeedback({ kind: "correct", text: "Correct!" });
-      setTimeout(() => advanceOrEnd(score + 1, lives), 800);
+      setTimeout(() => advanceOrEnd(score + BIGBRO_POINTS, lives), FEEDBACK_DELAY_MS);
     } else {
       const correctName = q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`;
       setFeedback({ kind: "wrong", text: `Wrong! Answer: ${correctName}` });
-      setTimeout(() => advanceOrEnd(score, lives - 1), 800);
+      setTimeout(() => advanceOrEnd(score, lives - 1), FEEDBACK_DELAY_MS);
     }
   }
 
@@ -147,10 +148,10 @@ export default function GamePage() {
     const correct = parsed === q.correct_answer;
     if (correct) {
       setFeedback({ kind: "correct", text: "Correct!" });
-      setTimeout(() => advanceOrEnd(score + 2, lives), 800);
+      setTimeout(() => advanceOrEnd(score + ROLL_POINTS, lives), FEEDBACK_DELAY_MS);
     } else {
       setFeedback({ kind: "wrong", text: `Wrong! Answer: #${q.correct_answer}` });
-      setTimeout(() => advanceOrEnd(score, lives - 1), 800);
+      setTimeout(() => advanceOrEnd(score, lives - 1), FEEDBACK_DELAY_MS);
     }
   }
 
@@ -163,6 +164,7 @@ export default function GamePage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: username.trim(), score, time_seconds: elapsedSec }),
+      signal: AbortSignal.timeout(8000),
     })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
@@ -172,7 +174,13 @@ export default function GamePage() {
         }
         setFinalRank(typeof data.rank === "number" ? data.rank : null);
       })
-      .catch(() => setSubmitErr("Network error saving score"));
+      .catch((err) => {
+        if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+          setSubmitErr("Saving score timed out — try again next round");
+        } else {
+          setSubmitErr("Network error saving score");
+        }
+      });
   }, [state, startTime, score, username]);
 
   // Render: start
@@ -195,8 +203,8 @@ export default function GamePage() {
             autoComplete="off"
             style={{ margin: "4px 0 12px" }}
           />
-          {usernameError && <p style={{ color: "#EF4444", fontSize: 12, margin: "0 0 12px" }}>{usernameError}</p>}
-          {startErr && <p style={{ color: "#EF4444", fontSize: 12, margin: "0 0 12px" }}>{startErr}</p>}
+          {usernameError && <p role="alert" aria-live="polite" style={{ color: "#EF4444", fontSize: 12, margin: "0 0 12px" }}>{usernameError}</p>}
+          {startErr && <p role="alert" aria-live="polite" style={{ color: "#EF4444", fontSize: 12, margin: "0 0 12px" }}>{startErr}</p>}
           <button className="game-btn" onClick={handleStart} disabled={!username.trim()}>
             Start
           </button>
@@ -217,7 +225,7 @@ export default function GamePage() {
       <main className="game-shell">
         <div className="game-header-bar">
           <span>⏱ {formatTime(elapsedSec)}</span>
-          <span>{"💀".repeat(lives)}</span>
+          <span aria-label={`${lives} ${lives === 1 ? "life" : "lives"} remaining`}>{"💀".repeat(lives)}</span>
           <span>SCORE {score}</span>
         </div>
         <div className="game-card">
@@ -252,6 +260,7 @@ export default function GamePage() {
                   onKeyDown={(e) => { if (e.key === "Enter") answerRoll(); }}
                   placeholder="e.g. 1234"
                   disabled={locked}
+                  aria-label="Roll number"
                   autoFocus
                 />
                 <button className="game-btn" onClick={answerRoll} disabled={locked || !rollInput.trim()}>
@@ -260,7 +269,7 @@ export default function GamePage() {
               </div>
             </>
           )}
-          {feedback && <div className={`game-feedback ${feedback.kind}`}>{feedback.text}</div>}
+          {feedback && <div className={`game-feedback ${feedback.kind}`} role="status" aria-live="polite">{feedback.text}</div>}
         </div>
       </main>
     );
@@ -281,7 +290,7 @@ export default function GamePage() {
             🏆 You made #{finalRank} on the leaderboard!
           </p>
         )}
-        {submitErr && <p style={{ color: "#EF4444", fontSize: 12 }}>{submitErr}</p>}
+        {submitErr && <p role="alert" aria-live="polite" style={{ color: "#EF4444", fontSize: 12 }}>{submitErr}</p>}
         <div style={{ display: "flex", gap: 8 }}>
           <button className="game-btn" onClick={() => { setState("start"); setSubmitErr(""); setFinalRank(null); }}>
             Play Again
