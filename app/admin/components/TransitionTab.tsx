@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Fine } from "@/lib/types";
+import type { Fine, LeaderboardEntry } from "@/lib/types";
 
 type Props = {
   fines: Fine[];
@@ -36,9 +36,15 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
   const [showExportHelp, setShowExportHelp] = useState(false);
 
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardClearing, setLeaderboardClearing] = useState(false);
+  const [gameEnabled, setGameEnabled] = useState(false);
+  const [gameEnabledSaving, setGameEnabledSaving] = useState(false);
+
   useEffect(() => {
     loadAdminUsers();
     loadSettings();
+    loadLeaderboard();
   }, []);
 
   async function loadAdminUsers() {
@@ -55,6 +61,15 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       try {
         setExportHistory(data.export_history ? JSON.parse(data.export_history) : []);
       } catch { setExportHistory([]); }
+      setGameEnabled(data.game_enabled === "true");
+    }
+  }
+
+  async function loadLeaderboard() {
+    const res = await fetch("/api/game/leaderboard");
+    if (res.ok) {
+      const data = await res.json();
+      setLeaderboardEntries(Array.isArray(data.entries) ? data.entries : []);
     }
   }
 
@@ -144,6 +159,31 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       setExportResult({ ok: false, msg: data.error ?? "Export failed" });
     }
     setExportLoading(false);
+  }
+
+  async function toggleGameEnabled(next: boolean) {
+    setGameEnabledSaving(true);
+    const res = await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "game_enabled", value: next ? "true" : "false" }),
+    });
+    if (res.ok) setGameEnabled(next);
+    setGameEnabledSaving(false);
+  }
+
+  async function clearLeaderboard() {
+    if (!confirm("Delete ALL leaderboard entries? This cannot be undone.")) return;
+    setLeaderboardClearing(true);
+    const res = await fetch("/api/admin/leaderboard", { method: "DELETE" });
+    if (res.ok) await loadLeaderboard();
+    setLeaderboardClearing(false);
+  }
+
+  async function deleteLeaderboardEntry(id: string, username: string) {
+    if (!confirm(`Remove ${username}'s entry?`)) return;
+    const res = await fetch(`/api/admin/leaderboard/${id}`, { method: "DELETE" });
+    if (res.ok) await loadLeaderboard();
   }
 
   return (
@@ -463,6 +503,72 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               {defaultSheetSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace" }}>Saved ✓</span>}
             </div>
           </form>
+        </div>
+      </div>
+
+      <div className="adm-card">
+        <div className="adm-card-header">
+          <span className="adm-card-title">Chapter Trivia Game</span>
+        </div>
+        <div className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={gameEnabled}
+                onChange={(e) => toggleGameEnabled(e.target.checked)}
+                disabled={gameEnabledSaving}
+              />
+              <span style={{ fontSize: 13 }}>Game enabled (public site shows Play button + leaderboard)</span>
+            </label>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
+              Top 3 Leaderboard
+            </div>
+            {leaderboardEntries.length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--text-dim)", margin: 0 }}>No entries yet.</p>
+            ) : (
+              <table className="adm-table" style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Score</th>
+                    <th>Time</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboardEntries.map((e) => {
+                    const m = Math.floor(e.time_seconds / 60);
+                    const s = e.time_seconds % 60;
+                    return (
+                      <tr key={e.id}>
+                        <td>{e.username}</td>
+                        <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
+                        <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <button className="adm-delete-btn" onClick={() => deleteLeaderboardEntry(e.id, e.username)}>Remove</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div>
+            <button
+              onClick={clearLeaderboard}
+              disabled={leaderboardClearing || leaderboardEntries.length === 0}
+              className="adm-btn"
+              style={{ background: "#7F1D1D", color: "#FEE2E2" }}
+            >
+              {leaderboardClearing ? "Clearing…" : "Clear All Entries"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
