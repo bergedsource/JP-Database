@@ -43,9 +43,11 @@ export async function GET(req: NextRequest) {
   }
 
   // Pull the full roster once (small table, ~1400 rows; cheaper than per-question lookups)
+  // chapter_roster has 1386+ rows — override Supabase's default 1000-row cap
   const { data: roster, error: rErr } = await service
     .from("chapter_roster")
-    .select("roll, name, initiation_date, big_brother_roll");
+    .select("roll, name, initiation_date, big_brother_roll")
+    .limit(5000);
   if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
   if (!roster || roster.length === 0) {
     return NextResponse.json({ error: "Roster is empty" }, { status: 500 });
