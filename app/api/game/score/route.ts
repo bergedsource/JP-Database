@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
+import { gameDisabledResponse } from "@/lib/game-gate";
 import { NextRequest, NextResponse } from "next/server";
 import { SCORE_CAP } from "@/lib/game-constants";
 
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
   if (await isRateLimited(publicLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
+
+  const denied = await gameDisabledResponse();
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });

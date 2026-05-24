@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
+import { gameDisabledResponse } from "@/lib/game-gate";
 import { NextRequest, NextResponse } from "next/server";
 import type { GameQuestion, GameStartResponse } from "@/lib/types";
 import { QUESTIONS_PER_GAME } from "@/lib/game-constants";
@@ -24,17 +25,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const service = createServiceClient();
+  const denied = await gameDisabledResponse();
+  if (denied) return denied;
 
-  // Gate on game_enabled
-  const { data: gameEnabled } = await service
-    .from("settings")
-    .select("value")
-    .eq("key", "game_enabled")
-    .maybeSingle();
-  if (gameEnabled?.value !== "true") {
-    return NextResponse.json({ error: "Game is not currently enabled" }, { status: 403 });
-  }
+  const service = createServiceClient();
 
   // Active members only (Dillon's direction, deviation from spec line 167). Big bros are pulled from
   // chapter_roster regardless of current status — only the question SUBJECT must be active.

@@ -66,7 +66,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   }
 
   async function loadLeaderboard() {
-    const res = await fetch("/api/game/leaderboard");
+    const res = await fetch("/api/admin/leaderboard");
     if (res.ok) {
       const data = await res.json();
       setLeaderboardEntries(Array.isArray(data.entries) ? data.entries : []);

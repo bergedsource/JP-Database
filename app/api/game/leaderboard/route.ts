@@ -1,11 +1,15 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
+import { gameDisabledResponse } from "@/lib/game-gate";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   if (await isRateLimited(publicLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
+
+  const denied = await gameDisabledResponse();
+  if (denied) return denied;
 
   const service = createServiceClient();
   const { data, error } = await service

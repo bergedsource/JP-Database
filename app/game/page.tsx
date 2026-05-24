@@ -49,6 +49,7 @@ export default function GamePage() {
   const [now, setNow] = useState<number>(0);
   const [feedback, setFeedback] = useState<{ kind: "correct" | "wrong"; text: string } | null>(null);
   const [locked, setLocked] = useState(false);
+  const [pickedRoll, setPickedRoll] = useState<number | null>(null);
   const [rollInput, setRollInput] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [finalRank, setFinalRank] = useState<number | null>(null);
@@ -98,6 +99,7 @@ export default function GamePage() {
       setRollInput("");
       setFeedback(null);
       setLocked(false);
+      setPickedRoll(null);
       submitRef.current = false;
       const t = Date.now();
       setStartTime(t);
@@ -122,13 +124,15 @@ export default function GamePage() {
     setRollInput("");
     setFeedback(null);
     setLocked(false);
+    setPickedRoll(null);
   }
 
-  function answerBigbro(pickedRoll: number) {
+  function answerBigbro(picked: number) {
     if (locked) return;
     const q = questions[index];
     setLocked(true);
-    const correct = pickedRoll === q.correct_answer;
+    setPickedRoll(picked);
+    const correct = picked === q.correct_answer;
     if (correct) {
       setFeedback({ kind: "correct", text: "Correct!" });
       setTimeout(() => advanceOrEnd(score + BIGBRO_POINTS, lives), FEEDBACK_DELAY_MS);
@@ -239,7 +243,8 @@ export default function GamePage() {
                 {q.options?.map((o) => {
                   const showResult = locked;
                   const isCorrect = o.roll === q.correct_answer;
-                  const cls = showResult && isCorrect ? "correct" : "";
+                  const isPickedWrong = showResult && o.roll === pickedRoll && !isCorrect;
+                  const cls = showResult && isCorrect ? "correct" : isPickedWrong ? "wrong" : "";
                   return (
                     <button key={o.roll} onClick={() => answerBigbro(o.roll)} disabled={locked} className={cls}>
                       {o.name}
