@@ -35,14 +35,18 @@
 
 .game-input {
   width: 100%;
-  background: var(--bg-base, #0e0e10);
-  border: 1px solid var(--border, #2a2820);
-  color: var(--text-base, #e9e3d6);
+  background: #0e0e10;
+  border: 1px solid #2a2820;
+  color: #e9e3d6;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 14px;
   padding: 10px 12px;
   border-radius: 4px;
   box-sizing: border-box;
+}
+.game-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px #0e0e10 inset;
+  -webkit-text-fill-color: #e9e3d6;
 }
 
 .game-btn {
@@ -74,6 +78,14 @@
   margin-bottom: 16px;
   font-size: 13px;
   color: var(--text-dim, #9a917f);
+}
+
+.game-question-timer {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  transition: color 0.2s;
 }
 
 .game-question {

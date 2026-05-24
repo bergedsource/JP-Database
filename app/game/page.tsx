@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { GameQuestion, LeaderboardEntry } from "@/lib/types";
-import { STARTING_LIVES, FEEDBACK_DELAY_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS } from "@/lib/game-constants";
+import { STARTING_LIVES, FEEDBACK_DELAY_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_S } from "@/lib/game-constants";
 import "./game.css";
 
 type GameState = "start" | "playing" | "over";
@@ -50,6 +50,7 @@ export default function GamePage() {
   const [feedback, setFeedback] = useState<{ kind: "correct" | "wrong"; text: string } | null>(null);
   const [locked, setLocked] = useState(false);
   const [pickedRoll, setPickedRoll] = useState<number | null>(null);
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(QUESTION_TIME_LIMIT_S);
   const [rollInput, setRollInput] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [finalRank, setFinalRank] = useState<number | null>(null);
@@ -71,6 +72,32 @@ export default function GamePage() {
     const t = setInterval(() => setNow(Date.now()), TIMER_TICK_MS);
     return () => clearInterval(t);
   }, [state]);
+
+  // Reset per-question countdown when a new question starts
+  useEffect(() => {
+    if (state === "playing") setQuestionTimeLeft(QUESTION_TIME_LIMIT_S);
+  }, [index, state]);
+
+  // Count down once per second while question is unanswered
+  useEffect(() => {
+    if (state !== "playing" || locked) return;
+    const t = setInterval(() => setQuestionTimeLeft((prev) => Math.max(0, prev - 1)), TIMER_TICK_MS);
+    return () => clearInterval(t);
+  }, [state, locked, index]);
+
+  // Auto-fail when countdown hits 0
+  useEffect(() => {
+    if (questionTimeLeft !== 0 || state !== "playing" || locked) return;
+    const q = questions[index];
+    setLocked(true);
+    const correctText =
+      q.type === "bigbro"
+        ? `Time's up! Answer: ${q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`}`
+        : `Time's up! Answer: #${q.correct_answer}`;
+    setFeedback({ kind: "wrong", text: correctText });
+    const timer = setTimeout(() => advanceOrEnd(score, lives - 1), FEEDBACK_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [questionTimeLeft, state, locked]);
 
   async function handleStart() {
     setUsernameError("");
@@ -100,6 +127,7 @@ export default function GamePage() {
       setFeedback(null);
       setLocked(false);
       setPickedRoll(null);
+      setQuestionTimeLeft(QUESTION_TIME_LIMIT_S);
       submitRef.current = false;
       const t = Date.now();
       setStartTime(t);
@@ -233,8 +261,15 @@ export default function GamePage() {
           <span>SCORE {score}</span>
         </div>
         <div className="game-card">
-          <div style={{ fontSize: 12, color: "var(--text-dim, #9a917f)" }}>
-            Question {index + 1} of {questions.length}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#9a917f" }}>
+            <span>Question {index + 1} of {questions.length}</span>
+            <span
+              className="game-question-timer"
+              style={{ color: questionTimeLeft <= 2 ? "#EF4444" : "#9a917f" }}
+              aria-label={`${questionTimeLeft} seconds remaining`}
+            >
+              {questionTimeLeft}s
+            </span>
           </div>
           {q.type === "bigbro" ? (
             <>
