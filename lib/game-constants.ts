@@ -1,10 +1,11 @@
 // Single source of truth for game tuning constants. Edit here, not at call sites.
-export const QUESTIONS_PER_GAME = 25;
-export const MAX_POINTS_PER_QUESTION = 2;
-export const SCORE_CAP = QUESTIONS_PER_GAME * MAX_POINTS_PER_QUESTION;
+// Server-side anti-abuse upper bound for /api/game/score. Generous enough to fit any
+// plausible chapter size: 1pt bigbro + 2pt roll per member, ~600+ members capacity.
+export const MAX_POSSIBLE_SCORE = 2000;
 
 // Game-page tuning constants.
-export const QUESTION_TIME_LIMIT_S = 5;
+export const QUESTION_TIME_LIMIT_MS = 7500;
+export const QUESTION_TICK_MS = 10;
 export const STARTING_LIVES = 3;
 export const FEEDBACK_DELAY_MS = 800;
 export const TIMER_TICK_MS = 1000;

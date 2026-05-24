@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 import { gameDisabledResponse } from "@/lib/game-gate";
 import { NextRequest, NextResponse } from "next/server";
-import { SCORE_CAP } from "@/lib/game-constants";
+import { MAX_POSSIBLE_SCORE } from "@/lib/game-constants";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9 ]{1,16}$/;
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!USERNAME_PATTERN.test(username)) {
     return NextResponse.json({ error: "Invalid username (1-16 chars, letters/digits/spaces only)" }, { status: 400 });
   }
-  if (!Number.isInteger(score) || score < 0 || score > SCORE_CAP) {
+  if (!Number.isInteger(score) || score < 0 || score > MAX_POSSIBLE_SCORE) {
     return NextResponse.json({ error: "Invalid score" }, { status: 400 });
   }
   if (!Number.isInteger(time_seconds) || time_seconds < 0) {

@@ -129,4 +129,5 @@ export interface GameQuestion {
 
 export interface GameStartResponse {
   questions: GameQuestion[];
+  is_creator?: boolean;
 }

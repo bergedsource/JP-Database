@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { GameQuestion, LeaderboardEntry } from "@/lib/types";
-import { STARTING_LIVES, FEEDBACK_DELAY_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_S } from "@/lib/game-constants";
+import { STARTING_LIVES, FEEDBACK_DELAY_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS } from "@/lib/game-constants";
 import "./game.css";
 
 type GameState = "start" | "playing" | "over";
@@ -50,12 +50,14 @@ export default function GamePage() {
   const [feedback, setFeedback] = useState<{ kind: "correct" | "wrong"; text: string } | null>(null);
   const [locked, setLocked] = useState(false);
   const [pickedRoll, setPickedRoll] = useState<number | null>(null);
-  const [questionTimeLeft, setQuestionTimeLeft] = useState(QUESTION_TIME_LIMIT_S);
+  const [questionMsLeft, setQuestionMsLeft] = useState(QUESTION_TIME_LIMIT_MS);
+  const [questionDeadline, setQuestionDeadline] = useState<number>(0);
   const [rollInput, setRollInput] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [finalRank, setFinalRank] = useState<number | null>(null);
   const [submitErr, setSubmitErr] = useState("");
   const [startErr, setStartErr] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
   const submitRef = useRef(false);
   const autoFailFiredRef = useRef(false);
 
@@ -74,26 +76,29 @@ export default function GamePage() {
     return () => clearInterval(t);
   }, [state]);
 
-  // Reset per-question countdown and auto-fail guard when a new question starts
+  // Reset per-question countdown and auto-fail guard when a new question starts.
+  // Deadline is wall-clock so drift in setInterval cannot affect displayed accuracy.
   useEffect(() => {
     if (state === "playing") {
-      setQuestionTimeLeft(QUESTION_TIME_LIMIT_S);
+      setQuestionDeadline(Date.now() + QUESTION_TIME_LIMIT_MS);
+      setQuestionMsLeft(QUESTION_TIME_LIMIT_MS);
       autoFailFiredRef.current = false;
     }
   }, [index, state]);
 
-  // Count down once per second while question is unanswered
+  // Recompute remaining time from the deadline at ~100Hz while the question is unanswered.
   useEffect(() => {
     if (state !== "playing" || locked) return;
-    const t = setInterval(() => setQuestionTimeLeft((prev) => Math.max(0, prev - 1)), TIMER_TICK_MS);
+    const t = setInterval(() => setQuestionMsLeft(Math.max(0, questionDeadline - Date.now())), QUESTION_TICK_MS);
     return () => clearInterval(t);
-  }, [state, locked, index]);
+  }, [state, locked, questionDeadline]);
 
   // Auto-fail when countdown hits 0.
   // No cleanup return: the setTimeout must not be cancelled when setLocked(true) re-triggers this effect.
   // autoFailFiredRef guards against double-firing on the same question.
   useEffect(() => {
-    if (questionTimeLeft !== 0 || state !== "playing" || locked || autoFailFiredRef.current) return;
+    if (isCreator) return; // creator test mode: timer never auto-fails
+    if (questionMsLeft > 0 || state !== "playing" || locked || autoFailFiredRef.current) return;
     autoFailFiredRef.current = true;
     const q = questions[index];
     const capturedScore = score;
@@ -105,7 +110,7 @@ export default function GamePage() {
         : `Time's up! Answer: #${q.correct_answer}`;
     setFeedback({ kind: "wrong", text: correctText });
     setTimeout(() => advanceOrEnd(capturedScore, capturedLives - 1), FEEDBACK_DELAY_MS);
-  }, [questionTimeLeft, state, locked]);
+  }, [questionMsLeft, state, locked, isCreator]);
 
   async function handleStart() {
     setUsernameError("");
@@ -128,6 +133,7 @@ export default function GamePage() {
         return;
       }
       setQuestions(data.questions);
+      setIsCreator(data.is_creator === true);
       setIndex(0);
       setScore(0);
       setLives(STARTING_LIVES);
@@ -135,7 +141,7 @@ export default function GamePage() {
       setFeedback(null);
       setLocked(false);
       setPickedRoll(null);
-      setQuestionTimeLeft(QUESTION_TIME_LIMIT_S);
+      setQuestionMsLeft(QUESTION_TIME_LIMIT_MS);
       submitRef.current = false;
       const t = Date.now();
       setStartTime(t);
@@ -175,7 +181,7 @@ export default function GamePage() {
     } else {
       const correctName = q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`;
       setFeedback({ kind: "wrong", text: `Wrong! Answer: ${correctName}` });
-      setTimeout(() => advanceOrEnd(score, lives - 1), FEEDBACK_DELAY_MS);
+      setTimeout(() => advanceOrEnd(score, isCreator ? lives : lives - 1), FEEDBACK_DELAY_MS);
     }
   }
 
@@ -191,14 +197,15 @@ export default function GamePage() {
       setTimeout(() => advanceOrEnd(score + ROLL_POINTS, lives), FEEDBACK_DELAY_MS);
     } else {
       setFeedback({ kind: "wrong", text: `Wrong! Answer: #${q.correct_answer}` });
-      setTimeout(() => advanceOrEnd(score, lives - 1), FEEDBACK_DELAY_MS);
+      setTimeout(() => advanceOrEnd(score, isCreator ? lives : lives - 1), FEEDBACK_DELAY_MS);
     }
   }
 
-  // Submit score on entering 'over' (once)
+  // Submit score on entering 'over' (once). Creator test runs do not pollute the leaderboard.
   useEffect(() => {
     if (state !== "over" || submitRef.current) return;
     submitRef.current = true;
+    if (isCreator) return;
     const elapsedSec = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
     fetch("/api/game/score", {
       method: "POST",
@@ -265,18 +272,21 @@ export default function GamePage() {
       <main className="game-shell">
         <div className="game-header-bar">
           <span>⏱ {formatTime(elapsedSec)}</span>
-          <span aria-label={`${lives} ${lives === 1 ? "life" : "lives"} remaining`}>{"💀".repeat(lives)}</span>
+          <span aria-label={isCreator ? "test mode, unlimited lives" : `${lives} ${lives === 1 ? "life" : "lives"} remaining`}>
+            {isCreator ? "∞" : "💀".repeat(lives)}
+          </span>
           <span>SCORE {score}</span>
+          {isCreator && <span className="game-test-badge" aria-label="creator test mode">TEST</span>}
         </div>
         <div className="game-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#9a917f" }}>
             <span>Question {index + 1} of {questions.length}</span>
             <span
               className="game-question-timer"
-              style={{ color: questionTimeLeft <= 2 ? "#EF4444" : "#9a917f" }}
-              aria-label={`${questionTimeLeft} seconds remaining`}
+              style={{ color: isCreator ? "#9a917f" : questionMsLeft <= 2000 ? "#EF4444" : "#9a917f" }}
+              aria-label={isCreator ? "unlimited time" : `${Math.ceil(questionMsLeft / 1000)} seconds remaining`}
             >
-              {questionTimeLeft}s
+              {isCreator ? "∞" : `${(questionMsLeft / 1000).toFixed(2)}s`}
             </span>
           </div>
           {q.type === "bigbro" ? (

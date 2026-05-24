@@ -1,9 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 import { gameDisabledResponse } from "@/lib/game-gate";
+import { getCurrentRole } from "@/lib/admin-auth";
 import { NextRequest, NextResponse } from "next/server";
 import type { GameQuestion, GameStartResponse } from "@/lib/types";
-import { QUESTIONS_PER_GAME } from "@/lib/game-constants";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -30,12 +30,11 @@ export async function GET(req: NextRequest) {
 
   const service = createServiceClient();
 
-  // Active members only (Dillon's direction, deviation from spec line 167). Big bros are pulled from
-  // chapter_roster regardless of current status — only the question SUBJECT must be active.
+  // Any member with a roll # is fair game — active, alumni, inactive, live-out, resident-advisor.
+  // Pledges naturally drop out because they don't have rolls until initiation.
   const { data: members, error: mErr } = await service
     .from("members")
     .select("name, roll")
-    .eq("status", "active")
     .not("roll", "is", null);
   if (mErr) return NextResponse.json({ error: mErr.message }, { status: 500 });
   if (!members || members.length === 0) {
@@ -121,8 +120,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No questions could be built from the current data" }, { status: 500 });
   }
 
-  const questions = shuffle(pool).slice(0, QUESTIONS_PER_GAME);
-  const response: GameStartResponse = { questions };
+  // Full pool — every member's every applicable question, randomized order.
+  const questions = shuffle(pool);
+
+  // Creator-only test mode: infinite lives + timer bypass on the client.
+  // getCurrentRole returns null for unauthenticated callers — fast path, no role table lookup.
+  const current = await getCurrentRole();
+  const is_creator = current?.role === "root";
+
+  const response: GameStartResponse = { questions, is_creator };
 
   return NextResponse.json(response);
 }
