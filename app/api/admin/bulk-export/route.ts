@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     `${f.fine_type} — ${f.description}`,
     f.amount != null ? `$${Number(f.amount).toFixed(2)}` : "",
     f.fining_officer ?? "",
-    ["upheld", "paid", "labor"].includes(f.status) ? "TRUE" : "FALSE",
+    ["upheld", "paid", "labor", "added_to_dues"].includes(f.status) ? "TRUE" : "FALSE",
     new Date(f.date_issued).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     "", // Budget — manual
     extractBylaw(f.fine_type),

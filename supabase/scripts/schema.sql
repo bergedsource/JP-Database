@@ -15,7 +15,7 @@ create table public.fines (
   fine_type text not null,
   description text not null,
   amount numeric(8, 2),
-  status text not null default 'pending' check (status in ('pending', 'upheld', 'dismissed', 'paid', 'labor')),
+  status text not null default 'pending' check (status in ('pending', 'upheld', 'dismissed', 'paid', 'labor', 'overturned', 'added_to_dues')),
   term text not null,
   date_issued date not null,
   date_resolved date,

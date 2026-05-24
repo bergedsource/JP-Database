@@ -10,6 +10,7 @@ const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string 
   overturned: { bg: "#FFEDD5", color: "#7C2D12", border: "#F97316" },
   paid:       { bg: "#DBEAFE", color: "#1E3A5F", border: "#3B82F6" },
   labor:      { bg: "#EDE9FE", color: "#4C1D95", border: "#8B5CF6" },
+  added_to_dues: { bg: "#CCFBF1", color: "#134E4A", border: "#14B8A6" },
 };
 
 function AcaciaCrest() {
@@ -89,7 +90,7 @@ export default function Home() {
   }
 
   const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
-  const pastFines = fines.filter((f) => ["dismissed", "overturned", "paid", "labor"].includes(f.status));
+  const pastFines = fines.filter((f) => ["dismissed", "overturned", "paid", "labor", "added_to_dues"].includes(f.status));
   const totalOwed = currentFines
     .filter((f) => f.status === "upheld" && f.amount)
     .reduce((sum, f) => sum + (f.amount ?? 0), 0);
@@ -813,7 +814,7 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
                   className="status-badge"
                   style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}
                 >
-                  {fine.status}
+                  {fine.status.replace(/_/g, " ")}
                 </span>
                 {fine.amount != null && (
                   <p className="fine-amount">${fine.amount.toFixed(2)}</p>

@@ -9,6 +9,7 @@ const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: str
   overturned: { bg: "rgba(251,146,60,0.1)",   color: "#FB923C", border: "rgba(251,146,60,0.3)" },
   dismissed:  { bg: "rgba(52,211,153,0.1)",   color: "#34D399", border: "rgba(52,211,153,0.3)" },
   paid:       { bg: "rgba(96,165,250,0.1)",   color: "#60A5FA", border: "rgba(96,165,250,0.3)" },
+  added_to_dues: { bg: "rgba(45,212,191,0.1)", color: "#5EEAD4", border: "rgba(45,212,191,0.3)" },
   labor:      { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
 };
 
@@ -244,7 +245,7 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
                           <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
-                            {fine.status}
+                            {fine.status.replace(/_/g, " ")}
                           </span>
                           {isPrivileged ? (
                             <select
@@ -259,9 +260,10 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
                               <option value="overturned">Overturned</option>
                               <option value="paid">Paid</option>
                               <option value="labor">Labor</option>
+                              <option value="added_to_dues">Added to Dues</option>
                             </select>
                           ) : (
-                            <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status}</span>
+                            <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status.replace(/_/g, " ")}</span>
                           )}
                         </div>
                       </div>

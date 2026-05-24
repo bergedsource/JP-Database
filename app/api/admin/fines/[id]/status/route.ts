@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { exportFineToSheets } from "@/lib/export-to-sheets";
 import { NextRequest, NextResponse } from "next/server";
 
-const VALID_STATUSES = ["pending", "upheld", "dismissed", "overturned", "paid", "labor"];
+const VALID_STATUSES = ["pending", "upheld", "dismissed", "overturned", "paid", "labor", "added_to_dues"];
 
 export async function PUT(
   req: NextRequest,
@@ -24,7 +24,7 @@ export async function PUT(
 
   const service = createServiceClient();
 
-  const dateResolved = ["paid", "dismissed", "labor"].includes(status)
+  const dateResolved = ["paid", "dismissed", "labor", "added_to_dues"].includes(status)
     ? new Date().toISOString().split("T")[0]
     : null;
 

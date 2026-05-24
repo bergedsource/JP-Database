@@ -19,7 +19,7 @@ export async function POST(
     return NextResponse.json({ error: "fine_id and new_status are required" }, { status: 400 });
   }
 
-  const VALID_STATUSES = ["pending", "upheld", "dismissed", "paid", "labor", "overturned"];
+  const VALID_STATUSES = ["pending", "upheld", "dismissed", "paid", "labor", "overturned", "added_to_dues"];
   if (!VALID_STATUSES.includes(new_status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
