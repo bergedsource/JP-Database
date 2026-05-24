@@ -57,6 +57,7 @@ export default function GamePage() {
   const [submitErr, setSubmitErr] = useState("");
   const [startErr, setStartErr] = useState("");
   const submitRef = useRef(false);
+  const autoFailFiredRef = useRef(false);
 
   // Load top-3 on mount and after game-over
   useEffect(() => {
@@ -73,9 +74,12 @@ export default function GamePage() {
     return () => clearInterval(t);
   }, [state]);
 
-  // Reset per-question countdown when a new question starts
+  // Reset per-question countdown and auto-fail guard when a new question starts
   useEffect(() => {
-    if (state === "playing") setQuestionTimeLeft(QUESTION_TIME_LIMIT_S);
+    if (state === "playing") {
+      setQuestionTimeLeft(QUESTION_TIME_LIMIT_S);
+      autoFailFiredRef.current = false;
+    }
   }, [index, state]);
 
   // Count down once per second while question is unanswered
@@ -85,18 +89,22 @@ export default function GamePage() {
     return () => clearInterval(t);
   }, [state, locked, index]);
 
-  // Auto-fail when countdown hits 0
+  // Auto-fail when countdown hits 0.
+  // No cleanup return: the setTimeout must not be cancelled when setLocked(true) re-triggers this effect.
+  // autoFailFiredRef guards against double-firing on the same question.
   useEffect(() => {
-    if (questionTimeLeft !== 0 || state !== "playing" || locked) return;
+    if (questionTimeLeft !== 0 || state !== "playing" || locked || autoFailFiredRef.current) return;
+    autoFailFiredRef.current = true;
     const q = questions[index];
+    const capturedScore = score;
+    const capturedLives = lives;
     setLocked(true);
     const correctText =
       q.type === "bigbro"
         ? `Time's up! Answer: ${q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`}`
         : `Time's up! Answer: #${q.correct_answer}`;
     setFeedback({ kind: "wrong", text: correctText });
-    const timer = setTimeout(() => advanceOrEnd(score, lives - 1), FEEDBACK_DELAY_MS);
-    return () => clearTimeout(timer);
+    setTimeout(() => advanceOrEnd(capturedScore, capturedLives - 1), FEEDBACK_DELAY_MS);
   }, [questionTimeLeft, state, locked]);
 
   async function handleStart() {
