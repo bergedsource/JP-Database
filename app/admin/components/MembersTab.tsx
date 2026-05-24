@@ -21,6 +21,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
   const [bbSearch, setBbSearch] = useState("");
   const [bbResults, setBbResults] = useState<Array<{ roll: number; name: string; initiation_class: string | null }>>([]);
   const [showBbSuggestions, setShowBbSuggestions] = useState(false);
+  const [rosterMap, setRosterMap] = useState<Map<number, { name: string; big_brother_roll: number | null }>>(new Map());
 
   useEffect(() => {
     const q = bbSearch.trim();
@@ -43,6 +44,19 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
     }, 150);
     return () => clearTimeout(t);
   }, [bbSearch, memberForm.big_brother_roll]);
+
+  useEffect(() => {
+    fetch("/api/admin/roster")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.entries)) {
+          setRosterMap(
+            new Map(d.entries.map((e: { roll: number; name: string; big_brother_roll: number | null }) => [e.roll, { name: e.name, big_brother_roll: e.big_brother_roll }]))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [memberSubmitting, setMemberSubmitting] = useState(false);
   const [memberError, setMemberError] = useState("");
@@ -261,6 +275,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
               <tr>
                 <th>Name</th>
                 <th>Roll #</th>
+                <th>Big Bro</th>
                 <th>Status</th>
                 <th>Fines</th>
                 <th />
@@ -335,6 +350,15 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                           )}
                         </span>
                       )}
+                    </td>
+                    <td style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                      {(() => {
+                        const rosterEntry = m.roll != null ? rosterMap.get(m.roll) : null;
+                        const bbRoll = rosterEntry?.big_brother_roll;
+                        if (!bbRoll) return "—";
+                        const bbEntry = rosterMap.get(bbRoll);
+                        return bbEntry ? <span>{bbEntry.name} <span style={{ color: "var(--gold)", marginLeft: 4 }}>#{bbRoll}</span></span> : <span style={{ color: "var(--gold)" }}>#{bbRoll}</span>;
+                      })()}
                     </td>
                     <td>
                       {isPrivileged ? (
