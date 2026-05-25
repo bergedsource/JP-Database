@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { syncMasterRoster } from "@/lib/sync-roster";
 
 async function sendEmail(to: string[], subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) return;
@@ -211,5 +212,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, escalated: overdue?.length ?? 0 });
+  // --- Daily: Master roster sync ---
+  let rosterSyncResult: { rosterAdded: number; rosterUpdated: number; membersAdded: number } | null = null;
+  try {
+    const result = await syncMasterRoster({ service, dryRun: false });
+    rosterSyncResult = {
+      rosterAdded: result.rosterAdded,
+      rosterUpdated: result.rosterUpdated,
+      membersAdded: result.membersAdded.length,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await service.from("audit_logs").insert({
+      admin_email: "system",
+      action: "Master Roster Sync — FAILED",
+      details: msg.slice(0, 500),
+    });
+  }
+
+  return NextResponse.json({ ok: true, escalated: overdue?.length ?? 0, rosterSync: rosterSyncResult });
 }
