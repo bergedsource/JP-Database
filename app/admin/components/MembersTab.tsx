@@ -65,6 +65,95 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
   const [rollSaving, setRollSaving] = useState(false);
   const [rollError, setRollError] = useState("");
 
+  const [editingBbId, setEditingBbId] = useState<string | null>(null);
+  const [bbEditSearch, setBbEditSearch] = useState("");
+  const [bbEditPickRoll, setBbEditPickRoll] = useState<number | null>(null);
+  const [bbEditPickName, setBbEditPickName] = useState("");
+  const [bbEditResults, setBbEditResults] = useState<Array<{ roll: number; name: string; initiation_class: string | null }>>([]);
+  const [showBbEditSuggestions, setShowBbEditSuggestions] = useState(false);
+  const [bbEditSaving, setBbEditSaving] = useState(false);
+  const [bbEditError, setBbEditError] = useState("");
+
+  useEffect(() => {
+    if (editingBbId == null) return;
+    const q = bbEditSearch.trim();
+    if (!q || bbEditPickRoll != null) {
+      setBbEditResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/roster/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          setBbEditResults([]);
+          return;
+        }
+        const data = await res.json();
+        setBbEditResults(Array.isArray(data.results) ? data.results : []);
+      } catch {
+        setBbEditResults([]);
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [bbEditSearch, bbEditPickRoll, editingBbId]);
+
+  function startEditBb(m: Member) {
+    setEditingBbId(m.id);
+    const rosterEntry = m.roll != null ? rosterMap.get(m.roll) : null;
+    const currentBbRoll = rosterEntry?.big_brother_roll ?? null;
+    if (currentBbRoll != null) {
+      const bbEntry = rosterMap.get(currentBbRoll);
+      setBbEditPickRoll(currentBbRoll);
+      setBbEditPickName(bbEntry?.name ?? "");
+    } else {
+      setBbEditPickRoll(null);
+      setBbEditPickName("");
+    }
+    setBbEditSearch("");
+    setBbEditResults([]);
+    setBbEditError("");
+  }
+
+  function cancelEditBb() {
+    setEditingBbId(null);
+    setBbEditSearch("");
+    setBbEditPickRoll(null);
+    setBbEditPickName("");
+    setBbEditResults([]);
+    setBbEditError("");
+  }
+
+  async function refreshRosterMap() {
+    try {
+      const r = await fetch("/api/admin/roster");
+      const d = await r.json();
+      if (Array.isArray(d.entries)) {
+        setRosterMap(
+          new Map(d.entries.map((e: { roll: number; name: string; big_brother_roll: number | null }) => [e.roll, { name: e.name, big_brother_roll: e.big_brother_roll }]))
+        );
+      }
+    } catch {}
+  }
+
+  async function saveBb(memberId: string) {
+    setBbEditSaving(true);
+    setBbEditError("");
+    const res = await fetch(`/api/admin/members/${memberId}/big-bro`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ big_brother_roll: bbEditPickRoll }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setBbEditError(data.error ?? `HTTP ${res.status}`);
+    } else {
+      cancelEditBb();
+      await refreshRosterMap();
+      await refresh();
+    }
+    setBbEditSaving(false);
+  }
+
   function startEditRoll(m: Member) {
     setEditingRollId(m.id);
     setRollDraft(m.roll != null ? String(m.roll) : "");
@@ -352,13 +441,110 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                       )}
                     </td>
                     <td style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
-                      {(() => {
-                        const rosterEntry = m.roll != null ? rosterMap.get(m.roll) : null;
-                        const bbRoll = rosterEntry?.big_brother_roll;
-                        if (!bbRoll) return "—";
-                        const bbEntry = rosterMap.get(bbRoll);
-                        return bbEntry ? <span>{bbEntry.name} <span style={{ color: "var(--gold)", marginLeft: 4 }}>#{bbRoll}</span></span> : <span style={{ color: "var(--gold)" }}>#{bbRoll}</span>;
-                      })()}
+                      {editingBbId === m.id ? (
+                        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, minWidth: 200 }}>
+                          {bbEditPickRoll != null ? (
+                            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                              <span style={{ flex: 1 }}>
+                                {bbEditPickName} <span style={{ color: "var(--gold)" }}>#{bbEditPickRoll}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => { setBbEditPickRoll(null); setBbEditPickName(""); }}
+                                aria-label="Clear big brother"
+                                title="Clear"
+                                style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-dim)", padding: 0, fontSize: 14, lineHeight: 1 }}
+                              >×</button>
+                            </div>
+                          ) : (
+                            <>
+                              <input
+                                type="text"
+                                value={bbEditSearch}
+                                onChange={(e) => { setBbEditSearch(e.target.value); setShowBbEditSuggestions(true); }}
+                                onFocus={() => setShowBbEditSuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowBbEditSuggestions(false), 150)}
+                                onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); cancelEditBb(); } }}
+                                placeholder="Search roster…"
+                                className="adm-input"
+                                style={{ width: "100%", padding: "2px 6px", fontSize: 12 }}
+                                autoComplete="off"
+                                autoFocus
+                              />
+                              {showBbEditSuggestions && bbEditResults.length > 0 && (
+                                <ul className="adm-suggestions">
+                                  {bbEditResults.map((r) => (
+                                    <li key={r.roll}>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                          setBbEditPickRoll(r.roll);
+                                          setBbEditPickName(r.name);
+                                          setBbEditSearch("");
+                                          setBbEditResults([]);
+                                          setShowBbEditSuggestions(false);
+                                        }}
+                                        className="adm-suggestion-btn"
+                                      >
+                                        <span className="adm-suggestion-name">{r.name}</span>
+                                        <span className="adm-suggestion-status">
+                                          #{r.roll}{r.initiation_class ? ` · ${r.initiation_class}` : ""}
+                                        </span>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </>
+                          )}
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            <button
+                              type="button"
+                              onClick={() => saveBb(m.id)}
+                              disabled={bbEditSaving}
+                              aria-label="Save Big Brother"
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--gold)", padding: 2, fontSize: 14, lineHeight: 1 }}
+                            >✓</button>
+                            <button
+                              type="button"
+                              onClick={cancelEditBb}
+                              disabled={bbEditSaving}
+                              aria-label="Cancel"
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-dim)", padding: 2, fontSize: 14, lineHeight: 1 }}
+                            >✕</button>
+                            {bbEditError && (
+                              <span className="adm-error" style={{ fontSize: 11, marginLeft: 4 }}>{bbEditError}</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          {(() => {
+                            const rosterEntry = m.roll != null ? rosterMap.get(m.roll) : null;
+                            const bbRoll = rosterEntry?.big_brother_roll;
+                            if (!bbRoll) return <span>—</span>;
+                            const bbEntry = rosterMap.get(bbRoll);
+                            return bbEntry ? <span>{bbEntry.name} <span style={{ color: "var(--gold)", marginLeft: 4 }}>#{bbRoll}</span></span> : <span style={{ color: "var(--gold)" }}>#{bbRoll}</span>;
+                          })()}
+                          {isPrivileged && m.roll != null && (
+                            <button
+                              type="button"
+                              onClick={() => startEditBb(m)}
+                              aria-label="Edit Big Brother"
+                              title="Edit Big Brother"
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-dim)", padding: 0, display: "inline-flex", alignItems: "center" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                              </svg>
+                            </button>
+                          )}
+                        </span>
+                      )}
                     </td>
                     <td>
                       {isPrivileged ? (
