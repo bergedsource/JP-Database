@@ -58,6 +58,20 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
       .catch(() => {});
   }, []);
 
+  const [unbecomingCounts, setUnbecomingCounts] = useState<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (!isPrivileged) return;
+    fetch("/api/admin/unbecomings/counts")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d?.counts && typeof d.counts === "object") {
+          setUnbecomingCounts(new Map(Object.entries(d.counts) as [string, number][]));
+        }
+      })
+      .catch(() => {});
+  }, [isPrivileged]);
+
   const [memberSubmitting, setMemberSubmitting] = useState(false);
   const [memberError, setMemberError] = useState("");
   const [editingRollId, setEditingRollId] = useState<string | null>(null);
@@ -376,7 +390,28 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                 const open = memberFines.filter((f) => ["pending", "upheld"].includes(f.status)).length;
                 return (
                   <tr key={m.id}>
-                    <td style={{ fontWeight: 500 }}>{m.name}</td>
+                    <td style={{ fontWeight: 500 }}>
+                      {m.name}
+                      {isPrivileged && (unbecomingCounts.get(m.id) ?? 0) > 0 && (
+                        <span
+                          title={`${unbecomingCounts.get(m.id)} Unbecoming${unbecomingCounts.get(m.id) === 1 ? "" : "s"}`}
+                          style={{
+                            marginLeft: 8,
+                            fontSize: 10,
+                            fontFamily: "'IBM Plex Mono', monospace",
+                            background: "rgba(248, 113, 113, 0.12)",
+                            color: "var(--red)",
+                            border: "1px solid rgba(248, 113, 113, 0.45)",
+                            padding: "1px 6px",
+                            borderRadius: 3,
+                            letterSpacing: "0.04em",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          U·{unbecomingCounts.get(m.id)}
+                        </span>
+                      )}
+                    </td>
                     <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: m.roll ? "var(--gold)" : "var(--text-dim)" }}>
                       {editingRollId === m.id ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
