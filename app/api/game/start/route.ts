@@ -41,14 +41,24 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No eligible members for trivia" }, { status: 500 });
   }
 
-  // Pull the full roster once (small table, ~1400 rows; cheaper than per-question lookups)
-  // chapter_roster has 1386+ rows — override Supabase's default 1000-row cap
-  const { data: roster, error: rErr } = await service
-    .from("chapter_roster")
-    .select("roll, name, initiation_date, big_brother_roll")
-    .limit(5000);
-  if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
-  if (!roster || roster.length === 0) {
+  // Pull the full roster once (small table, ~1400 rows; cheaper than per-question lookups).
+  // Supabase caps each response at 1000 rows server-side regardless of .limit() — paginate via .range().
+  const PAGE = 1000;
+  const roster: Array<{ roll: number; name: string; initiation_date: string | null; big_brother_roll: number | null }> = [];
+  let from = 0;
+  while (true) {
+    const { data, error: rErr } = await service
+      .from("chapter_roster")
+      .select("roll, name, initiation_date, big_brother_roll")
+      .range(from, from + PAGE - 1)
+      .order("roll", { ascending: true });
+    if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
+    if (!data || data.length === 0) break;
+    roster.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  if (roster.length === 0) {
     return NextResponse.json({ error: "Roster is empty" }, { status: 500 });
   }
 
