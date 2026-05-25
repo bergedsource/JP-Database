@@ -46,7 +46,6 @@ export default function AdminPage() {
   }, []);
 
   async function loadData() {
-    setLoading(true);
     const [{ data: m }, { data: f }, { data: a }, spRes] = await Promise.all([
       supabase.from("members").select("*").order("roll", { ascending: true, nullsFirst: false }).order("name"),
       supabase.from("fines").select("*, members(name)").order("date_issued", { ascending: false }),
