@@ -1,7 +1,7 @@
 .game-shell {
   min-height: 100vh;
   background: var(--bg-base, #0e0e10);
-  color: var(--text-base, #e9e3d6);
+  color: #e9e3d6;
   font-family: 'IBM Plex Mono', monospace;
   display: flex;
   flex-direction: column;
@@ -180,7 +180,7 @@
 .game-options button {
   background: var(--bg-base, #0e0e10);
   border: 1px solid var(--border, #2a2820);
-  color: var(--text-base, #e9e3d6);
+  color: #ffffff;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 14px;
   padding: 16px 12px;
@@ -256,7 +256,7 @@
 .game-leaderboard h3 { color: var(--gold, #c9a85a); margin: 0 0 8px; font-size: 14px; letter-spacing: 0.05em; }
 .game-leaderboard ol { padding: 0 0 0 24px; margin: 0; }
 .game-leaderboard li { margin: 4px 0; color: var(--text-dim, #9a917f); }
-.game-leaderboard li strong { color: var(--text-base, #e9e3d6); font-weight: 500; }
+.game-leaderboard li strong { color: #e9e3d6; font-weight: 500; }
 
 /* ─────────── motion ─────────── */
 
