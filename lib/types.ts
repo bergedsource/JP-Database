@@ -98,6 +98,38 @@ export interface JpSessionChange {
   fine_type?: string;
 }
 
+export type UnbecomingStatus = "pending" | "upheld" | "dismissed";
+
+export interface Unbecoming {
+  id: string;
+  member_id: string;
+  member_name?: string;
+  incident_date: string;
+  title: string;
+  body: string;
+  status: UnbecomingStatus;
+  decision: string | null;
+  decision_date: string | null;
+  sanction: string | null;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+  attachments?: UnbecomingAttachment[];
+  attachment_count?: number;
+}
+
+export interface UnbecomingAttachment {
+  id: string;
+  unbecoming_id: string;
+  file_path: string;
+  file_name: string;
+  file_size_bytes: number;
+  mime_type: string | null;
+  uploaded_at: string;
+  uploaded_by: string;
+}
+
 export interface ChapterRosterEntry {
   roll: number;
   name: string;
