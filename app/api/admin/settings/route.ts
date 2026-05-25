@@ -26,7 +26,16 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "key and value are required" }, { status: 400 });
   }
 
-  const ALLOWED_KEYS = ["venmo_handle", "venmo_url", "export_history", "google_spreadsheet_id", "game_enabled"];
+  const ALLOWED_KEYS = [
+    "venmo_handle",
+    "venmo_url",
+    "export_history",
+    "google_spreadsheet_id",
+    "game_enabled",
+    "master_roster_spreadsheet_id",
+    "master_roster_sheet_name",
+    "last_roster_sync_at",
+  ];
   if (!ALLOWED_KEYS.includes(key)) {
     return NextResponse.json({ error: "Unknown setting key" }, { status: 400 });
   }
