@@ -13,9 +13,10 @@ import AuditTab from "./components/AuditTab";
 import EventsTab from "./components/EventsTab";
 import SessionsTab from "./components/SessionsTab";
 import TransitionTab from "./components/TransitionTab";
+import UnbecomingsTab from "./components/UnbecomingsTab";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 
-type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events";
+type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
@@ -150,6 +151,14 @@ export default function AdminPage() {
                 Transition
               </button>
             )}
+            {isPrivileged && (
+              <button
+                className={`adm-tab${tab === "unbecomings" ? " active" : ""}`}
+                onClick={() => setTab("unbecomings")}
+              >
+                Unbecomings
+              </button>
+            )}
             {userRole === "root" && (
               <button
                 className={`adm-tab${tab === "events" ? " active" : ""}`}
@@ -182,6 +191,9 @@ export default function AdminPage() {
               {tab === "sessions" && <SessionsTab isPrivileged={isPrivileged} />}
               {tab === "transition" && isPrivileged && (
                 <TransitionTab fines={fines} currentUserId={currentUserId} userRole={userRole} setUserRole={setUserRole} />
+              )}
+              {tab === "unbecomings" && isPrivileged && (
+                <UnbecomingsTab members={members} />
               )}
             </>
           )}
