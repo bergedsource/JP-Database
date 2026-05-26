@@ -140,14 +140,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No questions could be built from the current data" }, { status: 500 });
   }
 
-  // Trap-question injection: pull up to TRIVIA_PER_GAME random trivia questions and mix into pool.
-  // They look like normal questions in the UI but don't affect score/lives — wrong answers
-  // silently set flagged_suspect on the leaderboard row for admin review.
-  const TRIVIA_PER_GAME = 2;
+  // Trivia injection: include every chapter_trivia row in every game (shuffled).
+  // Game length is bounded by STARTING_LIVES, not pool size — players who survive long
+  // enough see more variety, but most won't finish the full pool. Future-proof: growing
+  // the trivia table automatically scales without code changes.
   const { data: triviaRows } = await service
     .from("chapter_trivia")
     .select("id, question_text, option_a, option_b, option_c, option_d, correct_index");
-  const selectedTrivia = shuffle(triviaRows ?? []).slice(0, TRIVIA_PER_GAME);
+  const selectedTrivia = shuffle(triviaRows ?? []);
 
   for (const t of selectedTrivia) {
     pool.push({
