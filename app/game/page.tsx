@@ -54,9 +54,11 @@ export default function GamePage() {
   const [locked, setLocked] = useState(false);
   const [pickedRoll, setPickedRoll] = useState<number | null>(null);
   const [questionMsLeft, setQuestionMsLeft] = useState(QUESTION_TIME_LIMIT_MS);
+  const [explodingKey, setExplodingKey] = useState(0);
   // Deadline lives in a ref, not state. Refs update synchronously, so the auto-fail effect
   // never sees a stale closure from the previous question after we advance.
   const questionDeadlineRef = useRef<number>(0);
+  const prevFeedbackKindRef = useRef<string | null>(null);
   const [rollInput, setRollInput] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [finalRank, setFinalRank] = useState<number | null>(null);
@@ -122,6 +124,16 @@ export default function GamePage() {
     setFeedback({ kind: "wrong", text: correctText });
     setTimeout(() => advanceOrEnd(capturedScore, isPractice ? capturedLives : capturedLives - 1), FEEDBACK_DELAY_WRONG_MS);
   }, [questionMsLeft, state, locked, isCreator, isPractice]);
+
+  // Trigger the skull-explode animation on the transition into a life-losing wrong feedback.
+  // Skipped in creator/practice modes (lives never decrement there, so an explosion would lie).
+  useEffect(() => {
+    const fkind = feedback?.kind ?? null;
+    if (fkind === "wrong" && prevFeedbackKindRef.current !== "wrong" && !isCreator && !isPractice) {
+      setExplodingKey((k) => k + 1);
+    }
+    prevFeedbackKindRef.current = fkind;
+  }, [feedback, isCreator, isPractice]);
 
   async function beginRun(practice: boolean) {
     setStartErr("");
@@ -298,8 +310,31 @@ export default function GamePage() {
       <main className="game-shell">
         <div className="game-header-bar">
           <span>⏱ {formatTime(elapsedSec)}</span>
-          <span aria-label={isCreator || isPractice ? "unlimited lives" : `${lives} ${lives === 1 ? "life" : "lives"} remaining`}>
-            {isCreator || isPractice ? "∞" : "💀".repeat(lives)}
+          <span
+            className="game-lives"
+            aria-label={isCreator || isPractice ? "unlimited lives" : `${lives} ${lives === 1 ? "life" : "lives"} remaining`}
+          >
+            {isCreator || isPractice
+              ? "∞"
+              : Array.from({ length: lives }).map((_, i) => {
+                  const isLastAndExploding = explodingKey > 0 && i === lives - 1;
+                  if (isLastAndExploding) {
+                    return (
+                      <span key={`boom-${explodingKey}`} className="game-skull-boom" aria-hidden="true">
+                        <span className="game-skull-boom-core">{"\u{1F480}"}</span>
+                        <span className="game-skull-boom-shard game-skull-boom-shard-1">{"\u{1F480}"}</span>
+                        <span className="game-skull-boom-shard game-skull-boom-shard-2">{"\u{1F480}"}</span>
+                        <span className="game-skull-boom-shard game-skull-boom-shard-3">{"\u{1F480}"}</span>
+                        <span className="game-skull-boom-ring" />
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={`skull-${i}`} className="game-skull" aria-hidden="true">
+                      {"\u{1F480}"}
+                    </span>
+                  );
+                })}
           </span>
           <span>SCORE {score}</span>
           {isCreator && <span className="game-test-badge" aria-label="creator test mode">TEST</span>}

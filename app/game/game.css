@@ -330,6 +330,79 @@
   animation: badge-breathe 2400ms ease-in-out infinite;
 }
 
+/* Lives indicator + skull explosion */
+.game-lives { display: inline-flex; align-items: center; gap: 1px; line-height: 1; }
+.game-skull { display: inline-block; }
+
+.game-skull-boom {
+  display: inline-block;
+  position: relative;
+  vertical-align: baseline;
+}
+.game-skull-boom-core {
+  display: inline-block;
+  transform-origin: center;
+  animation: skull-die 720ms cubic-bezier(0.34, 0.04, 0.34, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+.game-skull-boom-shard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  font-size: 0.5em;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.game-skull-boom-shard-1 { animation: skull-shard-up-right 620ms cubic-bezier(0.18, 0.71, 0.32, 1.05) 60ms forwards; }
+.game-skull-boom-shard-2 { animation: skull-shard-up-left  620ms cubic-bezier(0.18, 0.71, 0.32, 1.05) 60ms forwards; }
+.game-skull-boom-shard-3 { animation: skull-shard-down     660ms cubic-bezier(0.18, 0.71, 0.32, 1)    80ms forwards; }
+
+.game-skull-boom-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.15em;
+  height: 0.15em;
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0);
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: skull-impact-ring 540ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes skull-die {
+  0%   { opacity: 1; transform: scale(1) rotate(0); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)) brightness(1); }
+  10%  { opacity: 1; transform: scale(1.55) rotate(-9deg); filter: drop-shadow(0 0 18px rgba(239, 68, 68, 1)) brightness(1.45) saturate(1.4); }
+  25%  { opacity: 0.95; transform: scale(1.2) rotate(7deg); filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.85)) brightness(1.2); }
+  100% { opacity: 0; transform: scale(0.25) rotate(-50deg) translateY(14px); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)) blur(3px); }
+}
+
+@keyframes skull-shard-up-right {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0, 0)      scale(0.4)  rotate(0); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) translate(3px, -3px) scale(0.85) rotate(25deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(20px, -18px) scale(0.45) rotate(140deg); }
+}
+@keyframes skull-shard-up-left {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0, 0)        scale(0.4)  rotate(0); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) translate(-3px, -3px)  scale(0.85) rotate(-25deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(-20px, -16px) scale(0.45) rotate(-130deg); }
+}
+@keyframes skull-shard-down {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0, 0)    scale(0.4)  rotate(0); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) translate(1px, 3px) scale(0.75) rotate(15deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(6px, 20px) scale(0.35) rotate(200deg); }
+}
+
+@keyframes skull-impact-ring {
+  0%   { opacity: 0; width: 0.15em; height: 0.15em; border-color: rgba(239, 68, 68, 0);    border-width: 2px; }
+  18%  { opacity: 1;                                 border-color: rgba(239, 68, 68, 0.95); }
+  100% { opacity: 0; width: 2.6em;  height: 2.6em;  border-color: rgba(239, 68, 68, 0);    border-width: 1px; }
+}
+
 /* Reduced motion: respect user preference */
 @media (prefers-reduced-motion: reduce) {
   .game-question-wrap,
@@ -339,9 +412,13 @@
   .game-card.start-mode,
   .game-card.playing-mode,
   .game-card.start-mode > *,
-  .game-test-badge {
+  .game-test-badge,
+  .game-skull-boom-core,
+  .game-skull-boom-shard,
+  .game-skull-boom-ring {
     animation: none !important;
   }
+  .game-skull-boom { opacity: 0; }
   .game-btn,
   .game-btn-ghost,
   .game-options button {
