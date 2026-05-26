@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { GameQuestion, LeaderboardEntry } from "@/lib/types";
-import { STARTING_LIVES, FEEDBACK_DELAY_MS, FEEDBACK_DELAY_WRONG_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS, TIMER_URGENT_THRESHOLD_MS } from "@/lib/game-constants";
+import { STARTING_LIVES, FEEDBACK_DELAY_MS, FEEDBACK_DELAY_WRONG_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, TRIVIA_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS, TIMER_URGENT_THRESHOLD_MS } from "@/lib/game-constants";
 import "./game.css";
 
 type GameState = "start" | "playing" | "over";
@@ -120,19 +120,13 @@ export default function GamePage() {
     const capturedLives = lives;
     setLocked(true);
 
-    // Trivia timeouts must look silent — no life loss, no skull explosion, no "wrong" feedback.
-    // The player's missing answer is recorded as a non-pick (left out of trapAnswers), which
-    // /score treats as a failed trap and flags the run. From the player's view: nothing happened.
-    if (q.type === "trivia") {
-      setFeedback({ kind: "correct", text: "Correct!" });
-      setTimeout(() => advanceOrEnd(capturedScore, capturedLives), FEEDBACK_DELAY_MS);
-      return;
-    }
-
+    // Trivia times out like bigbro/roll now — life lost, correct answer revealed, skull explodes.
+    // The unanswered trivia is recorded as a non-pick (left out of trapAnswers), which /score
+    // counts as wrong toward the lifetime trivia stats used for aggregate cheating detection.
     const correctText =
-      q.type === "bigbro"
-        ? `Time's up! Answer: ${q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`}`
-        : `Time's up! Answer: #${q.correct_answer}`;
+      q.type === "roll"
+        ? `Time's up! Answer: #${q.correct_answer}`
+        : `Time's up! Answer: ${q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`}`;
     setFeedback({ kind: "wrong", text: correctText });
     setTimeout(() => advanceOrEnd(capturedScore, isPractice ? capturedLives : capturedLives - 1), FEEDBACK_DELAY_WRONG_MS);
   }, [questionMsLeft, state, locked, isCreator, isPractice]);
@@ -232,10 +226,9 @@ export default function GamePage() {
     }
   }
 
-  // Trap-trivia handler: silently records the player's pick, ALWAYS shows "Correct!" feedback,
-  // and advances without touching score or lives. The deception is intentional — the player
-  // can't tell which questions are traps, so they can't game which to take seriously. Wrong
-  // answers get flagged server-side on /score for admin review.
+  // Trivia handler: now plays like a regular question — 3pt correct, life loss on wrong,
+  // real "Correct!"/"Wrong! Answer: X" feedback. Still records the pick for server-side
+  // aggregate cheating detection (lifetime trivia success rate <40% across 3+ runs = flag).
   function answerTrivia(picked: number) {
     if (locked) return;
     const q = questions[index];
@@ -244,8 +237,15 @@ export default function GamePage() {
     if (typeof q.trivia_id === "number") {
       setTrapAnswers((prev) => [...prev, { id: q.trivia_id!, picked }]);
     }
-    setFeedback({ kind: "correct", text: "Correct!" });
-    setTimeout(() => advanceOrEnd(score, lives), FEEDBACK_DELAY_MS);
+    const correct = picked === q.correct_answer;
+    if (correct) {
+      setFeedback({ kind: "correct", text: "Correct!" });
+      setTimeout(() => advanceOrEnd(score + TRIVIA_POINTS, lives), FEEDBACK_DELAY_MS);
+    } else {
+      const correctName = q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`;
+      setFeedback({ kind: "wrong", text: `Wrong! Answer: ${correctName}` });
+      setTimeout(() => advanceOrEnd(score, isCreator || isPractice ? lives : lives - 1), FEEDBACK_DELAY_WRONG_MS);
+    }
   }
 
   function answerRoll() {
@@ -394,16 +394,9 @@ export default function GamePage() {
                   const showResult = locked;
                   let cls = "";
                   if (showResult) {
-                    if (q.type === "trivia") {
-                      // Trivia silently flags wrong answers server-side. Visually, the picked
-                      // option always lights "correct" regardless of real correctness so the
-                      // player can't deduce which questions are traps.
-                      cls = o.roll === pickedRoll ? "correct" : "";
-                    } else {
-                      const isCorrect = o.roll === q.correct_answer;
-                      const isPickedWrong = o.roll === pickedRoll && !isCorrect;
-                      cls = isCorrect ? "correct" : isPickedWrong ? "wrong" : "";
-                    }
+                    const isCorrect = o.roll === q.correct_answer;
+                    const isPickedWrong = o.roll === pickedRoll && !isCorrect;
+                    cls = isCorrect ? "correct" : isPickedWrong ? "wrong" : "";
                   }
                   const handler = q.type === "trivia" ? answerTrivia : answerBigbro;
                   return (

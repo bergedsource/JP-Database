@@ -3,7 +3,7 @@ import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 import { gameDisabledResponse } from "@/lib/game-gate";
 import { getCurrentRole } from "@/lib/admin-auth";
 import { createGameSession } from "@/lib/game-session";
-import { BIGBRO_POINTS, ROLL_POINTS } from "@/lib/game-constants";
+import { BIGBRO_POINTS, ROLL_POINTS, TRIVIA_POINTS } from "@/lib/game-constants";
 import { NextRequest, NextResponse } from "next/server";
 import type { GameQuestion, GameStartResponse } from "@/lib/types";
 
@@ -167,11 +167,13 @@ export async function GET(req: NextRequest) {
   // Full pool — every member's every applicable question + trivia traps, randomized order.
   const questions = shuffle(pool);
 
-  // Per-question-set score ceiling: 1pt per bigbro + 2pt per roll (trivia contributes 0).
+  // Per-question-set score ceiling: 1pt per bigbro + 2pt per roll + 3pt per trivia.
   // /score validates against THIS rather than the global MAX_POSSIBLE_SCORE so a cheater can't
   // submit a score higher than the pool actually permits.
   const maxPossibleScore = questions.reduce(
-    (sum, q) => sum + (q.type === "bigbro" ? BIGBRO_POINTS : q.type === "roll" ? ROLL_POINTS : 0),
+    (sum, q) =>
+      sum +
+      (q.type === "bigbro" ? BIGBRO_POINTS : q.type === "roll" ? ROLL_POINTS : TRIVIA_POINTS),
     0,
   );
 

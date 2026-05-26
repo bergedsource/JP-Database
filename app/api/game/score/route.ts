@@ -64,29 +64,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Time exceeds elapsed wall-clock (anti-cheat)" }, { status: 400 });
   }
 
-  // Trap-trivia flag: count how many trivia questions the player got wrong.
-  // The client submits trivia_answers; we validate each against the session-stored
-  // {id, correctIndex} pairs. Wrong/missing answers count toward the suspect flag.
-  // Defensive: if client omits trivia_answers entirely but the session had traps,
-  // treat ALL traps as wrong (a cheater might strip the field to avoid the flag).
+  // Trivia stats for THIS run. Trivia now counts for points (3pt each) and deducts lives,
+  // so the per-run "any wrong = flag" rule from the earlier silent-design no longer applies.
+  // Instead we compute trivia_attempted + trivia_correct for this run and store both, then
+  // flag if the player's LIFETIME trivia success rate is below threshold across enough runs.
   const submittedTrivia: Array<{ id: unknown; picked: unknown }> = Array.isArray(body.trivia_answers)
     ? body.trivia_answers
     : [];
-  let trapWrongCount = 0;
+  const trivia_attempted = session.trivia.length;
+  let trivia_correct = 0;
   for (const trap of session.trivia) {
     const submission = submittedTrivia.find((a) => a.id === trap.id);
-    if (!submission || submission.picked !== trap.correctIndex) {
-      trapWrongCount += 1;
+    if (submission && submission.picked === trap.correctIndex) {
+      trivia_correct += 1;
     }
   }
-  const flagged_suspect = trapWrongCount > 0 && session.trivia.length > 0;
 
   const service = createServiceClient();
+
+  // Aggregate flag: pull this username's prior trivia history, combine with the current run,
+  // and flag if (a) we have >=3 runs with trivia AND (b) combined success rate < 40%.
+  // Random guessing on 4-option trivia averages 25%, so 40% catches consistent guessers
+  // without false-positiving brothers who fluff one or two questions.
+  const RUNS_REQUIRED_FOR_AGGREGATE_FLAG = 3;
+  const AGGREGATE_FLAG_SUCCESS_RATE = 0.4;
+  const { data: history } = await service
+    .from("game_leaderboard")
+    .select("trivia_attempted, trivia_correct")
+    .ilike("username", username);
+  const priorRunsWithTrivia = (history ?? []).filter((h) => (h.trivia_attempted ?? 0) > 0);
+  const totalAttempted = priorRunsWithTrivia.reduce((s, h) => s + (h.trivia_attempted ?? 0), 0) + trivia_attempted;
+  const totalCorrect = priorRunsWithTrivia.reduce((s, h) => s + (h.trivia_correct ?? 0), 0) + trivia_correct;
+  const runsWithTrivia = priorRunsWithTrivia.length + (trivia_attempted > 0 ? 1 : 0);
+  const flagged_suspect =
+    runsWithTrivia >= RUNS_REQUIRED_FOR_AGGREGATE_FLAG &&
+    totalAttempted > 0 &&
+    totalCorrect / totalAttempted < AGGREGATE_FLAG_SUCCESS_RATE;
 
   // Insert
   const { data: inserted, error: insertErr } = await service
     .from("game_leaderboard")
-    .insert({ username, score, time_seconds, flagged_suspect })
+    .insert({ username, score, time_seconds, flagged_suspect, trivia_attempted, trivia_correct })
     .select("id")
     .single();
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
