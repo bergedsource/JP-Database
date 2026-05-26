@@ -66,6 +66,7 @@ export default function GamePage() {
   const [startErr, setStartErr] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const [isPractice, setIsPractice] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const submitRef = useRef(false);
   const autoFailFiredRef = useRef(false);
 
@@ -152,6 +153,7 @@ export default function GamePage() {
       setQuestions(data.questions);
       setIsCreator(data.is_creator === true);
       setIsPractice(practice);
+      setSessionToken(typeof data.session_token === "string" ? data.session_token : null);
       setIndex(0);
       setScore(0);
       setLives(STARTING_LIVES);
@@ -243,7 +245,7 @@ export default function GamePage() {
     fetch("/api/game/score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim(), score, time_seconds: elapsedSec }),
+      body: JSON.stringify({ username: username.trim(), score, time_seconds: elapsedSec, session_token: sessionToken }),
       signal: AbortSignal.timeout(8000),
     })
       .then(async (r) => {

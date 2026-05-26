@@ -1,7 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
-import { gameDisabledResponse } from "@/lib/game-gate";
+import { gameDisabledResponse, sheetSharedResponse } from "@/lib/game-gate";
 import { getCurrentRole } from "@/lib/admin-auth";
+import { createGameSession } from "@/lib/game-session";
+import { BIGBRO_POINTS, ROLL_POINTS } from "@/lib/game-constants";
 import { NextRequest, NextResponse } from "next/server";
 import type { GameQuestion, GameStartResponse } from "@/lib/types";
 
@@ -27,6 +29,9 @@ export async function GET(req: NextRequest) {
 
   const denied = await gameDisabledResponse();
   if (denied) return denied;
+
+  const sheetDenied = await sheetSharedResponse();
+  if (sheetDenied) return sheetDenied;
 
   const service = createServiceClient();
 
@@ -141,12 +146,24 @@ export async function GET(req: NextRequest) {
   // Full pool — every member's every applicable question, randomized order.
   const questions = shuffle(pool);
 
+  // Per-question-set score ceiling: 1pt per bigbro + 2pt per roll. /score validates
+  // against THIS rather than the global MAX_POSSIBLE_SCORE so a cheater can't submit
+  // a score higher than the pool actually permits.
+  const maxPossibleScore = questions.reduce(
+    (sum, q) => sum + (q.type === "bigbro" ? BIGBRO_POINTS : ROLL_POINTS),
+    0,
+  );
+
   // Creator-only test mode: infinite lives + timer bypass on the client.
   // getCurrentRole returns null for unauthenticated callers — fast path, no role table lookup.
   const current = await getCurrentRole();
   const is_creator = current?.role === "root";
 
-  const response: GameStartResponse = { questions, is_creator };
+  // Issue a one-shot session token bound to this question set. /score consumes it
+  // to prove the player went through /start (blocks doctored POSTs to /score).
+  const session_token = await createGameSession(getIP(req), maxPossibleScore);
+
+  const response: GameStartResponse = { questions, is_creator, session_token };
 
   return NextResponse.json(response);
 }
