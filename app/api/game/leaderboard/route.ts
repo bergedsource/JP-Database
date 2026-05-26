@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await service
     .from("game_leaderboard")
     .select("id, username, score, time_seconds, created_at")
+    .eq("flagged_suspect", false)
     .order("score", { ascending: false })
     .order("time_seconds", { ascending: true })
     .order("created_at", { ascending: true })

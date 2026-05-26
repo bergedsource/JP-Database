@@ -140,14 +140,38 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No questions could be built from the current data" }, { status: 500 });
   }
 
-  // Full pool — every member's every applicable question, randomized order.
+  // Trap-question injection: pull up to TRIVIA_PER_GAME random trivia questions and mix into pool.
+  // They look like normal questions in the UI but don't affect score/lives — wrong answers
+  // silently set flagged_suspect on the leaderboard row for admin review.
+  const TRIVIA_PER_GAME = 2;
+  const { data: triviaRows } = await service
+    .from("chapter_trivia")
+    .select("id, question_text, option_a, option_b, option_c, option_d, correct_index");
+  const selectedTrivia = shuffle(triviaRows ?? []).slice(0, TRIVIA_PER_GAME);
+
+  for (const t of selectedTrivia) {
+    pool.push({
+      member_name: t.question_text,
+      type: "trivia",
+      options: [
+        { roll: 0, name: t.option_a },
+        { roll: 1, name: t.option_b },
+        { roll: 2, name: t.option_c },
+        { roll: 3, name: t.option_d },
+      ],
+      correct_answer: t.correct_index,
+      trivia_id: t.id,
+    });
+  }
+
+  // Full pool — every member's every applicable question + trivia traps, randomized order.
   const questions = shuffle(pool);
 
-  // Per-question-set score ceiling: 1pt per bigbro + 2pt per roll. /score validates
-  // against THIS rather than the global MAX_POSSIBLE_SCORE so a cheater can't submit
-  // a score higher than the pool actually permits.
+  // Per-question-set score ceiling: 1pt per bigbro + 2pt per roll (trivia contributes 0).
+  // /score validates against THIS rather than the global MAX_POSSIBLE_SCORE so a cheater can't
+  // submit a score higher than the pool actually permits.
   const maxPossibleScore = questions.reduce(
-    (sum, q) => sum + (q.type === "bigbro" ? BIGBRO_POINTS : ROLL_POINTS),
+    (sum, q) => sum + (q.type === "bigbro" ? BIGBRO_POINTS : q.type === "roll" ? ROLL_POINTS : 0),
     0,
   );
 
@@ -158,7 +182,8 @@ export async function GET(req: NextRequest) {
 
   // Issue a one-shot session token bound to this question set. /score consumes it
   // to prove the player went through /start (blocks doctored POSTs to /score).
-  const session_token = await createGameSession(getIP(req), maxPossibleScore);
+  const triviaForSession = selectedTrivia.map((t) => ({ id: t.id, correctIndex: t.correct_index }));
+  const session_token = await createGameSession(getIP(req), maxPossibleScore, triviaForSession);
 
   const response: GameStartResponse = { questions, is_creator, session_token };
 

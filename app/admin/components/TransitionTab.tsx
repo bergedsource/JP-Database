@@ -53,6 +53,29 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   const [gameEnabled, setGameEnabled] = useState(false);
   const [gameEnabledSaving, setGameEnabledSaving] = useState(false);
 
+  type TriviaEntry = {
+    id: number;
+    question_text: string;
+    option_a: string;
+    option_b: string;
+    option_c: string;
+    option_d: string;
+    correct_index: number;
+    created_at: string;
+    created_by: string | null;
+  };
+  const [triviaEntries, setTriviaEntries] = useState<TriviaEntry[]>([]);
+  const [triviaForm, setTriviaForm] = useState({
+    question_text: "",
+    option_a: "",
+    option_b: "",
+    option_c: "",
+    option_d: "",
+    correct_index: 0,
+  });
+  const [triviaSubmitting, setTriviaSubmitting] = useState(false);
+  const [triviaError, setTriviaError] = useState("");
+
   const [lastRosterSyncAt, setLastRosterSyncAt] = useState<string | null>(null);
   const [rosterSyncRunning, setRosterSyncRunning] = useState(false);
   const [rosterSyncResult, setRosterSyncResult] = useState<{
@@ -69,6 +92,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
     loadAdminUsers();
     loadSettings();
     loadLeaderboard();
+    loadTrivia();
   }, []);
 
   async function loadAdminUsers() {
@@ -241,6 +265,39 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
     if (!confirm(`Remove ${username}'s entry?`)) return;
     const res = await fetch(`/api/admin/leaderboard/${id}`, { method: "DELETE" });
     if (res.ok) await loadLeaderboard();
+  }
+
+  async function loadTrivia() {
+    const res = await fetch("/api/admin/trivia");
+    if (res.ok) {
+      const data = await res.json();
+      setTriviaEntries(Array.isArray(data.entries) ? data.entries : []);
+    }
+  }
+
+  async function createTrivia(e: React.FormEvent) {
+    e.preventDefault();
+    setTriviaSubmitting(true);
+    setTriviaError("");
+    const res = await fetch("/api/admin/trivia", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(triviaForm),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setTriviaError(data.error ?? "Failed to add trivia");
+    } else {
+      setTriviaForm({ question_text: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_index: 0 });
+      await loadTrivia();
+    }
+    setTriviaSubmitting(false);
+  }
+
+  async function deleteTrivia(id: number, questionText: string) {
+    if (!confirm(`Delete trivia question "${questionText.slice(0, 60)}${questionText.length > 60 ? "…" : ""}"?`)) return;
+    const res = await fetch(`/api/admin/trivia/${id}`, { method: "DELETE" });
+    if (res.ok) await loadTrivia();
   }
 
   return (
@@ -726,9 +783,20 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                       const m = Math.floor(e.time_seconds / 60);
                       const s = e.time_seconds % 60;
                       return (
-                        <tr key={e.id}>
+                        <tr key={e.id} style={e.flagged_suspect ? { background: "rgba(239, 68, 68, 0.08)" } : undefined}>
                           <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
-                          <td>{e.username}</td>
+                          <td>
+                            {e.username}
+                            {e.flagged_suspect && (
+                              <span
+                                title="Failed a trap-trivia question — suspected cheater. This run is hidden from the public leaderboard."
+                                aria-label="suspected cheater"
+                                style={{ marginLeft: 6, color: "#EF4444", fontSize: 13 }}
+                              >
+                                {"\u{1F6A9}"}
+                              </span>
+                            )}
+                          </td>
                           <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
                           <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
                           <td style={{ textAlign: "right" }}>
@@ -754,6 +822,110 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
             >
               {leaderboardClearing ? "Clearing…" : "Clear All Entries"}
             </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="adm-card">
+        <div className="adm-card-header">
+          <span className="adm-card-title">Chapter Trivia (Trap Questions)</span>
+        </div>
+        <div className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0 }}>
+            Chapter trivia questions get mixed into each game run as silent trap questions.
+            Wrong answers don&apos;t change the player&apos;s score or lives — but flag the run as
+            suspect (failed trap = likely cheating). Flagged runs are hidden from the public
+            leaderboard and marked with {"\u{1F6A9}"} above.
+          </p>
+
+          <form onSubmit={createTrivia} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input
+              className="adm-input"
+              placeholder="Question (e.g., What year was Acacia OSU founded?)"
+              value={triviaForm.question_text}
+              onChange={(e) => setTriviaForm({ ...triviaForm, question_text: e.target.value })}
+              maxLength={200}
+              required
+            />
+            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 6, alignItems: "center" }}>
+              {(["a", "b", "c", "d"] as const).map((letter, idx) => (
+                <span key={`row-${letter}`} style={{ display: "contents" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                    <input
+                      type="radio"
+                      name="correct_index"
+                      checked={triviaForm.correct_index === idx}
+                      onChange={() => setTriviaForm({ ...triviaForm, correct_index: idx })}
+                    />
+                    {letter.toUpperCase()}
+                  </label>
+                  <input
+                    className="adm-input"
+                    placeholder={`Option ${letter.toUpperCase()}${idx === triviaForm.correct_index ? " (correct)" : ""}`}
+                    value={triviaForm[`option_${letter}` as const]}
+                    onChange={(e) => setTriviaForm({ ...triviaForm, [`option_${letter}`]: e.target.value })}
+                    maxLength={200}
+                    required
+                  />
+                  <span style={{ fontSize: 10, color: "var(--text-dim)", minWidth: 60 }}>
+                    {idx === triviaForm.correct_index ? "correct" : ""}
+                  </span>
+                </span>
+              ))}
+            </div>
+            {triviaError && (
+              <p role="alert" style={{ color: "#EF4444", fontSize: 12, margin: 0 }}>{triviaError}</p>
+            )}
+            <div>
+              <button type="submit" className="adm-btn" disabled={triviaSubmitting}>
+                {triviaSubmitting ? "Adding…" : "Add trivia"}
+              </button>
+            </div>
+          </form>
+
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
+              {triviaEntries.length === 0
+                ? "No trivia questions yet — without any, no runs will ever be flagged."
+                : `${triviaEntries.length} trivia question${triviaEntries.length === 1 ? "" : "s"}`}
+            </div>
+            {triviaEntries.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {triviaEntries.map((t) => (
+                  <div
+                    key={t.id}
+                    style={{
+                      border: "1px solid var(--border)",
+                      borderRadius: 4,
+                      padding: "8px 10px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{t.question_text}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                        {["A", "B", "C", "D"].map((letter, idx) => (
+                          <span key={letter} style={{ marginRight: 12, color: idx === t.correct_index ? "var(--gold)" : undefined }}>
+                            {letter}: {t[`option_${letter.toLowerCase()}` as "option_a" | "option_b" | "option_c" | "option_d"]}
+                            {idx === t.correct_index ? " ✓" : ""}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      className="adm-delete-btn"
+                      onClick={() => deleteTrivia(t.id, t.question_text)}
+                      style={{ flexShrink: 0 }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

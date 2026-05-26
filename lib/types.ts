@@ -146,17 +146,24 @@ export interface LeaderboardEntry {
   score: number;
   time_seconds: number;
   created_at: string;
+  flagged_suspect?: boolean;
 }
 
-export type GameQuestionType = "bigbro" | "roll";
+export type GameQuestionType = "bigbro" | "roll" | "trivia";
 
 export interface GameQuestion {
+  // For bigbro/roll: member name. For trivia: the question text.
   member_name: string;
   type: GameQuestionType;
-  // For bigbro: 4 options pre-shuffled (correct + 3 distractors). For roll: omitted.
+  // For bigbro: 4 options pre-shuffled (correct + 3 distractors).
+  // For roll: omitted.
+  // For trivia: 4 options where `roll` is the option index (0-3) and `name` is the option text.
   options?: Array<{ roll: number; name: string }>;
-  // Roll # of correct big bro (bigbro questions), OR the member's own roll # (roll questions).
+  // Roll # of correct big bro (bigbro), OR member's own roll # (roll), OR correct option index 0-3 (trivia).
   correct_answer: number;
+  // Trivia only: ID of the chapter_trivia row. /score validates submitted trivia answers against
+  // the session-stored trivia metadata to detect cheaters who fail trap questions.
+  trivia_id?: number;
 }
 
 export interface GameStartResponse {

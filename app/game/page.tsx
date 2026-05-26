@@ -67,6 +67,7 @@ export default function GamePage() {
   const [isCreator, setIsCreator] = useState(false);
   const [isPractice, setIsPractice] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [trapAnswers, setTrapAnswers] = useState<Array<{ id: number; picked: number }>>([]);
   const submitRef = useRef(false);
   const autoFailFiredRef = useRef(false);
 
@@ -118,6 +119,16 @@ export default function GamePage() {
     const capturedScore = score;
     const capturedLives = lives;
     setLocked(true);
+
+    // Trivia timeouts must look silent — no life loss, no skull explosion, no "wrong" feedback.
+    // The player's missing answer is recorded as a non-pick (left out of trapAnswers), which
+    // /score treats as a failed trap and flags the run. From the player's view: nothing happened.
+    if (q.type === "trivia") {
+      setFeedback({ kind: "correct", text: "Correct!" });
+      setTimeout(() => advanceOrEnd(capturedScore, capturedLives), FEEDBACK_DELAY_MS);
+      return;
+    }
+
     const correctText =
       q.type === "bigbro"
         ? `Time's up! Answer: ${q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`}`
@@ -154,6 +165,7 @@ export default function GamePage() {
       setIsCreator(data.is_creator === true);
       setIsPractice(practice);
       setSessionToken(typeof data.session_token === "string" ? data.session_token : null);
+      setTrapAnswers([]);
       setIndex(0);
       setScore(0);
       setLives(STARTING_LIVES);
@@ -220,6 +232,22 @@ export default function GamePage() {
     }
   }
 
+  // Trap-trivia handler: silently records the player's pick, ALWAYS shows "Correct!" feedback,
+  // and advances without touching score or lives. The deception is intentional — the player
+  // can't tell which questions are traps, so they can't game which to take seriously. Wrong
+  // answers get flagged server-side on /score for admin review.
+  function answerTrivia(picked: number) {
+    if (locked) return;
+    const q = questions[index];
+    setLocked(true);
+    setPickedRoll(picked);
+    if (typeof q.trivia_id === "number") {
+      setTrapAnswers((prev) => [...prev, { id: q.trivia_id!, picked }]);
+    }
+    setFeedback({ kind: "correct", text: "Correct!" });
+    setTimeout(() => advanceOrEnd(score, lives), FEEDBACK_DELAY_MS);
+  }
+
   function answerRoll() {
     if (locked) return;
     const q = questions[index];
@@ -245,7 +273,7 @@ export default function GamePage() {
     fetch("/api/game/score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim(), score, time_seconds: elapsedSec, session_token: sessionToken }),
+      body: JSON.stringify({ username: username.trim(), score, time_seconds: elapsedSec, session_token: sessionToken, trivia_answers: trapAnswers }),
       signal: AbortSignal.timeout(8000),
     })
       .then(async (r) => {
@@ -354,17 +382,32 @@ export default function GamePage() {
             </span>
           </div>
           <div className="game-question-wrap" key={index}>
-          {q.type === "bigbro" ? (
+          {q.type === "bigbro" || q.type === "trivia" ? (
             <>
-              <p className="game-question">Who is the big brother of <strong>{q.member_name}</strong>?</p>
+              {q.type === "trivia" ? (
+                <p className="game-question">{q.member_name}</p>
+              ) : (
+                <p className="game-question">Who is the big brother of <strong>{q.member_name}</strong>?</p>
+              )}
               <div className="game-options">
                 {q.options?.map((o) => {
                   const showResult = locked;
-                  const isCorrect = o.roll === q.correct_answer;
-                  const isPickedWrong = showResult && o.roll === pickedRoll && !isCorrect;
-                  const cls = showResult && isCorrect ? "correct" : isPickedWrong ? "wrong" : "";
+                  let cls = "";
+                  if (showResult) {
+                    if (q.type === "trivia") {
+                      // Trivia silently flags wrong answers server-side. Visually, the picked
+                      // option always lights "correct" regardless of real correctness so the
+                      // player can't deduce which questions are traps.
+                      cls = o.roll === pickedRoll ? "correct" : "";
+                    } else {
+                      const isCorrect = o.roll === q.correct_answer;
+                      const isPickedWrong = o.roll === pickedRoll && !isCorrect;
+                      cls = isCorrect ? "correct" : isPickedWrong ? "wrong" : "";
+                    }
+                  }
+                  const handler = q.type === "trivia" ? answerTrivia : answerBigbro;
                   return (
-                    <button key={o.roll} onClick={() => answerBigbro(o.roll)} disabled={locked} className={cls}>
+                    <button key={o.roll} onClick={() => handler(o.roll)} disabled={locked} className={cls}>
                       {o.name}
                     </button>
                   );

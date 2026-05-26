@@ -13,14 +13,14 @@ export async function GET(req: NextRequest) {
 
   const service = createServiceClient();
 
-  type Row = { id: string; username: string; score: number; time_seconds: number; created_at: string };
+  type Row = { id: string; username: string; score: number; time_seconds: number; created_at: string; flagged_suspect: boolean };
   const entries: Row[] = [];
   const PAGE = 1000;
   let from = 0;
   while (true) {
     const { data, error } = await service
       .from("game_leaderboard")
-      .select("id, username, score, time_seconds, created_at")
+      .select("id, username, score, time_seconds, created_at, flagged_suspect")
       .order("score", { ascending: false })
       .order("time_seconds", { ascending: true })
       .order("created_at", { ascending: true })

@@ -15,15 +15,22 @@ export interface GameSession {
   // Cap on submitted score for THIS specific question set (sum of 1pt per bigbro + 2pt per roll).
   // Server-side, this is what /score validates against — NOT the global MAX_POSSIBLE_SCORE.
   maxPossibleScore: number;
+  // Trivia trap questions sent in this run. /score validates submitted trivia answers against
+  // this list to flag suspect runs (failed traps -> cheater behavioral signal).
+  trivia: Array<{ id: number; correctIndex: number }>;
 }
 
 const KEY = (token: string) => `game-session:${token}`;
 
-export async function createGameSession(ip: string, maxPossibleScore: number): Promise<string> {
+export async function createGameSession(
+  ip: string,
+  maxPossibleScore: number,
+  trivia: Array<{ id: number; correctIndex: number }>,
+): Promise<string> {
   const token = crypto.randomUUID();
   await redis.set<GameSession>(
     KEY(token),
-    { ip, startedAt: Date.now(), maxPossibleScore },
+    { ip, startedAt: Date.now(), maxPossibleScore, trivia },
     { ex: SESSION_TTL_SEC },
   );
   return token;
