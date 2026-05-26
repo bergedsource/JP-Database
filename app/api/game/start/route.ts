@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
-import { gameDisabledResponse, sheetSharedResponse } from "@/lib/game-gate";
+import { gameDisabledResponse } from "@/lib/game-gate";
 import { getCurrentRole } from "@/lib/admin-auth";
 import { createGameSession } from "@/lib/game-session";
 import { BIGBRO_POINTS, ROLL_POINTS } from "@/lib/game-constants";
@@ -29,9 +29,6 @@ export async function GET(req: NextRequest) {
 
   const denied = await gameDisabledResponse();
   if (denied) return denied;
-
-  const sheetDenied = await sheetSharedResponse();
-  if (sheetDenied) return sheetDenied;
 
   const service = createServiceClient();
 
