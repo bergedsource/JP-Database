@@ -557,7 +557,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
         </div>
         <div className="adm-card-body">
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.6 }}>
-            Syncs the Master Roll Numbers Google Sheet into <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>chapter_roster</code> (upsert all rows) and adds any brand-new initiates to the Members tab as <strong style={{ color: "var(--text)" }}>active</strong>. Existing members and their statuses are never modified. Runs nightly at 11:59 PM automatically.
+            Syncs the Master Roll Numbers Google Sheet into <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>chapter_roster</code> (upsert all rows) and adds any <strong style={{ color: "var(--text)" }}>brand-new initiates</strong> to the Members tab as <strong style={{ color: "var(--text)" }}>active</strong>. Only rolls higher than the current max get auto-added — retroactive backfills of historical brothers stay roster-only. Existing members and their statuses are never modified. Runs nightly at 11:59 PM automatically.
           </p>
           <div style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginBottom: 16 }}>
             Last synced:{" "}

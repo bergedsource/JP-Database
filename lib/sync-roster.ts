@@ -190,11 +190,18 @@ export async function syncMasterRoster(args: {
   const existingRosterRolls = new Set((existingRosterRaw ?? []).map((r: { roll: number }) => r.roll));
   const membersRolls = new Set((membersRaw ?? []).map((m: { roll: number }) => m.roll));
 
+  // Auto-create floor: only rolls ABOVE the current highest chapter_roster roll become
+  // active members. Anything at-or-below is a retroactive backfill (alumnus we missed) —
+  // synced to chapter_roster for the trivia game, but NEVER auto-added to members.
+  const maxExistingRoll = existingRosterRolls.size > 0 ? Math.max(...existingRosterRolls) : 0;
+
   const newRosterRows = valid.filter((r) => !existingRosterRolls.has(r.roll));
   const updatedRosterRows = valid.filter((r) => existingRosterRolls.has(r.roll));
   rosterAdded = newRosterRows.length;
   rosterUpdated = updatedRosterRows.length;
-  const memberRollsToCreate = newRosterRows.filter((r) => !membersRolls.has(r.roll));
+  const memberRollsToCreate = newRosterRows.filter(
+    (r) => r.roll > maxExistingRoll && !membersRolls.has(r.roll)
+  );
 
   if (dryRun) {
     for (const r of memberRollsToCreate) membersAdded.push({ roll: r.roll, name: r.name });

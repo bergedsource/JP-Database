@@ -20,7 +20,7 @@ This is fragile and easy to skip. Result: the Members tab and trivia game both d
 A daily background sync that reads the master sheet directly via the Google Sheets API and propagates changes into both `chapter_roster` and `members`:
 
 - **chapter_roster**: upserted on every sync — name, big bro, init class, init date, notes all stay in sync with the sheet.
-- **members**: new active-member rows auto-created when a roll # that's brand new to chapter_roster appears. Existing member rows are left alone.
+- **members**: new active-member rows auto-created when a roll # is **brand new to chapter_roster AND higher than the current maximum roll #**. Existing member rows are left alone. Retroactive backfills (adding a missed historical brother below the current max) update chapter_roster but do NOT create a members row — the JP Chair handles that manually if the backfill is actually still an active member.
 
 Plus a one-click "Sync Now" button + dry-run preview in the Transition tab so the JP Chair can force an immediate sync after editing the sheet without waiting for the next cron.
 
@@ -126,6 +126,7 @@ No HTTP / cron coupling inside the function — both consumers (cron and the API
 | `members.status` for any reason | never touched by sync | Sync only ever INSERTs members; never UPDATEs |
 | New row on sheet, roll # already in `members` | `chapter_roster` upserts, `members` create is SKIPPED | Prevents duplicate members for self-added rows |
 | Big bro change on sheet | propagates via `chapter_roster` upsert | Members tab reads big bro from `chapter_roster`, so flows through automatically |
+| Retroactive historical brother added to sheet (roll ≤ current max) | chapter_roster row created; members row NOT created | Sheet edits aren't allowed to retroactively re-classify alumni as active members |
 | Roll # typo fix (e.g., 1499 → 1500 on sheet) | new roster row at 1500, old 1499 orphaned | True fix requires manual SQL — flagged as issue |
 | Sheet has the same row twice (duplicate roll #) | last occurrence wins for upsert; one issue logged | Cheaper than two-pass dedup; sheet should not have duplicates |
 
