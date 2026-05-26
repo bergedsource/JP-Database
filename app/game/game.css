@@ -277,7 +277,6 @@
   animation: question-rise 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Timer pulse in the last 2s */
 @keyframes timer-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%      { opacity: 0.62; transform: scale(1.05); }

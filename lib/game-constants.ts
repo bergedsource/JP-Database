@@ -9,6 +9,7 @@ export const QUESTION_TICK_MS = 10;
 export const STARTING_LIVES = 3;
 export const FEEDBACK_DELAY_MS = 800;
 export const FEEDBACK_DELAY_WRONG_MS = 1000;
+export const TIMER_URGENT_THRESHOLD_MS = 3000;
 export const TIMER_TICK_MS = 1000;
 export const BIGBRO_POINTS = 1;
 export const ROLL_POINTS = 2;

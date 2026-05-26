@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { GameQuestion, LeaderboardEntry } from "@/lib/types";
-import { STARTING_LIVES, FEEDBACK_DELAY_MS, FEEDBACK_DELAY_WRONG_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS } from "@/lib/game-constants";
+import { STARTING_LIVES, FEEDBACK_DELAY_MS, FEEDBACK_DELAY_WRONG_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS, TIMER_URGENT_THRESHOLD_MS } from "@/lib/game-constants";
 import "./game.css";
 
 type GameState = "start" | "playing" | "over";
@@ -306,8 +306,8 @@ export default function GamePage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#9a917f" }}>
             <span>Question {index + 1} of {questions.length}</span>
             <span
-              className={"game-question-timer" + (!isCreator && questionMsLeft <= 2000 ? " urgent" : "")}
-              style={{ color: isCreator ? "#9a917f" : questionMsLeft <= 2000 ? "#EF4444" : "#9a917f" }}
+              className={"game-question-timer" + (!isCreator && questionMsLeft <= TIMER_URGENT_THRESHOLD_MS ? " urgent" : "")}
+              style={{ color: isCreator ? "#9a917f" : questionMsLeft <= TIMER_URGENT_THRESHOLD_MS ? "#EF4444" : "#9a917f" }}
               aria-label={isCreator ? "unlimited time" : `${Math.ceil(questionMsLeft / 1000)} seconds remaining`}
             >
               {isCreator ? "∞" : `${(questionMsLeft / 1000).toFixed(2)}s`}
