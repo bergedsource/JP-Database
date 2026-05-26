@@ -14,6 +14,8 @@ function formatTime(s: number): string {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
+const LEADERBOARD_MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+
 function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
   if (entries.length === 0) {
     return (
@@ -27,8 +29,9 @@ function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
     <div className="game-leaderboard">
       <h3>Top 3</h3>
       <ol>
-        {entries.map((e) => (
+        {entries.map((e, idx) => (
           <li key={e.id}>
+            <span className="game-leaderboard-medal">{LEADERBOARD_MEDALS[idx]}</span>
             <strong>{e.username}</strong> — {e.score} pts in {formatTime(e.time_seconds)}
           </li>
         ))}

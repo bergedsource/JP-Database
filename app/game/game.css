@@ -254,9 +254,10 @@
   font-size: 13px;
 }
 .game-leaderboard h3 { color: var(--gold, #c9a85a); margin: 0 0 8px; font-size: 14px; letter-spacing: 0.05em; }
-.game-leaderboard ol { padding: 0 0 0 24px; margin: 0; }
+.game-leaderboard ol { padding: 0; margin: 0; list-style: none; }
 .game-leaderboard li { margin: 4px 0; color: var(--text-dim, #9a917f); }
 .game-leaderboard li strong { color: #e9e3d6; font-weight: 500; }
+.game-leaderboard-medal { display: inline-block; margin-right: 6px; font-size: 1.1em; }
 
 /* ─────────── motion ─────────── */
 
