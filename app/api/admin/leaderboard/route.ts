@@ -12,15 +12,27 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const service = createServiceClient();
-  const { data, error } = await service
-    .from("game_leaderboard")
-    .select("id, username, score, time_seconds, created_at")
-    .order("score", { ascending: false })
-    .order("time_seconds", { ascending: true })
-    .order("created_at", { ascending: true })
-    .limit(3);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ entries: data ?? [] });
+
+  type Row = { id: string; username: string; score: number; time_seconds: number; created_at: string };
+  const entries: Row[] = [];
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await service
+      .from("game_leaderboard")
+      .select("id, username, score, time_seconds, created_at")
+      .order("score", { ascending: false })
+      .order("time_seconds", { ascending: true })
+      .order("created_at", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data || data.length === 0) break;
+    entries.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+
+  return NextResponse.json({ entries });
 }
 
 export async function DELETE(req: NextRequest) {

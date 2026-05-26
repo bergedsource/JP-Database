@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Fine, LeaderboardEntry } from "@/lib/types";
 
 type Props = {
@@ -48,6 +48,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   const [showExportHelp, setShowExportHelp] = useState(false);
 
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardView, setLeaderboardView] = useState<"all" | "best">("all");
   const [leaderboardClearing, setLeaderboardClearing] = useState(false);
   const [gameEnabled, setGameEnabled] = useState(false);
   const [gameEnabledSaving, setGameEnabledSaving] = useState(false);
@@ -117,6 +118,17 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       setLeaderboardEntries(Array.isArray(data.entries) ? data.entries : []);
     }
   }
+
+  const visibleLeaderboard = useMemo(() => {
+    if (leaderboardView === "all") return leaderboardEntries;
+    const seen = new Set<string>();
+    return leaderboardEntries.filter((e) => {
+      const key = e.username.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [leaderboardEntries, leaderboardView]);
 
   async function createAdminUser(e: React.FormEvent) {
     e.preventDefault();
@@ -649,38 +661,87 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
           </div>
 
           <div>
-            <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
-              Top 3 Leaderboard
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                Leaderboard
+                {leaderboardEntries.length > 0 && (
+                  <span style={{ marginLeft: 6 }}>
+                    ({visibleLeaderboard.length}
+                    {leaderboardView === "best" && visibleLeaderboard.length !== leaderboardEntries.length
+                      ? ` of ${leaderboardEntries.length}`
+                      : ""}
+                    )
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "inline-flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
+                <button
+                  type="button"
+                  onClick={() => setLeaderboardView("all")}
+                  className="adm-btn"
+                  style={{
+                    fontSize: 11,
+                    padding: "4px 10px",
+                    background: leaderboardView === "all" ? "var(--gold)" : "transparent",
+                    color: leaderboardView === "all" ? "#1a1a1a" : "var(--text-dim)",
+                    border: "none",
+                    borderRadius: 0,
+                  }}
+                >
+                  All entries
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLeaderboardView("best")}
+                  className="adm-btn"
+                  style={{
+                    fontSize: 11,
+                    padding: "4px 10px",
+                    background: leaderboardView === "best" ? "var(--gold)" : "transparent",
+                    color: leaderboardView === "best" ? "#1a1a1a" : "var(--text-dim)",
+                    border: "none",
+                    borderRadius: 0,
+                  }}
+                >
+                  Best per user
+                </button>
+              </div>
             </div>
             {leaderboardEntries.length === 0 ? (
               <p style={{ fontSize: 13, color: "var(--text-dim)", margin: 0 }}>No entries yet.</p>
             ) : (
-              <table className="adm-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Score</th>
-                    <th>Time</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboardEntries.map((e) => {
-                    const m = Math.floor(e.time_seconds / 60);
-                    const s = e.time_seconds % 60;
-                    return (
-                      <tr key={e.id}>
-                        <td>{e.username}</td>
-                        <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
-                        <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
-                        <td style={{ textAlign: "right" }}>
-                          <button className="adm-delete-btn" onClick={() => deleteLeaderboardEntry(e.id, e.username)}>Remove</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div style={{ maxHeight: 400, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 4 }}>
+                <table className="adm-table" style={{ width: "100%" }}>
+                  <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
+                    <tr>
+                      <th style={{ width: 48 }}>#</th>
+                      <th>Username</th>
+                      <th>Score</th>
+                      <th>Time</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleLeaderboard.map((e, idx) => {
+                      const m = Math.floor(e.time_seconds / 60);
+                      const s = e.time_seconds % 60;
+                      return (
+                        <tr key={e.id}>
+                          <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
+                          <td>{e.username}</td>
+                          <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
+                          <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
+                          <td style={{ textAlign: "right" }}>
+                            <button className="adm-delete-btn" onClick={() => deleteLeaderboardEntry(e.id, e.username)}>
+                              {leaderboardView === "best" ? "Remove this run" : "Remove"}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
