@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { GameQuestion, LeaderboardEntry } from "@/lib/types";
-import { STARTING_LIVES, FEEDBACK_DELAY_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS } from "@/lib/game-constants";
+import { STARTING_LIVES, FEEDBACK_DELAY_MS, FEEDBACK_DELAY_WRONG_MS, TIMER_TICK_MS, BIGBRO_POINTS, ROLL_POINTS, QUESTION_TIME_LIMIT_MS, QUESTION_TICK_MS } from "@/lib/game-constants";
 import "./game.css";
 
 type GameState = "start" | "playing" | "over";
@@ -117,7 +117,7 @@ export default function GamePage() {
         ? `Time's up! Answer: ${q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`}`
         : `Time's up! Answer: #${q.correct_answer}`;
     setFeedback({ kind: "wrong", text: correctText });
-    setTimeout(() => advanceOrEnd(capturedScore, isPractice ? capturedLives : capturedLives - 1), FEEDBACK_DELAY_MS);
+    setTimeout(() => advanceOrEnd(capturedScore, isPractice ? capturedLives : capturedLives - 1), FEEDBACK_DELAY_WRONG_MS);
   }, [questionMsLeft, state, locked, isCreator, isPractice]);
 
   async function beginRun(practice: boolean) {
@@ -199,7 +199,7 @@ export default function GamePage() {
     } else {
       const correctName = q.options?.find((o) => o.roll === q.correct_answer)?.name ?? `#${q.correct_answer}`;
       setFeedback({ kind: "wrong", text: `Wrong! Answer: ${correctName}` });
-      setTimeout(() => advanceOrEnd(score, isCreator || isPractice ? lives : lives - 1), FEEDBACK_DELAY_MS);
+      setTimeout(() => advanceOrEnd(score, isCreator || isPractice ? lives : lives - 1), FEEDBACK_DELAY_WRONG_MS);
     }
   }
 
@@ -215,7 +215,7 @@ export default function GamePage() {
       setTimeout(() => advanceOrEnd(score + ROLL_POINTS, lives), FEEDBACK_DELAY_MS);
     } else {
       setFeedback({ kind: "wrong", text: `Wrong! Answer: #${q.correct_answer}` });
-      setTimeout(() => advanceOrEnd(score, isCreator || isPractice ? lives : lives - 1), FEEDBACK_DELAY_MS);
+      setTimeout(() => advanceOrEnd(score, isCreator || isPractice ? lives : lives - 1), FEEDBACK_DELAY_WRONG_MS);
     }
   }
 
