@@ -153,12 +153,15 @@ export async function GET(req: NextRequest) {
     pool.push({
       member_name: t.question_text,
       type: "trivia",
-      options: [
+      // Shuffle so the correct answer isn't always in the same visual position.
+      // Each option's `roll` (0-3) preserves its original A/B/C/D index, so
+      // `correct_answer` matching still works regardless of display order.
+      options: shuffle([
         { roll: 0, name: t.option_a },
         { roll: 1, name: t.option_b },
         { roll: 2, name: t.option_c },
         { roll: 3, name: t.option_d },
-      ],
+      ]),
       correct_answer: t.correct_index,
       trivia_id: t.id,
     });
