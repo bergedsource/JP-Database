@@ -62,6 +62,31 @@ async function readSettings(
   };
 }
 
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function fetchAllRosterRolls(service: SupabaseClient): Promise<number[]> {
+  const PAGE = 1000;
+  const all: number[] = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await service
+      .from("chapter_roster")
+      .select("roll")
+      .range(offset, offset + PAGE - 1);
+    if (error || !data) break;
+    for (const r of data as { roll: number }[]) all.push(r.roll);
+    if (data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all;
+}
+
 function buildSheetsClient(): sheets_v4.Sheets {
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -183,24 +208,41 @@ export async function syncMasterRoster(args: {
   const { valid, issues: bbIssues } = validateBigBros(parsed);
   issues.push(...bbIssues);
 
-  const [{ data: existingRosterRaw }, { data: membersRaw }] = await Promise.all([
-    service.from("chapter_roster").select("roll"),
-    service.from("members").select("id, roll").not("roll", "is", null),
+  // chapter_roster is paginated — Supabase silently caps single .select() at 1000 rows,
+  // and the table has >1000 rows. Members table is small enough to fetch in one go.
+  const [rosterRolls, { data: membersRaw }] = await Promise.all([
+    fetchAllRosterRolls(service),
+    service.from("members").select("id, name, roll"),
   ]);
-  const existingRosterRolls = new Set((existingRosterRaw ?? []).map((r: { roll: number }) => r.roll));
-  const membersRolls = new Set((membersRaw ?? []).map((m: { roll: number }) => m.roll));
+  const existingRosterRolls = new Set(rosterRolls);
+  const membersWithRoll = (membersRaw ?? []).filter(
+    (m: { roll: number | null }) => m.roll != null
+  ) as { id: string; name: string; roll: number }[];
+  const membersRolls = new Set(membersWithRoll.map((m) => m.roll));
+  const existingMemberNames = new Set(
+    (membersRaw ?? []).map((m: { name: string }) => normalizeName(m.name))
+  );
 
-  // Auto-create floor: only rolls ABOVE the current highest chapter_roster roll become
-  // active members. Anything at-or-below is a retroactive backfill (alumnus we missed) —
-  // synced to chapter_roster for the trivia game, but NEVER auto-added to members.
-  const maxExistingRoll = existingRosterRolls.size > 0 ? Math.max(...existingRosterRolls) : 0;
+  // Auto-create floor: a sheet row only becomes an active member if its roll # is
+  // strictly greater than every roll # we already know about — across BOTH chapter_roster
+  // AND members (since members may have rolls higher than chapter_roster's max). This
+  // blocks retroactive backfills of historical brothers from being treated as new initiates.
+  const maxRosterRoll = existingRosterRolls.size > 0 ? Math.max(...existingRosterRolls) : 0;
+  const maxMemberRoll = membersRolls.size > 0 ? Math.max(...membersRolls) : 0;
+  const maxExistingRoll = Math.max(maxRosterRoll, maxMemberRoll);
 
   const newRosterRows = valid.filter((r) => !existingRosterRolls.has(r.roll));
   const updatedRosterRows = valid.filter((r) => existingRosterRolls.has(r.roll));
   rosterAdded = newRosterRows.length;
   rosterUpdated = updatedRosterRows.length;
+  // Members to create = (a) above the current max roll AND (b) not already in members
+  // by roll # AND (c) not already in members by NAME (catches members whose roll # was
+  // never filled in via the admin form).
   const memberRollsToCreate = newRosterRows.filter(
-    (r) => r.roll > maxExistingRoll && !membersRolls.has(r.roll)
+    (r) =>
+      r.roll > maxExistingRoll &&
+      !membersRolls.has(r.roll) &&
+      !existingMemberNames.has(normalizeName(r.name))
   );
 
   if (dryRun) {

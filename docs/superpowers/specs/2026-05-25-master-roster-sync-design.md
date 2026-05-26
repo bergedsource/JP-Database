@@ -19,8 +19,13 @@ This is fragile and easy to skip. Result: the Members tab and trivia game both d
 
 A daily background sync that reads the master sheet directly via the Google Sheets API and propagates changes into both `chapter_roster` and `members`:
 
-- **chapter_roster**: upserted on every sync — name, big bro, init class, init date, notes all stay in sync with the sheet.
-- **members**: new active-member rows auto-created when a roll # is **brand new to chapter_roster AND higher than the current maximum roll #**. Existing member rows are left alone. Retroactive backfills (adding a missed historical brother below the current max) update chapter_roster but do NOT create a members row — the JP Chair handles that manually if the backfill is actually still an active member.
+- **chapter_roster**: upserted on every sync — name, big bro, init class, init date, notes all stay in sync with the sheet. (Reads use paginated `.range()` because Supabase silently caps single `.select()` calls at 1,000 rows.)
+- **members**: new active-member rows auto-created ONLY when ALL THREE conditions hold:
+  1. The roll # is brand new to `chapter_roster`
+  2. The roll # is **strictly greater** than `max(chapter_roster.roll, members.roll)` — anything at-or-below is a retroactive backfill of a historical brother, not a new initiate
+  3. The normalized name (lowercased, punctuation-stripped) does NOT match any existing `members.name` — catches the case where a current brother is already in the admin tool but had his roll # filled in late (or never)
+
+  Existing member rows are left alone. Retroactive backfills update `chapter_roster` only — the JP Chair handles status manually if needed.
 
 Plus a one-click "Sync Now" button + dry-run preview in the Transition tab so the JP Chair can force an immediate sync after editing the sheet without waiting for the next cron.
 
