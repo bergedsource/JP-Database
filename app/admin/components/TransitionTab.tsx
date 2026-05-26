@@ -13,6 +13,17 @@ type Props = {
 type AdminUser = { user_id: string; email: string; role: string; created_at: string };
 type ExportHistoryItem = { spreadsheetId: string; term: string; date: string; url: string };
 
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
 export default function TransitionTab({ fines, currentUserId, userRole, setUserRole }: Props) {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [newUserForm, setNewUserForm] = useState({ email: "", password: "", role: "admin" });
@@ -41,6 +52,18 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   const [gameEnabled, setGameEnabled] = useState(false);
   const [gameEnabledSaving, setGameEnabledSaving] = useState(false);
 
+  const [lastRosterSyncAt, setLastRosterSyncAt] = useState<string | null>(null);
+  const [rosterSyncRunning, setRosterSyncRunning] = useState(false);
+  const [rosterSyncResult, setRosterSyncResult] = useState<{
+    rowsOnSheet: number;
+    rosterAdded: number;
+    rosterUpdated: number;
+    membersAdded: Array<{ roll: number; name: string }>;
+    issues: Array<{ roll: number | null; reason: string }>;
+    dryRun: boolean;
+  } | null>(null);
+  const [rosterSyncError, setRosterSyncError] = useState<string | null>(null);
+
   useEffect(() => {
     loadAdminUsers();
     loadSettings();
@@ -62,6 +85,28 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
         setExportHistory(data.export_history ? JSON.parse(data.export_history) : []);
       } catch { setExportHistory([]); }
       setGameEnabled(data.game_enabled === "true");
+      setLastRosterSyncAt(data.last_roster_sync_at ?? null);
+    }
+  }
+
+  async function runRosterSync(dryRun: boolean) {
+    setRosterSyncRunning(true);
+    setRosterSyncError(null);
+    setRosterSyncResult(null);
+    try {
+      const url = `/api/admin/sync-roster${dryRun ? "?dry=1" : ""}`;
+      const res = await fetch(url, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setRosterSyncError(data.error ?? `Sync failed (HTTP ${res.status})`);
+      } else {
+        setRosterSyncResult(data);
+        if (!dryRun) await loadSettings();
+      }
+    } catch (err) {
+      setRosterSyncError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRosterSyncRunning(false);
     }
   }
 
@@ -503,6 +548,86 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               {defaultSheetSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace" }}>Saved ✓</span>}
             </div>
           </form>
+        </div>
+      </div>
+
+      <div className="adm-card">
+        <div className="adm-card-header">
+          <span className="adm-card-title">Master Roster Sync</span>
+        </div>
+        <div className="adm-card-body">
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.6 }}>
+            Syncs the Master Roll Numbers Google Sheet into <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>chapter_roster</code> (upsert all rows) and adds any brand-new initiates to the Members tab as <strong style={{ color: "var(--text)" }}>active</strong>. Existing members and their statuses are never modified. Runs nightly at 11:59 PM automatically.
+          </p>
+          <div style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginBottom: 16 }}>
+            Last synced:{" "}
+            {lastRosterSyncAt
+              ? `${new Date(lastRosterSyncAt).toLocaleString()} (${timeAgo(lastRosterSyncAt)})`
+              : "never"}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              onClick={() => runRosterSync(true)}
+              disabled={rosterSyncRunning}
+              className="adm-btn"
+              style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)" }}
+            >
+              {rosterSyncRunning ? "Working…" : "Dry-run preview"}
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("Run roster sync now? This will create active members for any new initiates on the master sheet.")) {
+                  runRosterSync(false);
+                }
+              }}
+              disabled={rosterSyncRunning}
+              className="adm-btn"
+            >
+              {rosterSyncRunning ? "Working…" : "Run Sync Now"}
+            </button>
+          </div>
+
+          {rosterSyncError && (
+            <div style={{ marginTop: 16, padding: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, color: "#F87171", fontSize: 13 }}>
+              <strong>Sync failed:</strong> {rosterSyncError}
+            </div>
+          )}
+
+          {rosterSyncResult && (
+            <div style={{ marginTop: 16, padding: 12, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 6, fontSize: 13, lineHeight: 1.7 }}>
+              <div style={{ fontWeight: 600, color: "#34D399", marginBottom: 8 }}>
+                {rosterSyncResult.dryRun ? "Dry-run preview" : "Sync complete"}
+              </div>
+              <div>Rows on sheet: {rosterSyncResult.rowsOnSheet}</div>
+              <div>{rosterSyncResult.dryRun ? "Would add" : "Added"} to chapter_roster: {rosterSyncResult.rosterAdded}</div>
+              <div>{rosterSyncResult.dryRun ? "Would touch" : "Touched"} existing chapter_roster rows: {rosterSyncResult.rosterUpdated}</div>
+              <div>
+                {rosterSyncResult.dryRun ? "Would create" : "Created"} active members: {rosterSyncResult.membersAdded.length}
+                {rosterSyncResult.membersAdded.length > 0 && (
+                  <ul style={{ margin: "4px 0 0 18px", padding: 0 }}>
+                    {rosterSyncResult.membersAdded.map((m) => (
+                      <li key={m.roll}>#{m.roll} {m.name}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {rosterSyncResult.issues.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <strong style={{ color: "#FCD34D" }}>Issues ({rosterSyncResult.issues.length}):</strong>
+                  <ul style={{ margin: "4px 0 0 18px", padding: 0, color: "var(--text-muted)" }}>
+                    {rosterSyncResult.issues.slice(0, 20).map((iss, i) => (
+                      <li key={i}>{iss.roll ? `#${iss.roll}: ` : ""}{iss.reason}</li>
+                    ))}
+                  </ul>
+                  {rosterSyncResult.issues.length > 20 && (
+                    <div style={{ color: "var(--text-dim)", fontStyle: "italic", marginTop: 4 }}>
+                      …and {rosterSyncResult.issues.length - 20} more
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
