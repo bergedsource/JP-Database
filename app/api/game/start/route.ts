@@ -84,11 +84,20 @@ export async function GET(req: NextRequest) {
       if (bigBro?.name) {
         const targetYear = yearOf(rosterRow.initiation_date);
 
+        // Eligible distractor: not the correct big bro, not the little brother themselves,
+        // joined before or with the little brother (rolls are sequential by initiation, so
+        // r.roll <= m.roll means "could plausibly be m's big bro"), and has a name.
+        const isEligibleDistractor = (r: { roll: number; name: string }) =>
+          r.roll !== bigBro.roll &&
+          r.roll !== m.roll &&
+          r.roll <= m.roll &&
+          !!r.name;
+
         // Distractor pool: era-matched within ±5 years
         const eraMatched = (radiusYears: number) => {
           if (targetYear == null) return [];
           return roster.filter((r) => {
-            if (r.roll === bigBro.roll) return false;
+            if (!isEligibleDistractor(r)) return false;
             const ry = yearOf(r.initiation_date);
             return ry != null && Math.abs(ry - targetYear) <= radiusYears;
           });
@@ -97,8 +106,7 @@ export async function GET(req: NextRequest) {
         let distractorCandidates = eraMatched(5);
         if (distractorCandidates.length < 3) distractorCandidates = eraMatched(10);
         if (distractorCandidates.length < 3) {
-          // Any roster row with a non-null name, excluding the correct answer
-          distractorCandidates = roster.filter((r) => r.roll !== bigBro.roll && r.name);
+          distractorCandidates = roster.filter(isEligibleDistractor);
         }
 
         const distractors = shuffle(distractorCandidates).slice(0, 3).map((r) => ({
