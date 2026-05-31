@@ -85,7 +85,7 @@ export const FINE_DEFAULT_AMOUNTS: Partial<Record<string, number>> = {
 
 export const FINE_DESCRIPTIONS: Partial<Record<string, string>> = {
   "Conduct Unbecoming (§11-010)": "Conduct unbecoming a member of Acacia Fraternity",
-  "General Misconduct (§11-020)": "General misconduct in violation of chapter standards",
+  "General Misconduct (§11-020)": "Conduct deemed unsuitable for the situation or bringing discredit to the fraternity",
   "Misconduct Under Influence (§11-030)": "Misconduct while under the influence of alcohol or substances",
   "Missing Security at Function (§11-050)": "Failed to fulfill assigned security duty at a chapter function",
   "Missing Required Event (§11-060)": "Failed to attend a required chapter event",
