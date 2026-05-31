@@ -50,6 +50,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [leaderboardView, setLeaderboardView] = useState<"all" | "best">("all");
   const [leaderboardClearing, setLeaderboardClearing] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [gameEnabled, setGameEnabled] = useState(false);
   const [gameEnabledSaving, setGameEnabledSaving] = useState(false);
 
@@ -259,6 +260,14 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
     const res = await fetch("/api/admin/leaderboard", { method: "DELETE" });
     if (res.ok) await loadLeaderboard();
     setLeaderboardClearing(false);
+  }
+
+  async function approveLeaderboardEntry(id: string, username: string) {
+    if (!confirm(`Clear the flag for ${username} and push their score to the live leaderboard?`)) return;
+    setApprovingId(id);
+    const res = await fetch(`/api/admin/leaderboard/${id}`, { method: "PATCH" });
+    if (res.ok) await loadLeaderboard();
+    setApprovingId(null);
   }
 
   async function deleteLeaderboardEntry(id: string, username: string) {
@@ -800,9 +809,20 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                           <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
                           <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
                           <td style={{ textAlign: "right" }}>
-                            <button className="adm-delete-btn" onClick={() => deleteLeaderboardEntry(e.id, e.username)}>
-                              {leaderboardView === "best" ? "Remove this run" : "Remove"}
-                            </button>
+                            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                              {e.flagged_suspect && (
+                                <button
+                                  onClick={() => approveLeaderboardEntry(e.id, e.username)}
+                                  disabled={approvingId === e.id}
+                                  style={{ fontSize: 11, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", color: "#34D399", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}
+                                >
+                                  {approvingId === e.id ? "Approving…" : "Approve"}
+                                </button>
+                              )}
+                              <button className="adm-delete-btn" onClick={() => deleteLeaderboardEntry(e.id, e.username)}>
+                                {leaderboardView === "best" ? "Remove this run" : "Remove"}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
