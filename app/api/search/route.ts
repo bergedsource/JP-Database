@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 
@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim();
   if (!q) return NextResponse.json([]);
 
-  const supabase = await createClient();
+  // Service client: `members` is no longer anon-readable via RLS
+  // (see migration_harden_rls_security.sql). Public but rate-limited; returns
+  // only id/name/status/roll for active+pledge members, capped at 8 rows.
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("members")
     .select("id, name, status, roll")

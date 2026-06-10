@@ -1,11 +1,17 @@
 import { getCurrentRole } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Destructive write — rate-limit like the other admin mutation routes.
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const current = await getCurrentRole();
   if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
