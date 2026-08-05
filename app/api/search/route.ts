@@ -10,15 +10,14 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim();
   if (!q) return NextResponse.json([]);
 
-  // Service client: `members` is no longer anon-readable via RLS
-  // (see migration_harden_rls_security.sql). Public but rate-limited; returns
-  // only id/name/status/roll for active+pledge members, capped at 8 rows.
+  // Reads the curated `public_members` view (see migration_public_read_views.sql),
+  // which restricts to id/name/status/roll for active+pledge members at the DB
+  // layer. Public but rate-limited, capped at 8.
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from("members")
+    .from("public_members")
     .select("id, name, status, roll")
     .ilike("name", `%${q}%`)
-    .in("status", ["active", "pledge"])
     .order("name")
     .limit(8);
 

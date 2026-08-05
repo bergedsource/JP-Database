@@ -13,14 +13,15 @@ export async function GET(
   const { id } = await params;
   if (!id) return NextResponse.json([], { status: 400 });
 
+  // Reads the curated `public_member_fines` view (see migration_public_read_views
+  // .sql). The view has no `notes` column, so that private field is unreachable
+  // here regardless of the select.
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from("fines")
+    .from("public_member_fines")
     .select("id, member_id, fine_type, description, amount, status, term, date_issued, date_resolved, fining_officer, created_at")
     .eq("member_id", id)
     .order("date_issued", { ascending: false });
-
-  // notes is intentionally excluded from the select above
   if (error) return NextResponse.json([], { status: 500 });
   return NextResponse.json(data ?? [], {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },

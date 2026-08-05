@@ -15,9 +15,12 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Reads the curated `public_settings` view (see migration_public_read_views
+    // .sql), which exposes only these three keys at the DB layer — no other
+    // settings row is reachable through this route.
     const service = createServiceClient();
     const { data } = await service
-      .from("settings")
+      .from("public_settings")
       .select("key, value")
       .in("key", ["venmo_handle", "venmo_url", "game_enabled"]);
 

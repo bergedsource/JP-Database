@@ -1,5 +1,6 @@
 import { requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { sheetSafe } from "@/lib/sheet-safe";
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -50,16 +51,16 @@ export async function POST(req: NextRequest) {
     fining_officer: string | null;
     members: { name: string; roll: number | null } | null;
   }[]).map((f) => [
-    f.members?.name ?? "",
+    sheetSafe(f.members?.name ?? ""),
     f.members?.roll ?? "",
-    `${f.fine_type} — ${f.description}`,
+    sheetSafe(`${f.fine_type} — ${f.description}`),
     f.amount != null ? `$${Number(f.amount).toFixed(2)}` : "",
-    f.fining_officer ?? "",
+    sheetSafe(f.fining_officer ?? ""),
     ["upheld", "paid", "labor", "added_to_dues"].includes(f.status) ? "TRUE" : "FALSE",
     new Date(f.date_issued).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     "", // Budget — manual
-    extractBylaw(f.fine_type),
-    f.notes ?? "",
+    sheetSafe(extractBylaw(f.fine_type)),
+    sheetSafe(f.notes ?? ""),
     "", // Minutes — manual
     ["paid", "labor"].includes(f.status) ? "TRUE" : "FALSE",
   ]);

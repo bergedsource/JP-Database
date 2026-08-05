@@ -7,14 +7,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  // Service client: the `members` table is no longer anon-readable via RLS
-  // (see migration_harden_rls_security.sql). This route stays public but is
-  // rate-limited and returns only the curated columns/statuses below.
+  // Reads the curated `public_members` view (see migration_public_read_views.sql):
+  // the view exposes only safe columns for active+pledge rows, so this route
+  // cannot over-read even if the select is later widened. anon still has no DB
+  // access, so this stays rate-limited (unlike direct PostgREST).
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from("members")
+    .from("public_members")
     .select("id, name, status, roll")
-    .in("status", ["active", "pledge"])
     .order("name");
 
   if (error) return NextResponse.json([], { status: 500 });

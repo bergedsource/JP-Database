@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { syncMasterRoster } from "@/lib/sync-roster";
+import { timingSafeEqualStr } from "@/lib/timing-safe";
 
 async function sendEmail(to: string[], subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) return;
@@ -21,7 +22,7 @@ async function getAdminEmails(service: ReturnType<typeof createServiceClient>): 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || !timingSafeEqualStr(authHeader ?? "", `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

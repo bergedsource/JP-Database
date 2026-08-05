@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 import { isRateLimited, getIP, exportLimiter } from "@/lib/rate-limit";
+import { sheetSafe } from "@/lib/sheet-safe";
+import { timingSafeEqualStr } from "@/lib/timing-safe";
 
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID ?? "17C4lp6_ZSaxi7bb58upLxrfUrtNuRKiiy_VpVWbuIQ0";
 const SHEET_NAME = "Fine Processing Form";
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
   // Auth: require a dedicated server-side secret, not the public anon key
   const authHeader = req.headers.get("authorization");
   const secret = process.env.EXPORT_API_SECRET;
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!secret || !timingSafeEqualStr(authHeader ?? "", `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -70,9 +72,9 @@ export async function POST(req: NextRequest) {
       requestBody: {
         values: [[
           new Date().toLocaleString("en-US"),
-          safeName,
-          safeDate,
-          `${safeType} — ${safeDesc}`,
+          sheetSafe(safeName),
+          sheetSafe(safeDate),
+          sheetSafe(`${safeType} — ${safeDesc}`),
           `$${Number(amount).toFixed(2)}`,
           "", // Column F: To Which Budget — filled in manually
         ]],

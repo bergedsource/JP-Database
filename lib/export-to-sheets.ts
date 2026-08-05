@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { createServiceClient } from "@/lib/supabase/service";
+import { sheetSafe } from "@/lib/sheet-safe";
 
 const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
 if (!FALLBACK_SPREADSHEET_ID) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
@@ -48,9 +49,9 @@ export async function exportFineToSheets(payload: ExportFinePayload): Promise<vo
     requestBody: {
       values: [[
         new Date().toLocaleString("en-US"),
-        safeName,
-        safeDate,
-        `${safeType} — ${safeDesc}`,
+        sheetSafe(safeName),
+        sheetSafe(safeDate),
+        sheetSafe(`${safeType} — ${safeDesc}`),
         `$${Number(amount ?? 0).toFixed(2)}`,
         "", // Column F: To Which Budget — filled in manually
       ]],

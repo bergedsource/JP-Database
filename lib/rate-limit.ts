@@ -40,13 +40,23 @@ export async function isRateLimited(
 }
 
 /**
- * Extract IP from a Next.js request.
- * x-real-ip is set by Vercel's edge and cannot be spoofed by clients.
+ * Extract the client IP used as the rate-limit key.
+ *
+ * On Vercel, `x-real-ip` is set by the edge and cannot be spoofed by clients, so
+ * it is the only header we trust in production. `x-forwarded-for` is fully
+ * client-controlled — trusting it would let an attacker rotate the header to get
+ * a fresh limiter bucket per request and defeat rate limiting entirely — so it
+ * is used ONLY off-Vercel (local dev, where `x-real-ip` isn't set). In
+ * production, a missing `x-real-ip` collapses to a single shared bucket rather
+ * than trusting the forwarded chain.
  */
 export function getIP(req: Request): string {
-  return (
-    req.headers.get("x-real-ip") ??
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    "unknown"
-  );
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  // Behind the Vercel edge x-real-ip is always present; its absence here means
+  // we're not behind a trusted proxy, so never trust the client-set chain.
+  if (process.env.VERCEL) return "no-real-ip";
+
+  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
 }
