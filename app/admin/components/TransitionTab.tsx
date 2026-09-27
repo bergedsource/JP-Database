@@ -13,6 +13,10 @@ type Props = {
 type AdminUser = { user_id: string; email: string; role: string; created_at: string };
 type ExportHistoryItem = { spreadsheetId: string; term: string; date: string; url: string };
 
+// Trap questions stay collapsed until asked for, so the answers aren't on screen
+// by default. Per-browser only — this is a shoulder-surfing guard, not access control.
+const TRAP_VISIBLE_KEY = "jp-admin-trap-questions-visible";
+
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -76,6 +80,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   });
   const [triviaSubmitting, setTriviaSubmitting] = useState(false);
   const [triviaError, setTriviaError] = useState("");
+  const [trapVisible, setTrapVisible] = useState(false);
 
   const [lastRosterSyncAt, setLastRosterSyncAt] = useState<string | null>(null);
   const [rosterSyncRunning, setRosterSyncRunning] = useState(false);
@@ -94,7 +99,19 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
     loadSettings();
     loadLeaderboard();
     loadTrivia();
+    // Read after mount, not in useState — keeps the first client render matching the server's.
+    try {
+      if (localStorage.getItem(TRAP_VISIBLE_KEY) === "true") setTrapVisible(true);
+    } catch { /* private mode / storage blocked — stay collapsed */ }
   }, []);
+
+  function toggleTrapVisible() {
+    const next = !trapVisible;
+    setTrapVisible(next);
+    try {
+      localStorage.setItem(TRAP_VISIBLE_KEY, next ? "true" : "false");
+    } catch { /* storage blocked — the toggle still works for this session */ }
+  }
 
   async function loadAdminUsers() {
     const res = await fetch("/api/admin/users");
@@ -847,10 +864,27 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       </div>
 
       <div className="adm-card">
-        <div className="adm-card-header">
+        <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <span className="adm-card-title">Chapter Trivia (Trap Questions)</span>
+          <button
+            type="button"
+            onClick={toggleTrapVisible}
+            aria-expanded={trapVisible}
+            aria-controls="trap-questions-body"
+            style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", whiteSpace: "nowrap" }}
+          >
+            {trapVisible ? "Hide ▲" : "Show ▼"}
+          </button>
         </div>
-        <div className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {!trapVisible ? (
+          <div id="trap-questions-body" className="adm-card-body">
+            <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0, fontFamily: "'IBM Plex Mono', monospace" }}>
+              Hidden — {triviaEntries.length} trap question{triviaEntries.length === 1 ? "" : "s"} loaded.
+              Click Show to view or edit them.
+            </p>
+          </div>
+        ) : (
+        <div id="trap-questions-body" className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0 }}>
             Chapter trivia questions get mixed into each game run as silent trap questions.
             Wrong answers don&apos;t change the player&apos;s score or lives — but flag the run as
@@ -948,6 +982,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
