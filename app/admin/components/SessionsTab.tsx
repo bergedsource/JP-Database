@@ -19,7 +19,7 @@ type SessionDetail = {
   changes: JpSessionChange[];
 };
 
-export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean }) {
+export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: boolean; refresh: () => Promise<void> | void }) {
   const [sessions, setSessions] = useState<JpSession[]>([]);
   const [sessionView, setSessionView] = useState<"list" | "detail">("list");
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
@@ -28,6 +28,12 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
   const [newSessionSubmitting, setNewSessionSubmitting] = useState(false);
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
   const [sessionError, setSessionError] = useState("");
+
+  // Inline amount editing, one fine at a time.
+  const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
+  const [amountDraft, setAmountDraft] = useState("");
+  const [amountSaving, setAmountSaving] = useState(false);
+  const [amountError, setAmountError] = useState("");
 
   async function loadSessions() {
     setSessionLoading(true);
@@ -97,9 +103,53 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
     });
     if (res.ok) {
       await loadSessionDetail(sessionId);
+      // The fine itself changed, so the Fines/Outstanding tabs' copies are now stale.
+      await refresh();
     } else {
-      setSessionError("Failed to update fine status.");
+      const data = await res.json().catch(() => ({}));
+      setSessionError(data.error ?? "Failed to update fine status.");
     }
+  }
+
+  function startEditAmount(fineId: string, current: number | null) {
+    setAmountError("");
+    setEditingAmountId(fineId);
+    setAmountDraft(current != null ? String(current) : "");
+  }
+
+  function cancelEditAmount() {
+    setEditingAmountId(null);
+    setAmountDraft("");
+    setAmountError("");
+  }
+
+  async function saveAmount(sessionId: string, fineId: string) {
+    const raw = amountDraft.trim();
+    // Empty clears the amount, which the API accepts as null.
+    if (raw !== "") {
+      const parsed = parseFloat(raw);
+      if (!isFinite(parsed) || parsed < 0 || parsed > 10000) {
+        setAmountError("Enter an amount between $0 and $10,000, or leave it blank.");
+        return;
+      }
+    }
+    setAmountSaving(true);
+    setAmountError("");
+    const res = await fetch(`/api/admin/sessions/${sessionId}/update-fine`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fine_id: fineId, amount: raw === "" ? null : raw }),
+    });
+    if (res.ok) {
+      cancelEditAmount();
+      await loadSessionDetail(sessionId);
+      // Push the new amount into the tabs that hold their own copy of the fines list.
+      await refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setAmountError(data.error ?? "Failed to update amount.");
+    }
+    setAmountSaving(false);
   }
 
   return (
@@ -229,6 +279,9 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
                 ) : (
                   sessionDetail.fines.map((fine) => {
                     const sc = STATUS_COLORS[fine.status as FineStatus] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+                    // Amounts are editable only by owner/root and only while the session is
+                    // open — once closed it's the ratified record. Matches the status dropdown.
+                    const canEditAmounts = isPrivileged && !sessionDetail.session.closed_at;
                     return (
                       <div key={fine.fine_id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -242,8 +295,64 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
                           <p className="adm-fine-meta">
                             {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
                             {fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
-                            {fine.amount != null ? ` · $${fine.amount.toFixed(2)}` : ""}
+                            {!canEditAmounts && fine.amount != null ? ` · $${fine.amount.toFixed(2)}` : ""}
                           </p>
+                          {canEditAmounts && (
+                            editingAmountId === fine.fine_id ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="10000"
+                                  value={amountDraft}
+                                  onChange={(e) => setAmountDraft(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveAmount(sessionDetail.session.id, fine.fine_id);
+                                    if (e.key === "Escape") cancelEditAmount();
+                                  }}
+                                  placeholder="blank = none"
+                                  className="adm-input"
+                                  style={{ width: 110 }}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => saveAmount(sessionDetail.session.id, fine.fine_id)}
+                                  disabled={amountSaving}
+                                  className="adm-btn"
+                                  style={{ fontSize: 11, padding: "4px 10px" }}
+                                >
+                                  {amountSaving ? "Saving…" : "Save"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEditAmount}
+                                  disabled={amountSaving}
+                                  style={{ fontSize: 11, padding: "4px 8px", background: "none", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 5, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif" }}
+                                >
+                                  Cancel
+                                </button>
+                                {amountError && (
+                                  <span role="alert" style={{ fontSize: 11, color: "#F87171" }}>{amountError}</span>
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: fine.amount != null ? "var(--gold)" : "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                                  {fine.amount != null ? `$${fine.amount.toFixed(2)}` : "no amount"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditAmount(fine.fine_id, fine.amount)}
+                                  style={{ fontSize: 11, padding: "2px 8px", background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 5, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}
+                                >
+                                  Edit amount
+                                </button>
+                              </div>
+                            )
+                          )}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
                           <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>

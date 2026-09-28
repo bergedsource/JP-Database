@@ -189,7 +189,7 @@ export default function AdminPage() {
               )}
               {tab === "audit" && isPrivileged && <AuditTab auditLogs={auditLogs} />}
               {tab === "events" && userRole === "root" && <EventsTab eventLog={eventLog} />}
-              {tab === "sessions" && <SessionsTab isPrivileged={isPrivileged} />}
+              {tab === "sessions" && <SessionsTab isPrivileged={isPrivileged} refresh={loadData} />}
               {tab === "transition" && isPrivileged && (
                 <TransitionTab fines={fines} currentUserId={currentUserId} userRole={userRole} setUserRole={setUserRole} />
               )}
