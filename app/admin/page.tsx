@@ -34,17 +34,6 @@ export default function AdminPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    loadData();
-    supabase.auth.getUser().then(({ data }) => {
-      setAdminEmail(data.user?.email ?? "unknown");
-    });
-    fetch("/api/admin/me")
-      .then((r) => r.json())
-      .then((d) => { setUserRole(d.role ?? null); setCurrentUserId(d.userId ?? null); })
-      .catch(() => {});
-  }, []);
-
   async function loadData() {
     const [{ data: m }, { data: f }, { data: a }, spRes] = await Promise.all([
       supabase.from("members").select("*").order("roll", { ascending: true, nullsFirst: false }).order("name"),
@@ -84,6 +73,19 @@ export default function AdminPage() {
     router.push("/admin/login");
     router.refresh();
   }
+
+  // loadData is deferred one microtask so its setState calls don't run during the
+  // effect's synchronous phase; the other two already settle in promise callbacks.
+  useEffect(() => {
+    void Promise.resolve().then(loadData);
+    supabase.auth.getUser().then(({ data }) => {
+      setAdminEmail(data.user?.email ?? "unknown");
+    });
+    fetch("/api/admin/me")
+      .then((r) => r.json())
+      .then((d) => { setUserRole(d.role ?? null); setCurrentUserId(d.userId ?? null); })
+      .catch(() => {});
+  }, []);
 
   return (
     <>

@@ -73,16 +73,16 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
   const [bylawSubmitting, setBylawSubmitting] = useState(false);
   const [bylawError, setBylawError] = useState("");
 
-  useEffect(() => {
-    loadCustomFineTypes();
-  }, []);
-
   async function loadCustomFineTypes() {
     fetch("/api/admin/fine-types")
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setCustomFineTypes(d); })
       .catch(() => {});
   }
+
+  useEffect(() => {
+    loadCustomFineTypes();
+  }, []);
 
   async function submitFine(e: React.FormEvent) {
     e.preventDefault();
@@ -163,7 +163,10 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
     return true;
   });
 
-  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  // Captured once per mount: "recent" means the 14 days before the tab was opened.
+  // Reading the clock during render is impure, and recomputing it every render
+  // would let the recent/older split shift mid-session for no benefit.
+  const [cutoff] = useState(() => new Date(Date.now() - 14 * 24 * 60 * 60 * 1000));
   const recentFines = filteredFines.filter((f) => new Date(f.created_at) >= cutoff);
   const olderFines = filteredFines.filter((f) => new Date(f.created_at) < cutoff);
 

@@ -95,8 +95,11 @@ function UnbecomingsContent({ members }: { members: Member[] }) {
     setLoading(false);
   }
 
+  // Deferred one microtask so loadList's opening setLoading/setError don't run
+  // during the effect's synchronous phase. `loading` already starts true, so the
+  // first paint is unchanged.
   useEffect(() => {
-    loadList();
+    void Promise.resolve().then(loadList);
   }, []);
 
   const filtered = list.filter((u) => {
@@ -266,8 +269,9 @@ function UnbecomingDetail({
     setLoading(false);
   }
 
+  // Deferred for the same reason as the list effect above.
   useEffect(() => {
-    load();
+    void Promise.resolve().then(load);
   }, [id]);
 
   if (loading) return <p className="adm-loading">Loading…</p>;
