@@ -29,10 +29,6 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
   const [sessionError, setSessionError] = useState("");
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
   async function loadSessions() {
     setSessionLoading(true);
     setSessionError("");
@@ -41,6 +37,12 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
     else setSessionError("Failed to load sessions.");
     setSessionLoading(false);
   }
+
+  // Deferred one microtask so loadSessions' opening setSessionLoading/setSessionError
+  // don't run during the effect's synchronous phase.
+  useEffect(() => {
+    void Promise.resolve().then(loadSessions);
+  }, []);
 
   async function loadSessionDetail(id: string) {
     setSessionDetailLoading(true);

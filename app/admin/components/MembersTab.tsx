@@ -23,12 +23,16 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
   const [showBbSuggestions, setShowBbSuggestions] = useState(false);
   const [rosterMap, setRosterMap] = useState<Map<number, { name: string; big_brother_roll: number | null }>>(new Map());
 
+  // Suggestions are hidden by deriving during render rather than by clearing the
+  // state from inside the effect below — a synchronous setState in an effect
+  // triggers a cascading re-render. Stale results may sit in state while this is
+  // empty; they're never shown, and the next fetch replaces them.
+  const bbSuggestions =
+    !bbSearch.trim() || memberForm.big_brother_roll != null ? [] : bbResults;
+
   useEffect(() => {
     const q = bbSearch.trim();
-    if (!q || memberForm.big_brother_roll != null) {
-      setBbResults([]);
-      return;
-    }
+    if (!q || memberForm.big_brother_roll != null) return;
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/admin/roster/search?q=${encodeURIComponent(q)}`);
@@ -74,13 +78,14 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
   const [bbEditSaving, setBbEditSaving] = useState(false);
   const [bbEditError, setBbEditError] = useState("");
 
+  // Derived for the same reason as bbSuggestions above.
+  const bbEditSuggestions =
+    editingBbId == null || !bbEditSearch.trim() || bbEditPickRoll != null ? [] : bbEditResults;
+
   useEffect(() => {
     if (editingBbId == null) return;
     const q = bbEditSearch.trim();
-    if (!q || bbEditPickRoll != null) {
-      setBbEditResults([]);
-      return;
-    }
+    if (!q || bbEditPickRoll != null) return;
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/admin/roster/search?q=${encodeURIComponent(q)}`);
@@ -300,9 +305,9 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                     autoComplete="off"
                     style={{ width: "100%" }}
                   />
-                  {showBbSuggestions && bbResults.length > 0 && (
+                  {showBbSuggestions && bbSuggestions.length > 0 && (
                     <ul className="adm-suggestions">
-                      {bbResults.map((r) => (
+                      {bbSuggestions.map((r) => (
                         <li key={r.roll}>
                           <button
                             type="button"
@@ -473,9 +478,9 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                                 autoComplete="off"
                                 autoFocus
                               />
-                              {showBbEditSuggestions && bbEditResults.length > 0 && (
+                              {showBbEditSuggestions && bbEditSuggestions.length > 0 && (
                                 <ul className="adm-suggestions">
-                                  {bbEditResults.map((r) => (
+                                  {bbEditSuggestions.map((r) => (
                                     <li key={r.roll}>
                                       <button
                                         type="button"

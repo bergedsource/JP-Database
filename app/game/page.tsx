@@ -49,6 +49,9 @@ export default function GamePage() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(STARTING_LIVES);
   const [startTime, setStartTime] = useState<number>(0);
+  // Frozen when the run ends, so the game-over screen shows one stable time
+  // instead of re-reading the clock on every render.
+  const [endedAt, setEndedAt] = useState<number>(0);
   const [now, setNow] = useState<number>(0);
   const [feedback, setFeedback] = useState<{ kind: "correct" | "wrong"; text: string } | null>(null);
   const [locked, setLocked] = useState(false);
@@ -89,9 +92,16 @@ export default function GamePage() {
   // Reset per-question countdown and auto-fail guard when a new question starts.
   // Deadline is wall-clock so drift in setInterval cannot affect displayed accuracy.
   // Ref update is synchronous, so subsequent effects in the same render cycle see the new value.
+  //
+  // set-state-in-effect is suppressed deliberately: the synchronous reset is the
+  // invariant this timer relies on (see the comment above). Deferring it would let
+  // the previous question's msLeft survive into the new question and re-trigger the
+  // auto-fail effect below. Fixing this properly means deriving msLeft from the
+  // deadline instead of storing it — a timer rewrite, not a lint tweak.
   useEffect(() => {
     if (state === "playing") {
       questionDeadlineRef.current = Date.now() + QUESTION_TIME_LIMIT_MS;
+      /* eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above */
       setQuestionMsLeft(QUESTION_TIME_LIMIT_MS);
       autoFailFiredRef.current = false;
     }
@@ -105,10 +115,35 @@ export default function GamePage() {
     return () => clearInterval(t);
   }, [state, locked]);
 
+  // Declared above the auto-fail effect below, which references it. Moving the
+  // function (rather than that effect) keeps effect declaration order intact —
+  // the auto-fail and skull-explode effects interact via prevFeedbackKindRef.
+  function advanceOrEnd(newScore: number, newLives: number) {
+    const next = index + 1;
+    if (newLives <= 0 || next >= questions.length) {
+      setScore(newScore);
+      setLives(newLives);
+      setEndedAt(Date.now());
+      setState("over");
+      return;
+    }
+    setScore(newScore);
+    setLives(newLives);
+    setIndex(next);
+    setRollInput("");
+    setFeedback(null);
+    setLocked(false);
+    setPickedRoll(null);
+  }
+
   // Auto-fail when countdown hits 0.
   // No cleanup return: the setTimeout must not be cancelled when setLocked(true) re-triggers this effect.
   // autoFailFiredRef guards against double-firing on the same question.
   // The deadlineRef check is the load-bearing guard: it prevents stale msLeft from re-firing across question boundaries.
+  //
+  // set-state-in-effect is suppressed deliberately: setLocked/setFeedback must land
+  // in the same commit that sets autoFailFiredRef, or a re-render can slip in and
+  // double-fire the auto-fail (costing two lives for one timeout).
   useEffect(() => {
     if (isCreator) return; // creator test mode: timer never auto-fails
     if (state !== "playing" || locked || autoFailFiredRef.current) return;
@@ -118,6 +153,7 @@ export default function GamePage() {
     const q = questions[index];
     const capturedScore = score;
     const capturedLives = lives;
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above */
     setLocked(true);
 
     // Trivia times out like bigbro/roll now — life lost, correct answer revealed, skull explodes.
@@ -133,9 +169,16 @@ export default function GamePage() {
 
   // Trigger the skull-explode animation on the transition into a life-losing wrong feedback.
   // Skipped in creator/practice modes (lives never decrement there, so an explosion would lie).
+  //
+  // set-state-in-effect is suppressed deliberately: explodingKey is an animation
+  // remount key, and the edge-detect against prevFeedbackKindRef is what keeps the
+  // CSS animation from replaying on unrelated re-renders. Deriving it during render
+  // would unmount the boom span as soon as feedback clears, truncating the animation
+  // if it outlasts FEEDBACK_DELAY_WRONG_MS — needs visual checking, not a lint pass.
   useEffect(() => {
     const fkind = feedback?.kind ?? null;
     if (fkind === "wrong" && prevFeedbackKindRef.current !== "wrong" && !isCreator && !isPractice) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above */
       setExplodingKey((k) => k + 1);
     }
     prevFeedbackKindRef.current = fkind;
@@ -191,23 +234,6 @@ export default function GamePage() {
   async function handlePractice() {
     setUsernameError("");
     await beginRun(true);
-  }
-
-  function advanceOrEnd(newScore: number, newLives: number) {
-    const next = index + 1;
-    if (newLives <= 0 || next >= questions.length) {
-      setScore(newScore);
-      setLives(newLives);
-      setState("over");
-      return;
-    }
-    setScore(newScore);
-    setLives(newLives);
-    setIndex(next);
-    setRollInput("");
-    setFeedback(null);
-    setLocked(false);
-    setPickedRoll(null);
   }
 
   function answerBigbro(picked: number) {
@@ -409,7 +435,7 @@ export default function GamePage() {
             </>
           ) : (
             <>
-              <p className="game-question">What is <strong>{q.member_name}</strong>'s roll number?</p>
+              <p className="game-question">What is <strong>{q.member_name}</strong>&apos;s roll number?</p>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   className="game-input"
@@ -436,7 +462,9 @@ export default function GamePage() {
   }
 
   // Render: over
-  const elapsedSec = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+  // endedAt is set in the same update that flips state to "over", so it is always
+  // populated by the time this renders; Math.max keeps it safe regardless.
+  const elapsedSec = Math.max(0, Math.floor((endedAt - startTime) / 1000));
   const allDone = lives > 0 && index >= questions.length - 1;
   return (
     <main className="game-shell">
