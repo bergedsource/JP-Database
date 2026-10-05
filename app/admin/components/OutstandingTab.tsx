@@ -64,6 +64,11 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
   const [editingAmountValue, setEditingAmountValue] = useState<string>("");
 
+  // Labor completion — two-click confirm, since the row disappears with no undo
+  const [confirmLaborId, setConfirmLaborId] = useState<string | null>(null);
+  const [laborBusyId, setLaborBusyId] = useState<string | null>(null);
+  const [laborError, setLaborError] = useState("");
+
   async function submitOutstandingFine(e: React.FormEvent) {
     e.preventDefault();
     if (!outSelectedMember) { setOutError("Select a member."); return; }
@@ -131,6 +136,28 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
     setEditingAmountValue("");
     await refresh();
   }
+
+  async function completeLabor(id: string) {
+    setLaborBusyId(id);
+    setLaborError("");
+    const res = await fetch(`/api/admin/fines/${id}/labor-complete`, { method: "PUT" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setLaborError(d.error ?? "Failed to mark labor complete");
+    }
+    setConfirmLaborId(null);
+    await refresh();
+    setLaborBusyId(null);
+  }
+
+  const laborFines = fines
+    .filter((f) => f.status === "labor" && !f.labor_completed_at)
+    .filter((f) => filterTerm === "all" || f.term === filterTerm);
+  const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? "Unknown";
+  const laborRows = [...laborFines].sort((a, b) =>
+    memberName(a.member_id).localeCompare(memberName(b.member_id)) ||
+    a.date_issued.localeCompare(b.date_issued)
+  );
 
   const outstandingFines = fines.filter((f) => {
     if (f.status !== "pending" && f.status !== "upheld") return false;
@@ -430,6 +457,54 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
           </div>
         ))
       )}
+
+      {/* Labor owed — fines served as labor instead of money */}
+      <div className="adm-card">
+        <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span className="adm-card-title">On Labor</span>
+          <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+            {laborRows.length} owed{filterTerm !== "all" ? ` · ${filterTerm}` : ""}
+          </span>
+        </div>
+        <div className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {laborError && <p className="adm-error">{laborError}</p>}
+          {laborRows.length === 0 ? (
+            <p className="adm-empty">Nobody currently owes labor.</p>
+          ) : (
+            laborRows.map((fine) => (
+              <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: STATUS_COLORS.labor.color }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{memberName(fine.member_id)}</p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.fine_type} — {fine.description}</p>
+                  {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                  <p className="adm-fine-meta">
+                    {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                    {fine.amount != null && ` · in place of $${fine.amount.toFixed(2)}`}
+                  </p>
+                </div>
+                {isPrivileged && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {confirmLaborId === fine.id ? (
+                      <>
+                        <button type="button" className="adm-btn" disabled={laborBusyId === fine.id} onClick={() => completeLabor(fine.id)} style={{ padding: "4px 10px", fontSize: 12 }}>
+                          {laborBusyId === fine.id ? "Saving…" : "Confirm"}
+                        </button>
+                        <button type="button" onClick={() => setConfirmLaborId(null)} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 12 }}>
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" className="adm-btn" onClick={() => setConfirmLaborId(fine.id)} style={{ padding: "4px 10px", fontSize: 12 }}>
+                        Labor done
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }

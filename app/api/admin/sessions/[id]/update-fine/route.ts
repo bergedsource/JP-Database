@@ -52,7 +52,7 @@ export async function POST(
   // Update the fine status
   const { error: updateError } = await service
     .from("fines")
-    .update({ status: new_status })
+    .update({ status: new_status, labor_completed_at: null })
     .eq("id", fine_id);
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });

@@ -36,7 +36,8 @@ export async function PUT(
 
   const { error } = await service
     .from("fines")
-    .update({ status, date_resolved: dateResolved })
+    // Any status change resets labor completion, so re-assigning labor puts the member back on the labor list.
+    .update({ status, date_resolved: dateResolved, labor_completed_at: null })
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
