@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import MemberFilter from "./MemberFilter";
+import FineDetailsEditor from "./FineDetailsEditor";
 import OverdueActions, { OVERDUE_ROW_STYLE } from "./OverdueActions";
 import { isOverdue } from "@/lib/overdue";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
@@ -382,8 +383,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                 <div key={fine.id} className="adm-fine-row" style={overdue ? OVERDUE_ROW_STYLE : { borderLeftColor: sc.color }}>
                   <div style={{ flex: 1, minWidth: 0, userSelect: "none", cursor: "default" }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{fine.fine_type}</p>
-                    <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.description}</p>
-                    {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                    <FineDetailsEditor key={`${fine.id}:${fine.description}:${fine.notes ?? ""}`} fineId={fine.id} description={fine.description} notes={fine.notes} canEdit={isPrivileged} onSaved={() => refresh()} />
                     <p className="adm-fine-meta">
                       {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}{fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
                       {editingAmountId === fine.id ? (
