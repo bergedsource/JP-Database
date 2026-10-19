@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import MemberFilter from "./MemberFilter";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DEFAULT_AMOUNTS, FINE_DESCRIPTIONS } from "@/lib/fine-types";
 
@@ -585,17 +586,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
           <option value="labor">Labor</option>
           <option value="added_to_dues">Added to Dues</option>
         </select>
-        <select
-          value={filterMember}
-          onChange={(e) => setFilterMember(e.target.value)}
-          className="adm-input"
-          style={{ width: "auto" }}
-        >
-          <option value="all">All members</option>
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
+        <MemberFilter members={members} value={filterMember} onChange={setFilterMember} />
         <select
           value={filterOfficer}
           onChange={(e) => setFilterOfficer(e.target.value)}
