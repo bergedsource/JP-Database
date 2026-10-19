@@ -22,6 +22,7 @@ export default function LaborTab({ members, fines, isPrivileged, refresh }: Labo
 
   // Labor completion — two-click confirm, since the row disappears with no undo
   const [confirmLaborId, setConfirmLaborId] = useState<string | null>(null);
+  const [confirmIncompleteId, setConfirmIncompleteId] = useState<string | null>(null);
   const [laborBusyId, setLaborBusyId] = useState<string | null>(null);
   const [laborError, setLaborError] = useState("");
 
@@ -34,6 +35,19 @@ export default function LaborTab({ members, fines, isPrivileged, refresh }: Labo
       setLaborError(d.error ?? "Failed to mark labor complete");
     }
     setConfirmLaborId(null);
+    await refresh();
+    setLaborBusyId(null);
+  }
+
+  async function markNotCompleted(id: string) {
+    setLaborBusyId(id);
+    setLaborError("");
+    const res = await fetch(`/api/admin/fines/${id}/labor-incomplete`, { method: "PUT" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setLaborError(d.error ?? "Failed to mark labor not completed");
+    }
+    setConfirmIncompleteId(null);
     await refresh();
     setLaborBusyId(null);
   }
@@ -94,19 +108,38 @@ export default function LaborTab({ members, fines, isPrivileged, refresh }: Labo
                   </p>
                 </div>
                 {isPrivileged && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                     {confirmLaborId === fine.id ? (
-                      <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <button type="button" className="adm-btn" disabled={laborBusyId === fine.id} onClick={() => completeLabor(fine.id)} style={{ padding: "4px 10px", fontSize: 12 }}>
                           {laborBusyId === fine.id ? "Saving…" : "Confirm"}
                         </button>
                         <button type="button" onClick={() => setConfirmLaborId(null)} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 12 }}>
                           Cancel
                         </button>
-                      </>
+                      </div>
                     ) : (
-                      <button type="button" className="adm-btn" onClick={() => setConfirmLaborId(fine.id)} style={{ padding: "4px 10px", fontSize: 12 }}>
+                      <button type="button" className="adm-btn" onClick={() => { setConfirmLaborId(fine.id); setConfirmIncompleteId(null); }} style={{ padding: "4px 10px", fontSize: 12 }}>
                         Labor done
+                      </button>
+                    )}
+                    {confirmIncompleteId === fine.id ? (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                          {fine.amount != null ? `${fine.amount.toFixed(2)} → ${(Math.round(fine.amount * 140) / 100).toFixed(2)}` : "No amount set"} · soc pro
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <button type="button" className="adm-btn" disabled={laborBusyId === fine.id} onClick={() => markNotCompleted(fine.id)} style={{ padding: "4px 10px", fontSize: 12, background: "var(--red)", color: "#fff" }}>
+                            {laborBusyId === fine.id ? "Saving…" : "Confirm"}
+                          </button>
+                          <button type="button" onClick={() => setConfirmIncompleteId(null)} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 12 }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button type="button" className="adm-btn" onClick={() => { setConfirmIncompleteId(fine.id); setConfirmLaborId(null); }} style={{ padding: "4px 10px", fontSize: 12, background: "transparent", color: "var(--red)", border: "1px solid var(--red)" }}>
+                        Not completed
                       </button>
                     )}
                   </div>
