@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import MemberFilter from "./MemberFilter";
+import OverdueActions, { OVERDUE_ROW_STYLE } from "./OverdueActions";
+import { isOverdue } from "@/lib/overdue";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DEFAULT_AMOUNTS, FINE_DESCRIPTIONS } from "@/lib/fine-types";
 
@@ -168,14 +170,17 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
   // Reading the clock during render is impure, and recomputing it every render
   // would let the recent/older split shift mid-session for no benefit.
   const [cutoff] = useState(() => new Date(Date.now() - 14 * 24 * 60 * 60 * 1000));
+  const [now] = useState(() => Date.now());
+  const overdueCount = fines.filter((f) => isOverdue(f, now)).length;
   const recentFines = filteredFines.filter((f) => new Date(f.created_at) >= cutoff);
   const olderFines = filteredFines.filter((f) => new Date(f.created_at) < cutoff);
 
   const renderFineCard = (fine: Fine) => {
     const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
     const repeatCount = fines.filter((f) => f.member_id === fine.member_id && f.fine_type === fine.fine_type).length;
+    const overdue = isOverdue(fine, now);
     return (
-      <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
+      <div key={fine.id} className="adm-fine-row" style={overdue ? OVERDUE_ROW_STYLE : { borderLeftColor: sc.color }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span className="adm-fine-member">{fine.member_name}</span>
@@ -220,6 +225,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+          {overdue && <OverdueActions fine={fine} now={now} isPrivileged={isPrivileged} refresh={refresh} />}
           <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
             {fine.status.replace(/_/g, " ")}
           </span>
@@ -566,6 +572,12 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {overdueCount > 0 && (
+        <div className="adm-error" style={{ margin: 0, fontWeight: 600 }}>
+          {overdueCount} pending fine{overdueCount !== 1 ? "s are" : " is"} past the review deadline — highlighted in red below.
         </div>
       )}
 
