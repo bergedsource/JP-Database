@@ -1,5 +1,6 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { archiveSocPro } from "@/lib/soc-pro-history";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
@@ -20,6 +21,8 @@ export async function DELETE(
     .select("member_id, reason, members(name)")
     .eq("id", id)
     .single();
+
+  await archiveSocPro(service, [id], current.email, "Lifted manually");
 
   const { error } = await service
     .from("social_probation")

@@ -10,6 +10,20 @@ export type SocialProbationReason =
   | "Missing House Philanthropy Event (§11-270)"
   | "Other";
 
+export interface SocialProbationHistory {
+  id: string;
+  member_id: string | null;
+  member_name: string;
+  reason: string;
+  notes: string | null;
+  start_date: string;
+  end_date: string | null;
+  source: string;
+  removed_at: string;
+  removed_by: string;
+  removal_reason: string;
+}
+
 export interface SocialProbation {
   id: string;
   member_id: string;

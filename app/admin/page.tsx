@@ -10,6 +10,7 @@ import OutstandingTab from "./components/OutstandingTab";
 import LaborTab from "./components/LaborTab";
 import MembersTab from "./components/MembersTab";
 import SocialProbationTab from "./components/SocialProbationTab";
+import SocProHistoryTab from "./components/SocProHistoryTab";
 import AuditTab from "./components/AuditTab";
 import EventsTab from "./components/EventsTab";
 import SessionsTab from "./components/SessionsTab";
@@ -17,7 +18,7 @@ import TransitionTab from "./components/TransitionTab";
 import UnbecomingsTab from "./components/UnbecomingsTab";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 
-type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
+type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "soc pro history" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
@@ -122,7 +123,7 @@ export default function AdminPage() {
 
           <div className="adm-tabs-wrap">
             <div className="adm-tabs">
-            {(["fines", "outstanding", "labor", "members", "soc pro"] as Tab[]).map((t) => (
+            {(["fines", "outstanding", "labor", "members", "soc pro", "soc pro history"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -191,6 +192,7 @@ export default function AdminPage() {
               {tab === "soc pro" && (
                 <SocialProbationTab members={members} socialProbations={socialProbations} isPrivileged={isPrivileged} userRole={userRole} refresh={loadData} />
               )}
+              {tab === "soc pro history" && <SocProHistoryTab />}
               {tab === "audit" && isPrivileged && <AuditTab auditLogs={auditLogs} />}
               {tab === "events" && userRole === "root" && <EventsTab eventLog={eventLog} />}
               {tab === "sessions" && <SessionsTab isPrivileged={isPrivileged} refresh={loadData} />}
