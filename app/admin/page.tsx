@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import type { AuditLog, Fine, Member, SocialProbation } from "@/lib/types";
 import FinesTab from "./components/FinesTab";
 import OutstandingTab from "./components/OutstandingTab";
+import LaborTab from "./components/LaborTab";
 import MembersTab from "./components/MembersTab";
 import SocialProbationTab from "./components/SocialProbationTab";
 import AuditTab from "./components/AuditTab";
@@ -16,7 +17,7 @@ import TransitionTab from "./components/TransitionTab";
 import UnbecomingsTab from "./components/UnbecomingsTab";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 
-type Tab = "fines" | "outstanding" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
+type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
@@ -121,7 +122,7 @@ export default function AdminPage() {
 
           <div className="adm-tabs-wrap">
             <div className="adm-tabs">
-            {(["fines", "outstanding", "members", "soc pro"] as Tab[]).map((t) => (
+            {(["fines", "outstanding", "labor", "members", "soc pro"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -180,6 +181,9 @@ export default function AdminPage() {
               )}
               {tab === "outstanding" && (
                 <OutstandingTab members={members} fines={fines} isPrivileged={isPrivileged} currentUserId={currentUserId} userRole={userRole} refresh={loadData} />
+              )}
+              {tab === "labor" && (
+                <LaborTab members={members} fines={fines} isPrivileged={isPrivileged} refresh={loadData} />
               )}
               {tab === "members" && (
                 <MembersTab members={members} fines={fines} isPrivileged={isPrivileged} refresh={loadData} />

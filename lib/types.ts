@@ -52,6 +52,7 @@ export interface Fine {
   term: string;
   date_issued: string;
   date_resolved: string | null;
+  labor_completed_at?: string | null;
   notes: string | null;
   fining_officer: string | null;
   created_by_user_id: string | null;
