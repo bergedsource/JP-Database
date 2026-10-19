@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import FineDetailsEditor from "./FineDetailsEditor";
 import type { FineStatus, JpSession, JpSessionChange, JpSessionFine } from "@/lib/types";
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
@@ -19,7 +20,7 @@ type SessionDetail = {
   changes: JpSessionChange[];
 };
 
-export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean }) {
+export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: boolean; refresh: () => Promise<void> }) {
   const [sessions, setSessions] = useState<JpSession[]>([]);
   const [sessionView, setSessionView] = useState<"list" | "detail">("list");
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
@@ -237,8 +238,17 @@ export default function SessionsTab({ isPrivileged }: { isPrivileged: boolean })
                             <span style={{ color: "var(--text-dim)" }}>·</span>
                             <span className="adm-fine-type">{fine.fine_type}</span>
                           </div>
-                          <p className="adm-fine-desc">{fine.description}</p>
-                          {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+                          <FineDetailsEditor
+                            key={`${fine.fine_id}:${fine.description}:${fine.notes ?? ""}`}
+                            fineId={fine.fine_id}
+                            description={fine.description}
+                            notes={fine.notes}
+                            canEdit={isPrivileged}
+                            onSaved={(description, notes) => {
+                              setSessionDetail((d) => d && { ...d, fines: d.fines.map((f) => f.fine_id === fine.fine_id ? { ...f, description, notes } : f) });
+                              return refresh();
+                            }}
+                          />
                           <p className="adm-fine-meta">
                             {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
                             {fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import MemberFilter from "./MemberFilter";
+import FineDetailsEditor from "./FineDetailsEditor";
 import OverdueActions, { OVERDUE_ROW_STYLE } from "./OverdueActions";
 import { isOverdue } from "@/lib/overdue";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
@@ -192,8 +193,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
               </span>
             )}
           </div>
-          <p className="adm-fine-desc">{fine.description}</p>
-          {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
+          <FineDetailsEditor key={`${fine.id}:${fine.description}:${fine.notes ?? ""}`} fineId={fine.id} description={fine.description} notes={fine.notes} canEdit={isPrivileged} onSaved={() => refresh()} />
           <p className="adm-fine-meta">
             {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}{fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
             {editingAmountId === fine.id ? (
