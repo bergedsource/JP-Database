@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MemberFilter from "./MemberFilter";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DESCRIPTIONS } from "@/lib/fine-types";
 
@@ -59,6 +60,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
 
   // Filter state
   const [filterTerm, setFilterTerm] = useState<string>("all");
+  const [filterMember, setFilterMember] = useState<string>("all");
 
   // Amount editing state
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   const outstandingFines = fines.filter((f) => {
     if (f.status !== "pending" && f.status !== "upheld") return false;
     if (filterTerm !== "all" && f.term !== filterTerm) return false;
+    if (filterMember !== "all" && f.member_id !== filterMember) return false;
     return true;
   });
   const byMember = members
@@ -333,6 +336,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
             {getTermOptions().map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
+        <MemberFilter members={members} value={filterMember} onChange={setFilterMember} />
       </div>
 
       <div className="adm-summary">
