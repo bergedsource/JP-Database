@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import MemberFilter from "./MemberFilter";
+import OverdueActions, { OVERDUE_ROW_STYLE } from "./OverdueActions";
+import { isOverdue } from "@/lib/overdue";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DESCRIPTIONS } from "@/lib/fine-types";
 
@@ -61,6 +63,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   // Filter state
   const [filterTerm, setFilterTerm] = useState<string>("all");
   const [filterMember, setFilterMember] = useState<string>("all");
+  const [now] = useState(() => Date.now());
 
   // Amount editing state
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -140,6 +143,8 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
     if (filterMember !== "all" && f.member_id !== filterMember) return false;
     return true;
   });
+  const overdueCount = outstandingFines.filter((f) => isOverdue(f, now)).length;
+
   const byMember = members
     .map((m) => {
       const mFines = outstandingFines.filter((f) => f.member_id === m.id);
@@ -343,6 +348,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
         <span style={{ color: "var(--text-muted)" }}>
           {outstandingFines.length} outstanding fine{outstandingFines.length !== 1 ? "s" : ""} · {byMember.length} member{byMember.length !== 1 ? "s" : ""}
           {filterTerm !== "all" && <span style={{ color: "var(--gold)", marginLeft: 6 }}>· {filterTerm}</span>}
+          {overdueCount > 0 && <span style={{ color: "var(--red)", fontWeight: 600, marginLeft: 6 }}>· {overdueCount} overdue</span>}
         </span>
         {grandTotal > 0 && (
           <span style={{ color: "var(--red)", fontWeight: 600 }}>
@@ -371,8 +377,9 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
             </div>
             {mFines.map((fine) => {
               const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+              const overdue = isOverdue(fine, now);
               return (
-                <div key={fine.id} className="adm-fine-row" style={{ borderLeftColor: sc.color }}>
+                <div key={fine.id} className="adm-fine-row" style={overdue ? OVERDUE_ROW_STYLE : { borderLeftColor: sc.color }}>
                   <div style={{ flex: 1, minWidth: 0, userSelect: "none", cursor: "default" }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{fine.fine_type}</p>
                     <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.description}</p>
@@ -408,6 +415,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                    {overdue && <OverdueActions fine={fine} now={now} isPrivileged={isPrivileged} refresh={refresh} />}
                     <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
                       {fine.status.replace(/_/g, " ")}
                     </span>

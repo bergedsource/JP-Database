@@ -30,7 +30,6 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const month = now.getUTCMonth() + 1; // 1-indexed
   const day = now.getUTCDate();
-  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const today = now.toISOString().split("T")[0];
 
@@ -151,24 +150,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // --- Daily: Auto-escalate overdue pending fines ---
-  const { data: overdue } = await service
-    .from("fines")
-    .select("id, fine_type, members(name)")
-    .eq("status", "pending")
-    .lt("created_at", twoWeeksAgo);
-
-  if (overdue && overdue.length > 0) {
-    const ids = (overdue as { id: string }[]).map((f) => f.id);
-    await service.from("fines").update({ status: "upheld" }).in("id", ids);
-    for (const fine of overdue as unknown as { id: string; fine_type: string; members?: { name: string } }[]) {
-      await service.from("audit_logs").insert({
-        admin_email: "system",
-        action: "Auto-Escalated Fine",
-        details: `${fine.members?.name ?? "Unknown"} — ${fine.fine_type} auto-escalated to "upheld" (pending > 2 weeks)`,
-      });
-    }
-  }
+  // Overdue pending fines are no longer auto-upheld — the admin UI flags them (lib/overdue.ts) for an owner to uphold or extend.
 
   // --- Daily: Auto-detect social probation ---
   const [{ data: upheldFines }, { data: autoSP }] = await Promise.all([
@@ -231,5 +213,5 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ ok: true, escalated: overdue?.length ?? 0, rosterSync: rosterSyncResult });
+  return NextResponse.json({ ok: true, rosterSync: rosterSyncResult });
 }
