@@ -38,7 +38,10 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
   const [spSubmitting, setSpSubmitting] = useState(false);
   const [spError, setSpError] = useState("");
 
-  const activeSP = socialProbations;
+  // Entries drop off the day after their end date (the nightly cron deletes them; hide them here so
+  // they don't linger until it runs). Local date, so it flips at local midnight rather than UTC.
+  const localToday = new Date().toLocaleDateString("en-CA");
+  const activeSP = socialProbations.filter((sp) => !sp.end_date || sp.end_date >= localToday);
   const spMemberSuggestions = members
     .filter((m) => ["active", "pledge"].includes(m.status) && m.name.toLowerCase().includes(spMemberSearch.toLowerCase()))
     .slice(0, 8);

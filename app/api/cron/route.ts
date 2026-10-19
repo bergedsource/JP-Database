@@ -189,9 +189,27 @@ export async function GET(req: NextRequest) {
         await service.from("audit_logs").insert({ admin_email: "system", action: "Auto Social Probation", details: `${nameMap.get(memberId) ?? "Unknown"} placed on social probation — outstanding fines per §10-270` });
       }
       for (const sp of toRemove) {
-        await service.from("social_probation").update({ end_date: today }).eq("id", sp.id);
+        // Delete like a manual "Lift" — stamping end_date left the row on the list.
+        await service.from("social_probation").delete().eq("id", sp.id);
         await service.from("audit_logs").insert({ admin_email: "system", action: "Auto Social Probation Lifted", details: `${nameMap.get(sp.member_id) ?? "Unknown"} removed from social probation — fines resolved` });
       }
+    }
+  }
+
+  // --- Daily: Expire social probation past its end date ---
+  const { data: expiredSP } = await service
+    .from("social_probation")
+    .select("id, reason, end_date, members(name)")
+    .lt("end_date", today);
+
+  if (expiredSP && expiredSP.length > 0) {
+    await service.from("social_probation").delete().in("id", expiredSP.map((sp: { id: string }) => sp.id));
+    for (const sp of expiredSP as unknown as { reason: string; end_date: string; members?: { name: string } }[]) {
+      await service.from("audit_logs").insert({
+        admin_email: "system",
+        action: "Social Probation Expired",
+        details: `${sp.members?.name ?? "Unknown"} — ${sp.reason} ended ${sp.end_date}, removed automatically`,
+      });
     }
   }
 
@@ -213,5 +231,5 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ ok: true, rosterSync: rosterSyncResult });
+  return NextResponse.json({ ok: true, socProExpired: expiredSP?.length ?? 0, rosterSync: rosterSyncResult });
 }
