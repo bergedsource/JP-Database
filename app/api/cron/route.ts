@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { archiveSocPro } from "@/lib/soc-pro-history";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { syncMasterRoster } from "@/lib/sync-roster";
@@ -75,6 +76,8 @@ export async function GET(req: NextRequest) {
     await service.from("jp_session_fines").delete().neq("session_id", "00000000-0000-0000-0000-000000000000");
     await service.from("jp_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     // Delete all auto soc pro entries (manual ones are preserved)
+    const { data: autoRows } = await service.from("social_probation").select("id").eq("source", "auto");
+    await archiveSocPro(service, (autoRows ?? []).map((r: { id: string }) => r.id), "system", "Annual cleanup");
     await service.from("social_probation").delete().eq("source", "auto");
     // Delete all fines
     await service.from("fines").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -190,6 +193,7 @@ export async function GET(req: NextRequest) {
       }
       for (const sp of toRemove) {
         // Delete like a manual "Lift" — stamping end_date left the row on the list.
+        await archiveSocPro(service, [sp.id], "system", "Fines resolved");
         await service.from("social_probation").delete().eq("id", sp.id);
         await service.from("audit_logs").insert({ admin_email: "system", action: "Auto Social Probation Lifted", details: `${nameMap.get(sp.member_id) ?? "Unknown"} removed from social probation — fines resolved` });
       }
@@ -203,7 +207,9 @@ export async function GET(req: NextRequest) {
     .lt("end_date", today);
 
   if (expiredSP && expiredSP.length > 0) {
-    await service.from("social_probation").delete().in("id", expiredSP.map((sp: { id: string }) => sp.id));
+    const expiredIds = expiredSP.map((sp: { id: string }) => sp.id);
+    await archiveSocPro(service, expiredIds, "system", "End date passed");
+    await service.from("social_probation").delete().in("id", expiredIds);
     for (const sp of expiredSP as unknown as { reason: string; end_date: string; members?: { name: string } }[]) {
       await service.from("audit_logs").insert({
         admin_email: "system",
