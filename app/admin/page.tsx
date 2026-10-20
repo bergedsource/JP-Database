@@ -1,7 +1,7 @@
 "use client";
 
 import "./admin.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuditLog, Fine, Member, SocialProbation } from "@/lib/types";
@@ -16,12 +16,14 @@ import EventsTab from "./components/EventsTab";
 import SessionsTab from "./components/SessionsTab";
 import TransitionTab from "./components/TransitionTab";
 import UnbecomingsTab from "./components/UnbecomingsTab";
+import TabScrollbar from "./components/TabScrollbar";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 
 type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "soc pro history" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [fines, setFines] = useState<Fine[]>([]);
   const [socialProbations, setSocialProbations] = useState<SocialProbation[]>([]);
@@ -122,7 +124,7 @@ export default function AdminPage() {
           )}
 
           <div className="adm-tabs-wrap">
-            <div className="adm-tabs">
+            <div className="adm-tabs" ref={tabsRef}>
             {(["fines", "outstanding", "labor", "members", "soc pro", "soc pro history"] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -171,6 +173,7 @@ export default function AdminPage() {
               </button>
             )}
             </div>
+            <TabScrollbar target={tabsRef} />
           </div>
 
           {loading ? (
