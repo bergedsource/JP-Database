@@ -106,6 +106,36 @@
         }
         .adm-tabs::-webkit-scrollbar { display: none; }
 
+        /* Drag bar under the tabs (TabScrollbar) — only rendered when tabs overflow */
+        .adm-tabs-wrap:has(.adm-tabs-scroll)::after { bottom: 17px; }
+        .adm-tabs-scroll {
+          padding: 6px 0;
+          cursor: pointer;
+          touch-action: none;
+          user-select: none;
+        }
+        .adm-tabs-scroll-track {
+          position: relative;
+          height: 4px;
+          border-radius: 2px;
+          background: var(--border-light);
+          transition: transform 0.15s;
+        }
+        .adm-tabs-scroll-thumb {
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          border-radius: inherit;
+          background: var(--text-dim);
+          transition: background 0.15s;
+        }
+        .adm-tabs-scroll:hover .adm-tabs-scroll-track,
+        .adm-tabs-scroll.dragging .adm-tabs-scroll-track { transform: scaleY(1.5); }
+        .adm-tabs-scroll:hover .adm-tabs-scroll-thumb { background: var(--gold-dim); }
+        .adm-tabs-scroll.dragging { cursor: grabbing; }
+        .adm-tabs-scroll.dragging .adm-tabs-scroll-thumb { background: var(--gold); }
+
         @media (max-width: 640px) {
           .adm-table {
             display: block;
