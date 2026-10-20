@@ -161,7 +161,7 @@ export default function Home() {
         .page-wrap {
           position: relative;
           min-height: 100vh;
-          overflow-x: hidden;
+          overflow-x: clip;
           background: var(--black);
           font-family: var(--font-sans), sans-serif;
         }
@@ -180,7 +180,16 @@ export default function Home() {
         .serif { font-family: var(--font-serif), serif; }
 
         /* ── Nav ── */
-        .nav { border-bottom: 1px solid var(--black-border); animation: fadeDown 0.5s 0.2s ease both; }
+        .nav {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: rgba(10,10,10,0.85);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border-bottom: 1px solid var(--black-border);
+          animation: fadeDown 0.5s 0.2s ease both;
+        }
         .nav-inner {
           display: flex;
           flex-wrap: wrap;
@@ -295,7 +304,7 @@ export default function Home() {
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
           gap: 20px;
           padding-bottom: 72px;
-          scroll-margin-top: 24px;
+          scroll-margin-top: 96px;
         }
         .card {
           position: relative;
@@ -425,7 +434,7 @@ export default function Home() {
           max-width: 760px;
           margin: 0 auto;
           padding: 0 24px 72px;
-          scroll-margin-top: 24px;
+          scroll-margin-top: 96px;
         }
         .member-header {
           display: flex;
@@ -546,6 +555,10 @@ export default function Home() {
           .crest-ring img { width: 128px; height: 170px; }
           .card { padding: 22px; }
           .balance-amount, .clock-time { font-size: 46px; }
+          /* Keep the sticky bar to one row on phones; the hero button and cards cover lookup/pay */
+          .nav-inner { gap: 8px 16px; padding-top: 10px; padding-bottom: 10px; }
+          .nav-link-wide { display: none; }
+          .cards, .record { scroll-margin-top: 76px; }
         }
 
         /* ── Entrance: scan line ── */
@@ -656,8 +669,8 @@ export default function Home() {
               <img src="/crest.webp" alt="" width={30} height={40} style={{ objectFit: "contain" }} />
               <span className="brand-name">Acacia JP</span>
             </a>
-            <a href="#lookup" className="nav-link">Fine lookup</a>
-            <a href="#lookup" className="nav-link">Pay</a>
+            <a href="#lookup" className="nav-link nav-link-wide">Fine lookup</a>
+            <a href="#lookup" className="nav-link nav-link-wide">Pay</a>
             {gameEnabled && <a href="/game" className="nav-link">Game</a>}
             <a href="/admin/login" className="nav-login">Officer login</a>
           </div>
