@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import FineDetailsEditor from "./FineDetailsEditor";
+import SessionSettings from "./SessionSettings";
 import { rollMap, sortFines, type FineSort } from "./rollSort";
 import type { FineStatus, JpSession, JpSessionChange, JpSessionFine, Member } from "@/lib/types";
 
@@ -184,6 +185,8 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {sessionError && <p className="adm-error" role="alert">{sessionError}</p>}
+
+      {isPrivileged && sessionView === "list" && <SessionSettings />}
 
       {isPrivileged && sessionView === "list" && (
         <div className="adm-card">

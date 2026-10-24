@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Cormorant_Garamond, Lato } from "next/font/google";
 import type { Fine, Member } from "@/lib/types";
+import type { JpInfo } from "@/lib/jp-info";
+import JpInfoCard from "./JpInfoCard";
 
 // Self-hosted by next/font so the CSP's font-src 'self' allows them.
 const serif = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-serif" });
@@ -30,32 +32,6 @@ const PARTICLES: [number, string, string, string, string][] = [
   [3, "95px", "90px", "0.8s", "1.0s"],
 ];
 
-const PACIFIC = "America/Los_Angeles";
-
-function PacificClock() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  // Server and client render a few ms apart, so the text can differ on hydration.
-  return (
-    <div className="clock">
-      <p className="clock-time" suppressHydrationWarning>
-        {now.toLocaleTimeString("en-US", { timeZone: PACIFIC, hour: "numeric", minute: "2-digit", second: "2-digit" })}
-      </p>
-      <p className="clock-weekday" suppressHydrationWarning>
-        {now.toLocaleDateString("en-US", { timeZone: PACIFIC, weekday: "long" })}
-      </p>
-      <p className="clock-date" suppressHydrationWarning>
-        {now.toLocaleDateString("en-US", { timeZone: PACIFIC, month: "long", day: "numeric", year: "numeric" })}
-      </p>
-    </div>
-  );
-}
-
 export default function Home() {
   const [query, setQuery] = useState("");
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -66,6 +42,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [venmo, setVenmo] = useState({ handle: "@Dillon-Berge", url: "https://venmo.com/Dillon-Berge" });
   const [gameEnabled, setGameEnabled] = useState(false);
+  const [jpInfo, setJpInfo] = useState<JpInfo | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const recordRef = useRef<HTMLElement>(null);
 
@@ -86,6 +63,10 @@ export default function Home() {
         setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" });
         setGameEnabled(d.game_enabled === "true");
       })
+      .catch(() => {});
+    fetch("/api/jp-info")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: JpInfo | null) => setJpInfo(d))
       .catch(() => {});
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
@@ -322,7 +303,7 @@ export default function Home() {
           border-color: var(--gold-dim);
           animation: fadeUp 0.6s 1.87s ease both;
         }
-        .card-clock { animation: fadeUp 0.6s 1.99s ease both; }
+        .card-jp { animation: fadeUp 0.6s 1.99s ease both; }
         .card-title { font-family: var(--font-serif), serif; font-size: 28px; font-weight: 600; color: var(--cream); }
         .card-text { font-size: 15px; line-height: 1.6; color: var(--cream-dim); }
         .card-sub { margin-top: 4px; font-size: 13px; color: var(--cream-dim); }
@@ -417,17 +398,74 @@ export default function Home() {
         .pay-btn-name { font-size: 14px; font-weight: 700; }
         .pay-btn-handle { font-size: 11px; color: var(--cream-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .clock { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-        .clock-time {
+        /* ── JP info card (rotating: wait / next session / common fines) ── */
+        .card-jp { min-height: 400px; }
+        .jp-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .jp-dots { display: flex; gap: 6px; }
+        .jp-dot {
+          width: 8px;
+          height: 8px;
+          padding: 0;
+          border: 0;
+          border-radius: 4px;
+          background: #3a3a3a;
+          cursor: pointer;
+          transition: width 0.2s ease, background 0.2s;
+        }
+        .jp-dot:hover { background: var(--gold-dim); }
+        .jp-dot.active { width: 28px; background: var(--gold); }
+        .jp-arrows { display: flex; gap: 6px; }
+        .jp-arrow {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 1px solid var(--black-border);
+          background: none;
+          color: var(--cream-dim);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: border-color 0.15s, color 0.15s;
+        }
+        .jp-arrow:hover { border-color: var(--gold); color: var(--gold-light); }
+        .jp-dot:focus-visible, .jp-arrow:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+        .jp-panel { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+        .jp-panel .card-text strong { color: var(--cream); }
+        .jp-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+        .jp-big {
+          margin-top: auto;
           font-family: var(--font-serif), serif;
-          font-size: 56px;
+          font-size: 52px;
           font-weight: 700;
           line-height: 1;
-          color: var(--cream);
-          font-variant-numeric: lining-nums tabular-nums;
+          color: var(--gold-light);
+          font-variant-numeric: lining-nums;
         }
-        .clock-weekday { font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
-        .clock-date { font-size: 15px; color: var(--cream-dim); }
+        .jp-bottom .jp-big { margin-top: 0; }
+        .jp-big.plain { color: var(--cream); }
+        .jp-big.muted { color: var(--cream-dim); }
+        .jp-sub { font-size: 14px; line-height: 1.5; color: var(--cream-dim); }
+        .jp-weekday { font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+        .jp-queue { display: flex; gap: 3px; }
+        .jp-queue span { flex-basis: 0; height: 6px; border-radius: 3px; background: var(--black-border); }
+        .jp-queue span.ahead { background: var(--gold-dim); }
+        .jp-queue span.you { background: var(--gold-light); }
+        .jp-common { list-style: none; display: flex; flex-direction: column; }
+        .jp-common li {
+          display: grid;
+          grid-template-columns: 22px minmax(0, 1fr) auto;
+          gap: 10px;
+          align-items: baseline;
+          padding: 9px 0;
+          border-bottom: 1px solid #222;
+        }
+        .jp-common li:last-child { border-bottom: 0; }
+        .jp-rank { font-family: var(--font-serif), serif; font-size: 20px; font-weight: 700; color: var(--gold); }
+        .jp-common-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .jp-common-name { font-size: 15px; font-weight: 700; color: var(--cream); }
+        .jp-common-meta { font-size: 12px; color: var(--cream-dim); }
+        .jp-common-amount { font-size: 15px; font-weight: 700; color: var(--gold-light); white-space: nowrap; }
 
         /* ── Member record ── */
         .record {
@@ -554,7 +592,7 @@ export default function Home() {
           .crest-ring { width: 240px; height: 240px; }
           .crest-ring img { width: 128px; height: 170px; }
           .card { padding: 22px; }
-          .balance-amount, .clock-time { font-size: 46px; }
+          .balance-amount, .jp-big { font-size: 46px; }
           /* Keep the sticky bar to one row on phones; the hero button and cards cover lookup/pay */
           .nav-inner { gap: 8px 16px; padding-top: 10px; padding-bottom: 10px; }
           .nav-link-wide { display: none; }
@@ -700,7 +738,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* ── Lookup / balance / clock ── */}
+        {/* ── Lookup / balance / JP info ── */}
         <section id="lookup" className="container cards">
           <article className="card card-search" ref={wrapperRef}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#CFB53B" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
@@ -767,11 +805,7 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="card card-clock">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#CFB53B" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-            <h2 className="card-title">Pacific Standard Time</h2>
-            <PacificClock />
-          </article>
+          <JpInfoCard info={jpInfo} member={selected} />
         </section>
 
         {/* ── Member record ── */}
@@ -818,7 +852,9 @@ export default function Home() {
               <li className="step">
                 <span className="step-num">II</span>
                 <span className="step-name">Reviewed at JP</span>
-                <span className="step-text">The board hears it at the next session.</span>
+                <span className="step-text">
+                  The board hears it at the next session{jpInfo?.nextSession ? <>, <strong>{new Date(jpInfo.nextSession.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</strong></> : ""}.
+                </span>
               </li>
               <li className="step">
                 <span className="step-num">III</span>

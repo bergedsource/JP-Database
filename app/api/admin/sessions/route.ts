@@ -1,6 +1,7 @@
 import { requireAuth, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
+import { NEXT_SESSION_KEY, parseNextSession } from "@/lib/jp-info";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/admin/sessions — list all sessions with fine count, newest first
@@ -83,6 +84,15 @@ export async function POST(req: NextRequest) {
       await service.from("jp_sessions").delete().eq("id", session.id);
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
+  }
+
+  // The posted "next session" is this one (or an earlier date), so take it off the
+  // homepage — it should never advertise a meeting that already happened. A posted
+  // date AFTER this session is a different meeting and stays up.
+  const { data: posted } = await service.from("settings").select("value").eq("key", NEXT_SESSION_KEY).maybeSingle();
+  const next = parseNextSession(posted?.value);
+  if (next && next.date <= date_held) {
+    await service.from("settings").upsert({ key: NEXT_SESSION_KEY, value: "", updated_at: new Date().toISOString() });
   }
 
   return NextResponse.json({ id: session.id, fine_count: pendingFines?.length ?? 0 });
