@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import FineDetailsEditor from "./FineDetailsEditor";
-import { rollMap, sortByRoll, type FineSort } from "./rollSort";
+import { rollMap, sortFines, type FineSort } from "./rollSort";
 import type { FineStatus, JpSession, JpSessionChange, JpSessionFine, Member } from "@/lib/types";
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
@@ -178,7 +178,7 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   const totalCount = sessionDetail?.fines.length ?? 0;
   const rolls = rollMap(members);
   const docket = sessionDetail
-    ? (sortBy === "roll" ? sortByRoll(sessionDetail.fines, rolls) : sessionDetail.fines)
+    ? sortFines(sessionDetail.fines, sortBy, rolls)
     : [];
 
   return (
@@ -302,6 +302,7 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
                     >
                       <option value="newest">As listed</option>
                       <option value="roll">Roll #, low to high</option>
+                      <option value="roll-desc">Roll #, high to low</option>
                     </select>
                   </div>
                 )}
