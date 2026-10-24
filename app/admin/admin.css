@@ -56,18 +56,11 @@
   border-bottom: 1px solid var(--border);
 }
 .adm-crest {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 40px;
   flex-shrink: 0;
-  border: 1.5px solid var(--gold);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-serif), serif;
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--gold);
+  object-fit: contain;
+  display: block;
 }
 .adm-brand-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .adm-brand-name { font-family: var(--font-serif), serif; font-weight: 700; font-size: 22px; line-height: 1; }
