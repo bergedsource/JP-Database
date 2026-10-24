@@ -385,7 +385,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                     <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{fine.fine_type}</p>
                     <FineDetailsEditor key={`${fine.id}:${fine.description}:${fine.notes ?? ""}`} fineId={fine.id} description={fine.description} notes={fine.notes} canEdit={isPrivileged} onSaved={() => refresh()} />
                     <p className="adm-fine-meta">
-                      {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}{fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
+                      {new Date(fine.date_issued + "T12:00:00").toLocaleDateString()} · {fine.term}{fine.fining_officer ? ` · Officer: ${fine.fining_officer}` : ""}
                       {editingAmountId === fine.id ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
                           · $<input

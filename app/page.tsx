@@ -911,7 +911,7 @@ function FineSection({ title, fines }: { title: string; fines: Fine[] }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 12 }}>
               <p className="fine-meta">
-                Issued {new Date(fine.date_issued).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                Issued {new Date(fine.date_issued + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                 &nbsp;·&nbsp;{fine.term}
               </p>
               <a
