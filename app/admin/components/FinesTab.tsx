@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import MemberFilter from "./MemberFilter";
 import FineDetailsEditor from "./FineDetailsEditor";
 import OverdueActions, { OVERDUE_ROW_STYLE } from "./OverdueActions";
+import { rollMap, sortByRoll, type FineSort } from "./rollSort";
 import { isOverdue } from "@/lib/overdue";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DEFAULT_AMOUNTS, FINE_DESCRIPTIONS } from "@/lib/fine-types";
@@ -47,6 +48,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
   const [filterMember, setFilterMember] = useState<string>("all");
   const [filterOfficer, setFilterOfficer] = useState<string>("all");
   const [filterTerm, setFilterTerm] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<FineSort>("newest");
 
   // Fine form state
   const [fineForm, setFineForm] = useState({
@@ -159,13 +161,15 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
 
   const uniqueOfficers = Array.from(new Set(fines.map((f) => f.fining_officer).filter(Boolean))) as string[];
 
-  const filteredFines = fines.filter((f) => {
+  const rolls = rollMap(members);
+  const matchingFines = fines.filter((f) => {
     if (filterStatus !== "all" && f.status !== filterStatus) return false;
     if (filterMember !== "all" && f.member_id !== filterMember) return false;
     if (filterOfficer !== "all" && f.fining_officer !== filterOfficer) return false;
     if (filterTerm !== "all" && f.term !== filterTerm) return false;
     return true;
   });
+  const filteredFines = sortBy === "roll" ? sortByRoll(matchingFines, rolls) : matchingFines;
 
   // Captured once per mount: "recent" means the 14 days before the tab was opened.
   // Reading the clock during render is impure, and recomputing it every render
@@ -185,6 +189,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span className="adm-fine-member">{fine.member_name}</span>
+            {rolls.get(fine.member_id) != null && <span className="adm-roll">#{rolls.get(fine.member_id)}</span>}
             <span style={{ color: "var(--text-dim)" }}>·</span>
             <span className="adm-fine-type">{fine.fine_type}</span>
             {repeatCount > 1 && (
@@ -618,6 +623,16 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
         >
           <option value="all">All terms</option>
           {getTermOptions().map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as FineSort)}
+          className="adm-input"
+          style={{ width: "auto" }}
+          aria-label="Sort fines"
+        >
+          <option value="newest">Newest first</option>
+          <option value="roll">Roll #, low to high</option>
         </select>
         <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
           {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
