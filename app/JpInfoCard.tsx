@@ -9,7 +9,7 @@ const SLIDES: { id: Slide; label: string }[] = [
   { id: "session", label: "Next JP session" },
   { id: "common", label: "Most common fines" },
 ];
-const ROTATE_MS = 6000;
+const ROTATE_MS = 8000;
 
 // "House Clean (§11-140)" → { name: "House Clean", bylaw: "§11-140" }
 function splitFineType(t: string): { name: string; bylaw: string } {
@@ -41,20 +41,21 @@ export default function JpInfoCard({
   member: { id: string; name: string; roll?: number | null } | null;
 }) {
   const [slide, setSlide] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [wait, setWait] = useState<JpWait | null>(null);
   const [waitFor, setWaitFor] = useState<string | null>(null);
 
-  // Auto-advance unless someone has taken control, is hovering/focused, or prefers less motion.
+  // Always rotating (wait → next session → common fines) except while the cursor is
+  // over the card or something in it has keyboard focus. Keyed on `slide` so every
+  // change, automatic or clicked, gets a full 8 s before the next one.
   useEffect(() => {
-    if (paused || hovering) return;
+    if (hovering) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), ROTATE_MS);
-    return () => clearInterval(t);
-  }, [paused, hovering]);
+    const t = setTimeout(() => setSlide((s) => (s + 1) % SLIDES.length), ROTATE_MS);
+    return () => clearTimeout(t);
+  }, [slide, hovering]);
 
-  // Searching a name jumps to the wait card and holds it there.
+  // Searching a name jumps to the wait card (it then rotates on as usual).
   useEffect(() => {
     if (!member) return;
     let cancelled = false;
@@ -65,7 +66,6 @@ export default function JpInfoCard({
         setWait(d);
         setWaitFor(member.id);
         setSlide(0);
-        setPaused(true);
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -73,7 +73,6 @@ export default function JpInfoCard({
 
   const go = (i: number) => {
     setSlide((i + SLIDES.length) % SLIDES.length);
-    setPaused(true);
   };
 
   const current = SLIDES[slide].id;
@@ -116,7 +115,7 @@ export default function JpInfoCard({
         </div>
       </div>
 
-      <div id="jp-panel" role="tabpanel" aria-label={SLIDES[slide].label} aria-live={paused ? "polite" : "off"} className="jp-panel">
+      <div id="jp-panel" role="tabpanel" aria-label={SLIDES[slide].label} aria-live={hovering ? "polite" : "off"} className="jp-panel">
         {current === "wait" && (
           <>
             <h2 className="card-title">Your wait at JP</h2>
