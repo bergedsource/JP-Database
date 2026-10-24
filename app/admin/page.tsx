@@ -179,7 +179,8 @@ export default function AdminPage() {
 
       <aside id="adm-sidebar" className={`adm-sidebar${menuOpen ? " open" : ""}`}>
         <div className="adm-brand">
-          <div className="adm-crest" aria-hidden="true">J</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="adm-crest" src="/crest.webp" alt="" width={30} height={40} />
           <div className="adm-brand-text">
             <span className="adm-brand-name">Acacia JP</span>
             <span className="adm-brand-sub">Oregon State</span>
