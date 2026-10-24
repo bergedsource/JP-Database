@@ -61,11 +61,15 @@ A **Queue** panel sits beside the docket (above it on phones):
 
 ### Order rule (updated 2026-10-24)
 
-JP hears fines **grouped by fining officer**. The officer with the **most pending fines goes first**, then the next most, and so on. Within an officer's group, brothers go in **roll # order, low to high** (assumed; see open questions).
+JP hears fines **grouped by fining officer** (confirmed by Dillon 2026-10-24):
+
+- **Group order:** the officer who fined the **most brothers** goes first. That's the count of distinct brothers with a pending fine from that officer, not the count of fines. Ties are broken alphabetically by officer name.
+- **Within a group:** brothers go in **roll # order, low to high**. Brothers with no roll # go last.
+- **Brothers with fines from several officers** are heard **once per group**: they come up in each officer's group and only that officer's fines are heard then.
 
 - The fining officer is **not typed by the brother**. Every fine already stores `fining_officer`, so the ticket fills it in from his pending fines, the same way name and roll # are filled in. The ticket and Queue show it: "House Manager group · 2nd of 6".
-- A brother with fines from **two officers** shows up in **both groups**. His ticket lists both slots ("House Manager group: 2nd · Philanthropy group: 5th"). He's called once per group unless the chair merges them; see open questions.
-- Officer group order is set when the session starts (counts of pending fines at that moment) so the order doesn't reshuffle mid-meeting as fines are decided. Ties between officers with the same count are broken alphabetically. The chair can drag groups to reorder them.
+- A brother with fines from **two officers** shows up in **both groups**. His ticket lists both slots ("House Manager group: 2nd · Philanthropy group: 5th"), and he's called once per group. For wait math, each appearance is its own hearing slot: +1 min walk-in, plus only that officer's fines.
+- Officer group order is set when the session starts (brother counts at that moment), so the order doesn't reshuffle mid-meeting as fines are decided. The chair can drag groups to reorder them.
 - The Queue panel gets an officer header for each group: "House Manager · 14 fines · 9 brothers".
 
 A ticket doesn't let anyone jump the line; it only lets him wait somewhere else. If the brother whose turn it is isn't there, the chair skips to the next brother who is present or has a ticket. The skipped brother gets "called" again when he shows up.
@@ -181,11 +185,7 @@ Use the existing look: homepage palette/fonts for member screens, admin palette 
 
 ## Open questions for Dillon
 
-0. **Officer grouping details:**
-   - Within an officer's group, is it **roll # low to high**?
-   - A brother with fines from **two officers**: is he heard **twice** (once per group), or does he do **all his fines the first time** his name comes up?
-   - Is it "most fines" (count of fines) or "most brothers" per officer?
-   - Can the chair change the group order on the night, or is it always by count?
+0. ~~Officer grouping details~~ **Answered 2026-10-24:** within a group it's roll # low to high, multi-officer brothers are heard once per group, and groups are ordered by number of brothers. (Still open: is drag-to-reorder of groups on the night actually wanted?)
 1. When an absent brother is skipped and comes back, does he go **right after the current brother**, or **back to his roll # spot** if it's still ahead?
 2. Should "Take a ticket" open only once the session is started, or earlier that day (pre-session tickets)? Pre-session needs the posted next-session date to be accurate.
 3. Is a **check-in code** needed in phase 1, or is "the chair can cancel fake tickets" enough to start?
@@ -199,7 +199,7 @@ Use the existing look: homepage palette/fonts for member screens, admin palette 
 | File | Action |
 |---|---|
 | `supabase/migrations/migration_add_jp_tickets.sql` | Create |
-| `lib/jp-info.ts` | Add shared `docketOrder()` (officer groups by fine count, then roll #) and a live-wait helper (undecided fines only) |
+| `lib/jp-info.ts` | Add shared `docketOrder()`: slots = (officer, brother) pairs; officers by distinct-brother count desc, then name; brothers by roll # asc, no-roll last. Plus a live-wait helper (undecided fines only) |
 | `app/api/jp-wait/[id]/route.ts` | Switch from roll-only order to `docketOrder()` |
 | `app/api/jp-ticket/route.ts` | Create (POST) |
 | `app/api/jp-ticket/[token]/route.ts` | Create (GET, DELETE) |
