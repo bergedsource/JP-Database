@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import MemberFilter from "./MemberFilter";
 import FineDetailsEditor from "./FineDetailsEditor";
 import OverdueActions, { OVERDUE_ROW_STYLE } from "./OverdueActions";
-import { rollMap, sortByRoll, type FineSort } from "./rollSort";
+import { rollMap, sortFines, type FineSort } from "./rollSort";
 import { isOverdue } from "@/lib/overdue";
 import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DEFAULT_AMOUNTS, FINE_DESCRIPTIONS } from "@/lib/fine-types";
@@ -169,7 +169,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
     if (filterTerm !== "all" && f.term !== filterTerm) return false;
     return true;
   });
-  const filteredFines = sortBy === "roll" ? sortByRoll(matchingFines, rolls) : matchingFines;
+  const filteredFines = sortFines(matchingFines, sortBy, rolls);
 
   // Captured once per mount: "recent" means the 14 days before the tab was opened.
   // Reading the clock during render is impure, and recomputing it every render
@@ -633,6 +633,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
         >
           <option value="newest">Newest first</option>
           <option value="roll">Roll #, low to high</option>
+          <option value="roll-desc">Roll #, high to low</option>
         </select>
         <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
           {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
