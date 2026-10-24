@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import FineDetailsEditor from "./FineDetailsEditor";
-import type { FineStatus, JpSession, JpSessionChange, JpSessionFine } from "@/lib/types";
+import { rollMap, sortByRoll, type FineSort } from "./rollSort";
+import type { FineStatus, JpSession, JpSessionChange, JpSessionFine, Member } from "@/lib/types";
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
   pending:    { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
@@ -36,7 +37,7 @@ type SessionDetail = {
   changes: JpSessionChange[];
 };
 
-export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: boolean; refresh: () => Promise<void> }) {
+export default function SessionsTab({ members, isPrivileged, refresh }: { members: Member[]; isPrivileged: boolean; refresh: () => Promise<void> }) {
   const [sessions, setSessions] = useState<JpSession[]>([]);
   const [sessionView, setSessionView] = useState<"list" | "detail">("list");
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
@@ -45,6 +46,7 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
   const [newSessionSubmitting, setNewSessionSubmitting] = useState(false);
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
   const [savingFineId, setSavingFineId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<FineSort>("newest");
   // Inline amount editing, one fine at a time.
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
   const [amountDraft, setAmountDraft] = useState("");
@@ -174,6 +176,10 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
 
   const decidedCount = sessionDetail ? sessionDetail.fines.filter((f) => f.status !== "pending").length : 0;
   const totalCount = sessionDetail?.fines.length ?? 0;
+  const rolls = rollMap(members);
+  const docket = sessionDetail
+    ? (sortBy === "roll" ? sortByRoll(sessionDetail.fines, rolls) : sessionDetail.fines)
+    : [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -284,6 +290,21 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
           ) : (
             <div className="ses-layout">
               <section className="ses-docket" aria-label="Fines in this session">
+                {totalCount > 1 && (
+                  <div className="ses-toolbar">
+                    <label htmlFor="ses-sort" className="ses-toolbar-label">Order</label>
+                    <select
+                      id="ses-sort"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as FineSort)}
+                      className="adm-input"
+                      style={{ width: "auto" }}
+                    >
+                      <option value="newest">As listed</option>
+                      <option value="roll">Roll #, low to high</option>
+                    </select>
+                  </div>
+                )}
                 {totalCount > 0 && (
                   <div
                     className="ses-progress"
@@ -300,14 +321,17 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
                 {totalCount === 0 ? (
                   <div className="adm-card"><p className="adm-empty">No fines were pending when this session was created.</p></div>
                 ) : (
-                  sessionDetail.fines.map((fine) => {
+                  docket.map((fine) => {
                     const canDecide = isPrivileged && !sessionDetail.session.closed_at;
                     const saving = savingFineId === fine.fine_id;
                     return (
                       <article key={fine.fine_id} className={`ses-fine${fine.status !== "pending" ? " decided" : ""}`}>
                         <div className="ses-fine-top">
                           <div className="ses-fine-who">
-                            <span className="ses-fine-name">{fine.member_name}</span>
+                            <span className="ses-fine-name">
+                              {fine.member_name}
+                              {rolls.get(fine.member_id) != null && <span className="adm-roll">#{rolls.get(fine.member_id)}</span>}
+                            </span>
                             <span className="ses-fine-type">
                               {fine.fine_type}
                               {!canDecide && fine.amount != null ? `, $${fine.amount.toFixed(2)}` : ""}
