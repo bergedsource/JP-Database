@@ -646,6 +646,40 @@
 .ses-fine-name { font-weight: 700; font-size: 16px; }
 .ses-fine-type { font-size: 14px; color: var(--text-muted); }
 
+/* Next session + hearing times (Sessions list) */
+.ses-card-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ses-card-hint { font-size: 13px; color: var(--text-muted); }
+.ses-next { border-color: var(--gold-dim); }
+.ses-next .adm-card-title, .ses-timing .adm-card-title { margin: 0; }
+.ses-next-form { display: flex; flex-direction: column; gap: 14px; }
+.ses-next-fields { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.ses-next-fields .adm-input { width: auto; min-height: 42px; }
+.ses-next-place { flex: 1 1 220px; }
+.ses-next-place .adm-input { width: 100%; }
+.ses-next-preview { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.ses-next-preview strong { color: var(--text); }
+.ses-saved { margin: 0; font-size: 14px; color: var(--gold); }
+.ses-timing summary { cursor: pointer; list-style: none; }
+.ses-timing summary::-webkit-details-marker { display: none; }
+.ses-timing:not([open]) summary { border-bottom: 0; }
+.ses-timing-row {
+  display: grid;
+  grid-template-columns: 110px 120px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.ses-timing-name { font-weight: 700; }
+.ses-timing-input { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 14px; }
+.ses-timing-input .adm-input { width: 64px; text-align: right; }
+.ses-timing-desc { font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.ses-timing-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; }
+@media (max-width: 640px) {
+  .ses-timing-row { grid-template-columns: 1fr auto; }
+  .ses-timing-desc { grid-column: 1 / -1; }
+}
+
 .adm-roll { margin-left: 8px; font-size: 13px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 .ses-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }

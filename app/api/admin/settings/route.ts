@@ -1,4 +1,5 @@
-import { requireAuth, requireOwner } from "@/lib/admin-auth";
+import { getCurrentRole, requireAuth, requireOwner } from "@/lib/admin-auth";
+import { HEARING_MINUTES_KEY, NEXT_SESSION_KEY, parseHearingMinutes, parseNextSession } from "@/lib/jp-info";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,16 +36,45 @@ export async function PUT(req: NextRequest) {
     "master_roster_spreadsheet_id",
     "master_roster_sheet_name",
     "last_roster_sync_at",
+    NEXT_SESSION_KEY,
+    HEARING_MINUTES_KEY,
   ];
   if (!ALLOWED_KEYS.includes(key)) {
     return NextResponse.json({ error: "Unknown setting key" }, { status: 400 });
   }
 
+  // These two are shown on the public homepage, so store only a normalized,
+  // validated form — never whatever string the client sent.
+  let stored: string = value;
+  if (key === NEXT_SESSION_KEY) {
+    if (value === "") {
+      stored = "";
+    } else {
+      const parsed = parseNextSession(typeof value === "string" ? value : JSON.stringify(value));
+      if (!parsed) return NextResponse.json({ error: "Next session needs a valid date" }, { status: 400 });
+      stored = JSON.stringify(parsed);
+    }
+  } else if (key === HEARING_MINUTES_KEY) {
+    stored = JSON.stringify(parseHearingMinutes(typeof value === "string" ? value : JSON.stringify(value)));
+  }
+
   const service = createServiceClient();
   const { error } = await service
     .from("settings")
-    .upsert({ key, value, updated_at: new Date().toISOString() });
+    .upsert({ key, value: stored, updated_at: new Date().toISOString() });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (key === NEXT_SESSION_KEY || key === HEARING_MINUTES_KEY) {
+    const current = await getCurrentRole();
+    if (current) {
+      await service.from(current.role === "root" ? "system_events" : "audit_logs").insert({
+        admin_email: current.email,
+        action: key === NEXT_SESSION_KEY ? "Updated Next JP Session" : "Updated Hearing Time Estimates",
+        details: stored || "cleared",
+      });
+    }
+  }
+
   return NextResponse.json({ success: true });
 }
