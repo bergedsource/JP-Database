@@ -59,9 +59,18 @@ A **Queue** panel sits beside the docket (above it on phones):
 - Deciding all of a brother's fines (the existing decision buttons) marks his ticket **Done** automatically.
 - A header line: "6 tickets · 2 waiting · now hearing roll #12".
 
-### Order rule
+### Order rule (updated 2026-10-24)
 
-Hearings stay in **roll # order**. A ticket doesn't let anyone jump the line; it only lets him wait somewhere else. If the brother whose turn it is isn't there, the chair skips to the next brother who is present or has a ticket. The skipped brother gets "called" again when he shows up.
+JP hears fines **grouped by fining officer**. The officer with the **most pending fines goes first**, then the next most, and so on. Within an officer's group, brothers go in **roll # order, low to high** (assumed; see open questions).
+
+- The fining officer is **not typed by the brother**. Every fine already stores `fining_officer`, so the ticket fills it in from his pending fines, the same way name and roll # are filled in. The ticket and Queue show it: "House Manager group · 2nd of 6".
+- A brother with fines from **two officers** shows up in **both groups**. His ticket lists both slots ("House Manager group: 2nd · Philanthropy group: 5th"). He's called once per group unless the chair merges them; see open questions.
+- Officer group order is set when the session starts (counts of pending fines at that moment) so the order doesn't reshuffle mid-meeting as fines are decided. Ties between officers with the same count are broken alphabetically. The chair can drag groups to reorder them.
+- The Queue panel gets an officer header for each group: "House Manager · 14 fines · 9 brothers".
+
+A ticket doesn't let anyone jump the line; it only lets him wait somewhere else. If the brother whose turn it is isn't there, the chair skips to the next brother who is present or has a ticket. The skipped brother gets "called" again when he shows up.
+
+**⚠️ Knock-on fix needed:** the live "Your wait at JP" card (PR #20, `app/api/jp-wait/[id]/route.ts`) currently orders the docket by **roll # only**. It needs the same officer grouping before or alongside this feature, or its estimates will be wrong. The change belongs in `lib/jp-info.ts` as one shared `docketOrder()` used by both the card and the ticket queue.
 
 ---
 
@@ -172,6 +181,11 @@ Use the existing look: homepage palette/fonts for member screens, admin palette 
 
 ## Open questions for Dillon
 
+0. **Officer grouping details:**
+   - Within an officer's group, is it **roll # low to high**?
+   - A brother with fines from **two officers**: is he heard **twice** (once per group), or does he do **all his fines the first time** his name comes up?
+   - Is it "most fines" (count of fines) or "most brothers" per officer?
+   - Can the chair change the group order on the night, or is it always by count?
 1. When an absent brother is skipped and comes back, does he go **right after the current brother**, or **back to his roll # spot** if it's still ahead?
 2. Should "Take a ticket" open only once the session is started, or earlier that day (pre-session tickets)? Pre-session needs the posted next-session date to be accurate.
 3. Is a **check-in code** needed in phase 1, or is "the chair can cancel fake tickets" enough to start?
@@ -185,7 +199,8 @@ Use the existing look: homepage palette/fonts for member screens, admin palette 
 | File | Action |
 |---|---|
 | `supabase/migrations/migration_add_jp_tickets.sql` | Create |
-| `lib/jp-info.ts` | Add live-wait helper (undecided fines only) |
+| `lib/jp-info.ts` | Add shared `docketOrder()` (officer groups by fine count, then roll #) and a live-wait helper (undecided fines only) |
+| `app/api/jp-wait/[id]/route.ts` | Switch from roll-only order to `docketOrder()` |
 | `app/api/jp-ticket/route.ts` | Create (POST) |
 | `app/api/jp-ticket/[token]/route.ts` | Create (GET, DELETE) |
 | `app/api/jp-ticket/[token]/here/route.ts` | Create |
