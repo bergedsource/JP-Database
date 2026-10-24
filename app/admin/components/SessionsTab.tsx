@@ -45,6 +45,11 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
   const [newSessionSubmitting, setNewSessionSubmitting] = useState(false);
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
   const [savingFineId, setSavingFineId] = useState<string | null>(null);
+  // Inline amount editing, one fine at a time.
+  const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
+  const [amountDraft, setAmountDraft] = useState("");
+  const [amountSaving, setAmountSaving] = useState(false);
+  const [amountError, setAmountError] = useState("");
   const [sessionError, setSessionError] = useState("");
 
   async function loadSessions() {
@@ -118,10 +123,53 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
     });
     if (res.ok) {
       await loadSessionDetail(sessionId, true);
+      // The fine itself changed, so the Fines/Outstanding tabs' copies are now stale.
+      await refresh();
     } else {
-      setSessionError("Couldn't save that decision. Try again.");
+      const data = await res.json().catch(() => ({}));
+      setSessionError(data.error ?? "Couldn't save that decision. Try again.");
     }
     setSavingFineId(null);
+  }
+
+  function startEditAmount(fineId: string, current: number | null) {
+    setAmountError("");
+    setEditingAmountId(fineId);
+    setAmountDraft(current != null ? String(current) : "");
+  }
+
+  function cancelEditAmount() {
+    setEditingAmountId(null);
+    setAmountDraft("");
+    setAmountError("");
+  }
+
+  async function saveAmount(sessionId: string, fineId: string) {
+    const raw = amountDraft.trim();
+    // Empty clears the amount, which the API accepts as null.
+    if (raw !== "") {
+      const parsed = parseFloat(raw);
+      if (!isFinite(parsed) || parsed < 0 || parsed > 10000) {
+        setAmountError("Enter an amount from $0 to $10,000, or leave it blank for no amount.");
+        return;
+      }
+    }
+    setAmountSaving(true);
+    setAmountError("");
+    const res = await fetch(`/api/admin/sessions/${sessionId}/update-fine`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fine_id: fineId, amount: raw === "" ? null : raw }),
+    });
+    if (res.ok) {
+      cancelEditAmount();
+      await loadSessionDetail(sessionId, true);
+      await refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setAmountError(data.error ?? "Couldn't save the amount. Try again.");
+    }
+    setAmountSaving(false);
   }
 
   const decidedCount = sessionDetail ? sessionDetail.fines.filter((f) => f.status !== "pending").length : 0;
@@ -262,9 +310,61 @@ export default function SessionsTab({ isPrivileged, refresh }: { isPrivileged: b
                             <span className="ses-fine-name">{fine.member_name}</span>
                             <span className="ses-fine-type">
                               {fine.fine_type}
-                              {fine.amount != null ? `, $${fine.amount.toFixed(2)}` : ""}
+                              {!canDecide && fine.amount != null ? `, $${fine.amount.toFixed(2)}` : ""}
                             </span>
                           </div>
+                          {/* Amounts are editable by owner/root while the session is open; once closed it's the ratified record. */}
+                          {canDecide && (
+                            editingAmountId === fine.fine_id ? (
+                              <div className="ses-amount-edit">
+                                <label className="ses-amount-field">
+                                  <span aria-hidden="true">$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max="10000"
+                                    inputMode="decimal"
+                                    aria-label={`Amount for ${fine.member_name}`}
+                                    value={amountDraft}
+                                    onChange={(e) => { setAmountDraft(e.target.value); setAmountError(""); }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") saveAmount(sessionDetail.session.id, fine.fine_id);
+                                      if (e.key === "Escape") cancelEditAmount();
+                                    }}
+                                    placeholder="No amount"
+                                    autoFocus
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  className="adm-btn"
+                                  disabled={amountSaving}
+                                  onClick={() => saveAmount(sessionDetail.session.id, fine.fine_id)}
+                                >
+                                  {amountSaving ? "Saving…" : "Save"}
+                                </button>
+                                <button type="button" className="ses-choice" disabled={amountSaving} onClick={cancelEditAmount}>
+                                  Cancel
+                                </button>
+                                {amountError && <p role="alert" className="adm-error ses-amount-error">{amountError}</p>}
+                              </div>
+                            ) : (
+                              <div className="ses-amount">
+                                <span className={`ses-amount-value${fine.amount == null ? " none" : ""}`}>
+                                  {fine.amount != null ? `$${fine.amount.toFixed(2)}` : "No amount"}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="ses-amount-btn"
+                                  aria-label={`Edit amount for ${fine.member_name}`}
+                                  onClick={() => startEditAmount(fine.fine_id, fine.amount)}
+                                >
+                                  Edit amount
+                                </button>
+                              </div>
+                            )
+                          )}
                           {!canDecide && (
                             <span
                               className="adm-status-badge"

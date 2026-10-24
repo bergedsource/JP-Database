@@ -646,6 +646,48 @@
 .ses-fine-name { font-weight: 700; font-size: 16px; }
 .ses-fine-type { font-size: 14px; color: var(--text-muted); }
 
+.ses-amount { display: flex; align-items: center; gap: 10px; }
+.ses-amount-value { font-size: 20px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+.ses-amount-value.none { font-size: 14px; font-weight: 400; color: var(--text-muted); }
+.ses-amount-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  min-height: 36px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+.ses-amount-btn:hover { border-color: var(--gold); color: var(--gold); }
+.ses-amount-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-end; }
+.ses-amount-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 0 10px;
+  min-height: 40px;
+  color: var(--text-muted);
+}
+.ses-amount-field input {
+  width: 96px;
+  background: none;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.ses-amount-field input::-webkit-outer-spin-button,
+.ses-amount-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ses-amount-error { flex-basis: 100%; text-align: right; margin: 0; }
+
 /* Every decision is its own button so all options are visible at once; wraps on narrow screens. */
 .ses-choices { display: flex; flex-wrap: wrap; gap: 6px; }
 .ses-choice {
@@ -674,4 +716,6 @@
   .ses-fine { padding: 14px; }
   .ses-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ses-choice { justify-content: flex-start; min-height: 44px; }
+  .ses-amount-edit { justify-content: flex-start; }
+  .ses-amount-error { text-align: left; }
 }
