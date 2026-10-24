@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clockAfter, formatTime, waitRange, type JpInfo, type JpWait } from "@/lib/jp-info";
 
 type Slide = "wait" | "session" | "common";
@@ -41,9 +41,23 @@ export default function JpInfoCard({
   member: { id: string; name: string; roll?: number | null } | null;
 }) {
   const [slide, setSlide] = useState(0);
+  // The panel sliding out, and which way the carousel is moving (next = leftward).
+  const [leaving, setLeaving] = useState<{ index: number; dir: "next" | "prev" } | null>(null);
   const [hovering, setHovering] = useState(false);
   const [wait, setWait] = useState<JpWait | null>(null);
   const [waitFor, setWaitFor] = useState<string | null>(null);
+
+  // Latest slide for changeTo, so it stays stable for the effects below.
+  const slideRef = useRef(slide);
+  useEffect(() => { slideRef.current = slide; }, [slide]);
+
+  const changeTo = useCallback((i: number, dir: "next" | "prev") => {
+    const from = slideRef.current;
+    const target = (i + SLIDES.length) % SLIDES.length;
+    if (target === from) return;
+    setLeaving({ index: from, dir });
+    setSlide(target);
+  }, []);
 
   // Always rotating (wait → next session → common fines) except while the cursor is
   // over the card or something in it has keyboard focus. Keyed on `slide` so every
@@ -51,9 +65,9 @@ export default function JpInfoCard({
   useEffect(() => {
     if (hovering) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setTimeout(() => setSlide((s) => (s + 1) % SLIDES.length), ROTATE_MS);
+    const t = setTimeout(() => changeTo(slide + 1, "next"), ROTATE_MS);
     return () => clearTimeout(t);
-  }, [slide, hovering]);
+  }, [slide, hovering, changeTo]);
 
   // Searching a name jumps to the wait card (it then rotates on as usual).
   useEffect(() => {
@@ -65,20 +79,102 @@ export default function JpInfoCard({
         if (cancelled) return;
         setWait(d);
         setWaitFor(member.id);
-        setSlide(0);
+        changeTo(0, "prev");
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [member]);
+  }, [member, changeTo]);
 
-  const go = (i: number) => {
-    setSlide((i + SLIDES.length) % SLIDES.length);
-  };
+  // Arrows pass slide ± 1 (possibly -1 or 3), so comparing before wrapping gives the direction.
+  const go = (i: number) => changeTo(i, i > slide ? "next" : "prev");
 
   const current = SLIDES[slide].id;
   const firstName = member?.name.split(" ")[0] ?? "";
   const waitReady = member && waitFor === member.id;
   const next = info?.nextSession ?? null;
+
+  // One panel's content; rendered for both the incoming and the outgoing panel during a slide.
+  const renderPanel = (id: Slide) => (
+    <>
+        {id === "wait" && (
+          <>
+            <h2 className="card-title">Your wait at JP</h2>
+            {!member ? (
+              <>
+                <p className="card-text">Search your name and we&rsquo;ll estimate when you&rsquo;ll be called. Brothers go in roll # order, lowest first, and the estimate counts the fines ahead of you.</p>
+                <p className="jp-big muted" aria-hidden="true">&mdash; min</p>
+              </>
+            ) : !waitReady ? (
+              <p className="card-text">Checking the docket&hellip;</p>
+            ) : !wait || !wait.onDocket ? (
+              <>
+                <p className="card-text">{firstName}, you have nothing on the docket for the next session. No need to wait around.</p>
+                <p className="jp-big plain">You&rsquo;re clear</p>
+              </>
+            ) : (
+              <WaitDetail wait={wait} firstName={firstName} roll={member.roll ?? null} startTime={next?.time || ""} />
+            )}
+          </>
+        )}
+
+        {id === "session" && (
+          <>
+            <h2 className="card-title">Next JP session</h2>
+            {next ? (
+              <>
+                <p className="card-text">Pending fines are heard here. Come if you want to speak to yours.</p>
+                <div className="jp-bottom">
+                  <span className="jp-weekday">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}</span>
+                  <p className="jp-big plain">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                  <p className="jp-sub">
+                    {[next.time && formatTime(next.time), next.place && `in the ${next.place.replace(/^the\s+/i, "").toLowerCase()}`].filter(Boolean).join(" ")}
+                    {next.time || next.place ? ". " : ""}
+                    {daysUntil(next.date)}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="card-text">Not scheduled yet. The JP Chair posts the date here once it&rsquo;s set.</p>
+                <p className="jp-big muted" aria-hidden="true">TBD</p>
+              </>
+            )}
+          </>
+        )}
+
+        {id === "common" && (
+          <>
+            <div>
+              <h2 className="card-title">Most common fines</h2>
+              {info && info.totalFines > 0 && (
+                <p className="card-sub">{new Date().getFullYear()} so far, out of {info.totalFines} fines</p>
+              )}
+            </div>
+            {!info ? (
+              <p className="card-text">Loading&hellip;</p>
+            ) : info.commonFines.length === 0 ? (
+              <p className="card-text">No fines on record yet this year.</p>
+            ) : (
+              <ol className="jp-common">
+                {info.commonFines.map((c, i) => {
+                  const { name, bylaw } = splitFineType(c.fineType);
+                  return (
+                    <li key={c.fineType}>
+                      <span className="jp-rank">{i + 1}</span>
+                      <span className="jp-common-text">
+                        <span className="jp-common-name">{name}</span>
+                        <span className="jp-common-meta">{bylaw ? `${bylaw}, ` : ""}{c.count} fine{c.count !== 1 ? "s" : ""}</span>
+                      </span>
+                      <span className="jp-common-amount">{c.amount}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </>
+        )}
+    </>
+  );
 
   return (
     <article
@@ -115,84 +211,23 @@ export default function JpInfoCard({
         </div>
       </div>
 
-      <div id="jp-panel" role="tabpanel" aria-label={SLIDES[slide].label} aria-live={hovering ? "polite" : "off"} className="jp-panel">
-        {current === "wait" && (
-          <>
-            <h2 className="card-title">Your wait at JP</h2>
-            {!member ? (
-              <>
-                <p className="card-text">Search your name and we&rsquo;ll estimate when you&rsquo;ll be called. Brothers go in roll # order, lowest first, and the estimate counts the fines ahead of you.</p>
-                <p className="jp-big muted" aria-hidden="true">&mdash; min</p>
-              </>
-            ) : !waitReady ? (
-              <p className="card-text">Checking the docket&hellip;</p>
-            ) : !wait || !wait.onDocket ? (
-              <>
-                <p className="card-text">{firstName}, you have nothing on the docket for the next session. No need to wait around.</p>
-                <p className="jp-big plain">You&rsquo;re clear</p>
-              </>
-            ) : (
-              <WaitDetail wait={wait} firstName={firstName} roll={member.roll ?? null} startTime={next?.time || ""} />
-            )}
-          </>
+      <div className="jp-viewport">
+        {leaving && (
+          <div className={`jp-panel jp-out jp-${leaving.dir}`} aria-hidden="true" inert>
+            {renderPanel(SLIDES[leaving.index].id)}
+          </div>
         )}
-
-        {current === "session" && (
-          <>
-            <h2 className="card-title">Next JP session</h2>
-            {next ? (
-              <>
-                <p className="card-text">Pending fines are heard here. Come if you want to speak to yours.</p>
-                <div className="jp-bottom">
-                  <span className="jp-weekday">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}</span>
-                  <p className="jp-big plain">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                  <p className="jp-sub">
-                    {[next.time && formatTime(next.time), next.place && `in the ${next.place.replace(/^the\s+/i, "").toLowerCase()}`].filter(Boolean).join(" ")}
-                    {next.time || next.place ? ". " : ""}
-                    {daysUntil(next.date)}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="card-text">Not scheduled yet. The JP Chair posts the date here once it&rsquo;s set.</p>
-                <p className="jp-big muted" aria-hidden="true">TBD</p>
-              </>
-            )}
-          </>
-        )}
-
-        {current === "common" && (
-          <>
-            <div>
-              <h2 className="card-title">Most common fines</h2>
-              {info && info.totalFines > 0 && (
-                <p className="card-sub">{new Date().getFullYear()} so far, out of {info.totalFines} fines</p>
-              )}
-            </div>
-            {!info ? (
-              <p className="card-text">Loading&hellip;</p>
-            ) : info.commonFines.length === 0 ? (
-              <p className="card-text">No fines on record yet this year.</p>
-            ) : (
-              <ol className="jp-common">
-                {info.commonFines.map((c, i) => {
-                  const { name, bylaw } = splitFineType(c.fineType);
-                  return (
-                    <li key={c.fineType}>
-                      <span className="jp-rank">{i + 1}</span>
-                      <span className="jp-common-text">
-                        <span className="jp-common-name">{name}</span>
-                        <span className="jp-common-meta">{bylaw ? `${bylaw}, ` : ""}{c.count} fine{c.count !== 1 ? "s" : ""}</span>
-                      </span>
-                      <span className="jp-common-amount">{c.amount}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-          </>
-        )}
+        <div
+          key={slide}
+          id="jp-panel"
+          role="tabpanel"
+          aria-label={SLIDES[slide].label}
+          aria-live={hovering ? "polite" : "off"}
+          className={`jp-panel${leaving ? ` jp-in jp-${leaving.dir}` : ""}`}
+          onAnimationEnd={(e) => { if (e.target === e.currentTarget) setLeaving(null); }}
+        >
+          {renderPanel(current)}
+        </div>
       </div>
     </article>
   );
