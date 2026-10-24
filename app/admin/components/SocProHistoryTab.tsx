@@ -80,7 +80,7 @@ export default function SocProHistoryTab() {
       <div className="adm-card">
         <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="adm-card-title">Past Soc Pro</span>
-          <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+          <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
             {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
           </span>
         </div>
@@ -109,9 +109,9 @@ export default function SocProHistoryTab() {
                   <tr key={r.id}>
                     <td style={{ fontWeight: 600 }}>{r.member_name}</td>
                     <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{r.reason}</td>
-                    <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>{fmtDate(r.start_date)}</td>
-                    <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>{fmtDate(r.end_date) || "—"}</td>
-                    <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>{fmtDate(r.removed_at)}</td>
+                    <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 11, whiteSpace: "nowrap" }}>{fmtDate(r.start_date)}</td>
+                    <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 11, whiteSpace: "nowrap" }}>{fmtDate(r.end_date) || "—"}</td>
+                    <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 11, whiteSpace: "nowrap" }}>{fmtDate(r.removed_at)}</td>
                     <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
                       {r.removal_reason}
                       <span style={{ display: "block", fontSize: 10, color: "var(--text-dim)" }}>{r.removed_by}</span>

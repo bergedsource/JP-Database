@@ -177,7 +177,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
   const olderFines = filteredFines.filter((f) => new Date(f.created_at) < cutoff);
 
   const renderFineCard = (fine: Fine) => {
-    const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+    const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#A39C8B", border: "#332E24" };
     const repeatCount = fines.filter((f) => f.member_id === fine.member_id && f.fine_type === fine.fine_type).length;
     const overdue = isOverdue(fine, now);
     return (
@@ -188,7 +188,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
             <span style={{ color: "var(--text-dim)" }}>·</span>
             <span className="adm-fine-type">{fine.fine_type}</span>
             {repeatCount > 1 && (
-              <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", color: "var(--gold-dim)", background: "rgba(207,181,59,0.08)", border: "1px solid rgba(207,181,59,0.2)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: 10, fontFamily: "var(--font-sans), sans-serif", color: "var(--gold-dim)", background: "rgba(207,181,59,0.08)", border: "1px solid rgba(207,181,59,0.2)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.5px" }}>
                 ×{repeatCount} offenses
               </span>
             )}
@@ -205,7 +205,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
                   value={editingAmountValue}
                   onChange={(e) => setEditingAmountValue(e.target.value)}
                   autoFocus
-                  style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "'IBM Plex Mono', monospace" }}
+                  style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "var(--font-sans), sans-serif" }}
                 />
                 <button onClick={() => updateFineAmount(fine.id, editingAmountValue ? parseFloat(editingAmountValue) : null)} style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✓</button>
                 <button onClick={() => { setEditingAmountId(null); setEditingAmountValue(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✗</button>
@@ -216,7 +216,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
                 {(isPrivileged || fine.created_by_user_id === currentUserId) && (
                   <button
                     onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
-                    style={{ background: "rgba(207,181,59,0.12)", border: "1px solid rgba(207,181,59,0.35)", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace" }}
+                    style={{ background: "rgba(207,181,59,0.12)", border: "1px solid rgba(207,181,59,0.35)", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "var(--font-sans), sans-serif" }}
                     title="Edit amount"
                   >✎ edit</button>
                 )}
@@ -244,7 +244,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
               <option value="added_to_dues">Added to Dues</option>
             </select>
           ) : (
-            <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status.replace(/_/g, " ")}</span>
+            <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif" }}>{fine.status.replace(/_/g, " ")}</span>
           )}
           {isPrivileged && (
             <button onClick={() => deleteFine(fine.id)} className="adm-delete-btn">Delete</button>
@@ -552,7 +552,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
                   {customFineTypes.map((c) => (
                     <tr key={c.id}>
                       <td style={{ fontWeight: 500 }}>{c.name}</td>
-                      <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>§{c.bylaw_number}</td>
+                      <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12 }}>§{c.bylaw_number}</td>
                       <td>{c.default_amount != null ? `$${Number(c.default_amount).toFixed(2)}` : <span style={{ color: "var(--text-dim)" }}>—</span>}</td>
                       <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{c.description ?? <span style={{ color: "var(--text-dim)" }}>—</span>}</td>
                       <td>
@@ -619,7 +619,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
           <option value="all">All terms</option>
           {getTermOptions().map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+        <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
           {filteredFines.length} fine{filteredFines.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -633,7 +633,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
             <div className="adm-card">
               <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="adm-card-title" style={{ fontSize: 13 }}>Recent — last 14 days</span>
-                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{recentFines.length} fine{recentFines.length !== 1 ? "s" : ""}</span>
+                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>{recentFines.length} fine{recentFines.length !== 1 ? "s" : ""}</span>
               </div>
               {recentFines.map(renderFineCard)}
             </div>
@@ -642,7 +642,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
             <div className="adm-card">
               <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="adm-card-title" style={{ fontSize: 13, color: "var(--text-dim)" }}>Older than 14 days</span>
-                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>{olderFines.length} fine{olderFines.length !== 1 ? "s" : ""}</span>
+                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>{olderFines.length} fine{olderFines.length !== 1 ? "s" : ""}</span>
               </div>
               {olderFines.map(renderFineCard)}
             </div>

@@ -66,7 +66,7 @@ export default function LaborTab({ members, fines, isPrivileged, refresh }: Labo
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>Term</label>
+          <label style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif" }}>Term</label>
           <select
             value={filterTerm}
             onChange={(e) => setFilterTerm(e.target.value)}

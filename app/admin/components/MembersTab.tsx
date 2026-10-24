@@ -384,7 +384,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                     <td style={{ fontWeight: 500 }}>
                       {m.name}
                     </td>
-                    <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: m.roll ? "var(--gold)" : "var(--text-dim)" }}>
+                    <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: m.roll ? "var(--gold)" : "var(--text-dim)" }}>
                       {editingRollId === m.id ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                           <input
@@ -400,7 +400,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                             disabled={rollSaving}
                             autoFocus
                             className="adm-input"
-                            style={{ width: 70, padding: "2px 6px", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}
+                            style={{ width: 70, padding: "2px 6px", fontSize: 12, fontFamily: "var(--font-sans), sans-serif" }}
                             placeholder="—"
                           />
                           <button
@@ -447,7 +447,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                         </span>
                       )}
                     </td>
-                    <td style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                    <td style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
                       {editingBbId === m.id ? (
                         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, minWidth: 200 }}>
                           {bbEditPickRoll != null ? (
@@ -566,12 +566,12 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                           <option value="inactive">Inactive</option>
                         </select>
                       ) : (
-                        <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{m.status}</span>
+                        <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif" }}>{m.status}</span>
                       )}
                     </td>
                     <td>
                       {open > 0 ? (
-                        <span style={{ color: "var(--red)", fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
+                        <span style={{ color: "var(--red)", fontWeight: 600, fontFamily: "var(--font-sans), sans-serif", fontSize: 12 }}>
                           {open} open
                         </span>
                       ) : (

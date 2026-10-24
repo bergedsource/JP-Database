@@ -169,7 +169,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
       {isPrivileged && <div className="adm-card">
         <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span className="adm-card-title">Add Outstanding Fine</span>
-          <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>issued as upheld</span>
+          <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>issued as upheld</span>
         </div>
         <div className="adm-card-body">
           <form onSubmit={submitOutstandingFine} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -331,7 +331,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>Term</label>
+          <label style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif" }}>Term</label>
           <select
             value={filterTerm}
             onChange={(e) => setFilterTerm(e.target.value)}
@@ -366,18 +366,18 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
             <div className="adm-member-block-header" style={{ userSelect: "none", cursor: "default" }}>
               <span className="adm-member-block-name">{member.name}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "capitalize", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.5px" }}>
+                <span style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "capitalize", fontFamily: "var(--font-sans), sans-serif", letterSpacing: "0.5px" }}>
                   {member.status}
                 </span>
                 {totalOwed > 0 && (
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, fontWeight: 600, color: "var(--red)" }}>
+                  <span style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 13, fontWeight: 600, color: "var(--red)" }}>
                     ${totalOwed.toFixed(2)} owed
                   </span>
                 )}
               </div>
             </div>
             {mFines.map((fine) => {
-              const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#8B949E", border: "#30363D" };
+              const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#A39C8B", border: "#332E24" };
               const overdue = isOverdue(fine, now);
               return (
                 <div key={fine.id} className="adm-fine-row" style={overdue ? OVERDUE_ROW_STYLE : { borderLeftColor: sc.color }}>
@@ -395,7 +395,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                             value={editingAmountValue}
                             onChange={(e) => setEditingAmountValue(e.target.value)}
                             autoFocus
-                            style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "'IBM Plex Mono', monospace" }}
+                            style={{ width: 70, background: "var(--surface-2)", border: "1px solid var(--gold)", borderRadius: 4, color: "var(--text)", fontSize: 12, padding: "1px 4px", fontFamily: "var(--font-sans), sans-serif" }}
                           />
                           <button onClick={() => updateFineAmount(fine.id, editingAmountValue ? parseFloat(editingAmountValue) : null)} style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✓</button>
                           <button onClick={() => { setEditingAmountId(null); setEditingAmountValue(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 13, padding: "0 2px" }}>✗</button>
@@ -406,7 +406,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                           {(isPrivileged || fine.created_by_user_id === currentUserId) && (
                             <button
                               onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
-                              style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 2, fontFamily: "'IBM Plex Mono', monospace" }}
+                              style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 2, fontFamily: "var(--font-sans), sans-serif" }}
                               title="Edit amount"
                             >edit</button>
                           )}
@@ -433,7 +433,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
                         <option value="added_to_dues">Added to Dues</option>
                       </select>
                     ) : (
-                      <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{fine.status.replace(/_/g, " ")}</span>
+                      <span className="adm-status-badge" style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif" }}>{fine.status.replace(/_/g, " ")}</span>
                     )}
                   </div>
                 </div>

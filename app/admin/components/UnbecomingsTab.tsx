@@ -207,14 +207,14 @@ function UnbecomingRow({
     <>
       <tr style={{ cursor: "pointer" }} onClick={onToggle}>
         <td style={{ fontWeight: 500 }}>{unbecoming.member_name ?? "—"}</td>
-        <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{unbecoming.incident_date}</td>
+        <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12 }}>{unbecoming.incident_date}</td>
         <td>{unbecoming.title}</td>
         <td>
-          <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: statusColor(unbecoming.status) }}>
+          <span style={{ fontSize: 11, fontFamily: "var(--font-sans), sans-serif", color: statusColor(unbecoming.status) }}>
             {unbecoming.status}
           </span>
         </td>
-        <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--text-dim)" }}>
+        <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--text-dim)" }}>
           {unbecoming.attachment_count ?? 0}
         </td>
         <td style={{ textAlign: "right", color: "var(--text-dim)", fontSize: 12 }}>
@@ -357,7 +357,7 @@ function FieldRow({ label, value, mono, dim }: { label: string; value: string; m
     <div style={{ display: "flex", gap: 8, fontSize: 13 }}>
       <span style={{ color: "var(--text-muted)", minWidth: 110 }}>{label}:</span>
       <span style={{
-        fontFamily: mono ? "'IBM Plex Mono', monospace" : "inherit",
+        fontFamily: mono ? "var(--font-sans), sans-serif" : "inherit",
         fontSize: mono ? 12 : 13,
         color: dim ? "var(--text-dim)" : "inherit",
       }}>{value}</span>
@@ -926,7 +926,7 @@ function AttachmentsSection({
             <li key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 8px", border: "1px solid var(--border)", borderRadius: 4 }}>
               <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.file_name}</span>
-                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
                   {fmtSize(a.file_size_bytes)} · {a.uploaded_by} · {shortTime(a.uploaded_at)}
                 </span>
               </div>

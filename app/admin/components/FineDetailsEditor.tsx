@@ -53,7 +53,7 @@ export default function FineDetailsEditor({ fineId, description, notes, canEdit,
             <button
               type="button"
               onClick={startEdit}
-              style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 4, fontFamily: "'IBM Plex Mono', monospace" }}
+              style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11, padding: "0 4px", marginLeft: 4, fontFamily: "var(--font-sans), sans-serif" }}
               title="Edit description and notes"
             >✎ {notes ? "edit" : "edit / add note"}</button>
           )}
