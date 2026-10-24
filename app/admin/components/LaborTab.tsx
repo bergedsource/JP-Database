@@ -103,7 +103,7 @@ export default function LaborTab({ members, fines, isPrivileged, refresh }: Labo
                   <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{fine.fine_type} — {fine.description}</p>
                   {fine.notes && <p className="adm-fine-notes">{fine.notes}</p>}
                   <p className="adm-fine-meta">
-                    {new Date(fine.date_issued).toLocaleDateString()} · {fine.term}
+                    {new Date(fine.date_issued + "T12:00:00").toLocaleDateString()} · {fine.term}
                     {fine.amount != null && ` · in place of $${fine.amount.toFixed(2)}`}
                   </p>
                 </div>
