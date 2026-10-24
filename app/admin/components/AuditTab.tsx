@@ -18,7 +18,7 @@ export default function AuditTab({ auditLogs }: { auditLogs: AuditLog[] }) {
     <>
       <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ color: "#F87171", fontSize: 13, fontWeight: 600 }}>⚠ Annual Reset:</span>
-        <span style={{ color: "#F87171", fontSize: 13, fontFamily: "'IBM Plex Mono', monospace" }}>
+        <span style={{ color: "#F87171", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
           {days}d {hours}h {mins}m until all fines are deleted (Jan 4)
         </span>
       </div>
@@ -38,7 +38,7 @@ export default function AuditTab({ auditLogs }: { auditLogs: AuditLog[] }) {
             <tbody>
               {auditLogs.map((log) => (
                 <tr key={log.id}>
-                  <td style={{ whiteSpace: "nowrap", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+                  <td style={{ whiteSpace: "nowrap", fontFamily: "var(--font-sans), sans-serif", fontSize: 11 }}>
                     {new Date(log.created_at).toLocaleDateString()}{" "}
                     <span style={{ color: "var(--text-dim)" }}>
                       {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

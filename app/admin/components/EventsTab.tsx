@@ -19,7 +19,7 @@ export default function EventsTab({ eventLog }: { eventLog: AuditLog[] }) {
           <tbody>
             {eventLog.map((log) => (
               <tr key={log.id}>
-                <td style={{ whiteSpace: "nowrap", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+                <td style={{ whiteSpace: "nowrap", fontFamily: "var(--font-sans), sans-serif", fontSize: 11 }}>
                   {new Date(log.created_at).toLocaleDateString()}{" "}
                   <span style={{ color: "var(--text-dim)" }}>
                     {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

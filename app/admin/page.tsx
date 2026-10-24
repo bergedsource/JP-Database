@@ -1,7 +1,7 @@
 "use client";
 
 import "./admin.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuditLog, Fine, Member, SocialProbation } from "@/lib/types";
@@ -16,14 +16,25 @@ import EventsTab from "./components/EventsTab";
 import SessionsTab from "./components/SessionsTab";
 import TransitionTab from "./components/TransitionTab";
 import UnbecomingsTab from "./components/UnbecomingsTab";
-import TabScrollbar from "./components/TabScrollbar";
 import LoadingSkeleton from "./components/LoadingSkeleton";
+import NavIcon, { type NavIconName } from "./components/NavIcon";
 
 type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "soc pro history" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
+type NavItem = {
+  tab: Tab;
+  label: string;
+  icon: NavIconName;
+  count?: number;
+  // "alert" counts are things waiting on someone (coral); plain counts are just totals.
+  countTone?: "gold" | "alert" | "plain";
+  locked?: boolean;
+  show: boolean;
+};
+
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("fines");
-  const tabsRef = useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [fines, setFines] = useState<Fine[]>([]);
   const [socialProbations, setSocialProbations] = useState<SocialProbation[]>([]);
@@ -78,6 +89,12 @@ export default function AdminPage() {
     router.refresh();
   }
 
+  function openTab(t: Tab) {
+    setTab(t);
+    setMenuOpen(false);
+    if (t === "events") loadEventLog();
+  }
+
   // loadData is deferred one microtask so its setState calls don't run during the
   // effect's synchronous phase; the other two already settle in promise callbacks.
   useEffect(() => {
@@ -91,90 +108,146 @@ export default function AdminPage() {
       .catch(() => {});
   }, []);
 
+  // Escape closes the phone menu.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  const pendingCount = fines.filter((f) => f.status === "pending").length;
+  const owingCount = new Set(fines.filter((f) => f.status === "upheld").map((f) => f.member_id)).size;
+  const laborCount = fines.filter((f) => f.status === "labor" && !f.labor_completed_at).length;
+
+  const groups: { name: string; items: NavItem[] }[] = [
+    {
+      name: "Docket",
+      items: [
+        { tab: "fines", label: "Fines", icon: "fines", count: pendingCount, countTone: "gold", show: true },
+        { tab: "sessions", label: "Sessions", icon: "sessions", show: true },
+        { tab: "outstanding", label: "Outstanding", icon: "outstanding", count: owingCount, countTone: "alert", show: true },
+        { tab: "labor", label: "Labor owed", icon: "labor", count: laborCount, countTone: "plain", show: true },
+      ],
+    },
+    {
+      name: "Brothers",
+      items: [
+        { tab: "members", label: "Members", icon: "members", show: true },
+        { tab: "soc pro", label: "Social probation", icon: "socpro", count: socialProbations.length, countTone: "alert", show: true },
+        { tab: "soc pro history", label: "Probation history", icon: "history", show: true },
+      ],
+    },
+    {
+      name: "Records",
+      items: [
+        { tab: "audit", label: "Audit log", icon: "audit", show: isPrivileged },
+        { tab: "unbecomings", label: "Unbecomings", icon: "lock", locked: true, show: isPrivileged },
+        { tab: "events", label: "Creator log", icon: "events", show: userRole === "root" },
+      ],
+    },
+    {
+      name: "Chapter",
+      items: [
+        { tab: "transition", label: "Chair transition", icon: "transition", show: isPrivileged },
+      ],
+    },
+  ];
+
+  const activeLabel = groups.flatMap((g) => g.items).find((i) => i.tab === tab)?.label ?? "";
+  const roleLabel = userRole ? userRole[0].toUpperCase() + userRole.slice(1) : "";
+
   return (
-    <>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
-        rel="stylesheet"
-      />
+    <div className="adm-page">
+      <div className="adm-topbar">
+        <button
+          type="button"
+          className="adm-icon-btn"
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+          aria-controls="adm-sidebar"
+          onClick={() => setMenuOpen(true)}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+        <span className="adm-topbar-title">{activeLabel}</span>
+      </div>
 
-      <div className="adm-page">
-        <header className="adm-header">
-          <div className="adm-header-left">
-            <div className="adm-gold-bar" />
-            <div>
-              <div className="adm-title">JP Admin</div>
-              <div className="adm-subtitle">Acacia · Oregon State</div>
-            </div>
+      {menuOpen && (
+        <button type="button" className="adm-scrim" aria-label="Close menu" onClick={() => setMenuOpen(false)} />
+      )}
+
+      <aside id="adm-sidebar" className={`adm-sidebar${menuOpen ? " open" : ""}`}>
+        <div className="adm-brand">
+          <div className="adm-crest" aria-hidden="true">J</div>
+          <div className="adm-brand-text">
+            <span className="adm-brand-name">Acacia JP</span>
+            <span className="adm-brand-sub">Oregon State</span>
+          </div>
+          <button
+            type="button"
+            className="adm-icon-btn adm-sidebar-close"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+
+        <nav className="adm-nav" aria-label="Admin sections">
+          {groups.map((g) => {
+            const items = g.items.filter((i) => i.show);
+            if (items.length === 0) return null;
+            return (
+              <div key={g.name} className="adm-nav-group">
+                <span className="adm-nav-heading">{g.name}</span>
+                {items.map((item) => {
+                  const active = tab === item.tab;
+                  return (
+                    <button
+                      key={item.tab}
+                      type="button"
+                      className={`adm-nav-item${active ? " active" : ""}`}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => openTab(item.tab)}
+                    >
+                      <NavIcon name={item.icon} />
+                      <span className="adm-nav-label">{item.label}</span>
+                      {!loading && item.count != null && item.count > 0 && (
+                        <span className={`adm-nav-count tone-${item.countTone ?? "plain"}`}>{item.count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="adm-account">
+          <div className="adm-account-text">
+            <span className="adm-account-email" title={adminEmail}>{adminEmail}</span>
+            <span className="adm-account-role">{roleLabel}</span>
+          </div>
+          <div className="adm-account-actions">
             <a
+              className="adm-account-link"
               href={`mailto:bergedillon@gmail.com?subject=JP Admin Bug Report&body=Reported by: ${adminEmail}%0A%0ADescribe the bug:%0A`}
-              style={{ marginLeft: 8, fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", border: "1px solid var(--border)", borderRadius: 5, padding: "3px 8px", textDecoration: "none", cursor: "pointer" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
             >
-              bugs?
+              Report a bug
             </a>
+            <button type="button" onClick={signOut} className="adm-signout">Sign out</button>
           </div>
-          <button onClick={signOut} className="adm-signout">Sign out</button>
-        </header>
+        </div>
+      </aside>
 
+      <main className="adm-main">
         <div className="adm-body">
-          {userRole === "admin" && (
-            <div className="adm-view-only-banner">View Only — Contact JP Chair to make changes</div>
-          )}
+          <h1 className="adm-page-title">{activeLabel}</h1>
 
-          <div className="adm-tabs-wrap">
-            <div className="adm-tabs" ref={tabsRef}>
-            {(["fines", "outstanding", "labor", "members", "soc pro", "soc pro history"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`adm-tab${tab === t ? " active" : ""}`}
-              >
-                {t}
-              </button>
-            ))}
-            {isPrivileged && (
-              <button
-                className={`adm-tab${tab === "audit" ? " active" : ""}`}
-                onClick={() => setTab("audit")}
-              >
-                audit
-              </button>
-            )}
-            <button
-              className={`adm-tab${tab === "sessions" ? " active" : ""}`}
-              onClick={() => setTab("sessions")}
-            >
-              sessions
-            </button>
-            {isPrivileged && (
-              <button
-                className={`adm-tab${tab === "transition" ? " active" : ""}`}
-                onClick={() => setTab("transition")}
-              >
-                Transition
-              </button>
-            )}
-            {isPrivileged && (
-              <button
-                className={`adm-tab${tab === "unbecomings" ? " active" : ""}`}
-                onClick={() => setTab("unbecomings")}
-              >
-                Unbecomings
-              </button>
-            )}
-            {userRole === "root" && (
-              <button
-                className={`adm-tab${tab === "events" ? " active" : ""}`}
-                onClick={() => { setTab("events"); loadEventLog(); }}
-              >
-                creator log
-              </button>
-            )}
-            </div>
-            <TabScrollbar target={tabsRef} />
-          </div>
+          {userRole === "admin" && (
+            <div className="adm-view-only-banner">View only. Ask the JP Chair to make changes.</div>
+          )}
 
           {loading ? (
             <div className="adm-card"><LoadingSkeleton /></div>
@@ -208,7 +281,7 @@ export default function AdminPage() {
             </>
           )}
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 }

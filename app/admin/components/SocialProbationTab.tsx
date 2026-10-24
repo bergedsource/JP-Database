@@ -161,7 +161,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
       <div className="adm-card">
         <div className="adm-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span className="adm-card-title">Currently on Social Probation</span>
-          <span style={{ color: activeSP.length > 0 ? "var(--red)" : "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, fontWeight: 600 }}>
+          <span style={{ color: activeSP.length > 0 ? "var(--red)" : "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif", fontSize: 12, fontWeight: 600 }}>
             {activeSP.length} active
           </span>
         </div>
@@ -188,8 +188,8 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
                 <tr key={sp.id}>
                   <td style={{ fontWeight: 600 }}>{sp.member_name ?? "Unknown"}</td>
                   <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{sp.reason}</td>
-                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>{sp.start_date}</td>
-                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, whiteSpace: "nowrap" }}>
+                  <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 11, whiteSpace: "nowrap" }}>{sp.start_date}</td>
+                  <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 11, whiteSpace: "nowrap" }}>
                     {sp.end_date ? (
                       <span style={{ color: endPassed ? "var(--text-dim)" : "var(--text-muted)" }}>
                         {sp.end_date}
@@ -202,7 +202,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
                   <td>
                     <span style={{
                       fontSize: 11,
-                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontFamily: "var(--font-sans), sans-serif",
                       padding: "2px 8px",
                       borderRadius: 4,
                       background: sp.source === "auto" ? "rgba(251,191,36,0.1)" : "rgba(96,165,250,0.1)",

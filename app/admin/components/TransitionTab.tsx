@@ -356,20 +356,20 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                   <td>
                     <span style={{
                       fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const,
-                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontFamily: "var(--font-sans), sans-serif",
                       color: u.role === "owner" ? "var(--gold)" : "var(--text-muted)",
                     }}>
                       {u.role}
                     </span>
                   </td>
-                  <td style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <td style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
                   <td style={{ textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end" }}>
                     {u.role === "admin" && userRole !== "root" && (
                       <button
                         onClick={() => transferOwnership(u.user_id, u.email)}
-                        style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif" }}
+                        style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif" }}
                       >
                         Transfer Ownership
                       </button>
@@ -468,11 +468,11 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               <button type="submit" disabled={venmoSaving} className="adm-btn">
                 {venmoSaving ? "Saving…" : "Save Venmo"}
               </button>
-              {venmoSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace" }}>Saved ✓</span>}
+              {venmoSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-sans), sans-serif" }}>Saved ✓</span>}
             </div>
           </form>
           <div style={{ marginTop: 24, padding: "14px 16px", background: "var(--surface-2)", borderRadius: 8, border: "1px solid var(--border)" }}>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace" }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif" }}>
               Cash App handle ($AcaciaOSU) is hardcoded — contact the developer to update it.
             </p>
           </div>
@@ -517,14 +517,14 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               placeholder="Paste a spreadsheet ID to export there instead"
               className="adm-input"
             />
-            <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
+            <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif", marginTop: 4 }}>
               Leave blank to use the default sheet.{" "}
-              <button type="button" onClick={() => setShowExportHelp(!showExportHelp)} style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+              <button type="button" onClick={() => setShowExportHelp(!showExportHelp)} style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 11, fontFamily: "var(--font-sans), sans-serif", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
                 How to use a new sheet {showExportHelp ? "▲" : "▼"}
               </button>
             </p>
             {showExportHelp && (
-              <div style={{ marginTop: 8, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.8 }}>
+              <div style={{ marginTop: 8, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif", lineHeight: 1.8 }}>
                 <p style={{ fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>Setting up a new Google Sheet:</p>
                 <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
                   <li>Go to <a href="https://sheets.google.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)" }}>sheets.google.com</a> and create a blank spreadsheet</li>
@@ -547,19 +547,19 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                 {exportHistory.map((h, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--surface-2)", borderRadius: 6, border: "1px solid var(--border)", gap: 12 }}>
                     <div style={{ minWidth: 0 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "'IBM Plex Mono', monospace" }}>{h.term}</span>
-                      <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginLeft: 8 }}>{h.date}</span>
-                      <div style={{ fontSize: 10, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.spreadsheetId}</div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "var(--font-sans), sans-serif" }}>{h.term}</span>
+                      <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif", marginLeft: 8 }}>{h.date}</span>
+                      <div style={{ fontSize: 10, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.spreadsheetId}</div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                       <button
                         type="button"
                         onClick={() => { setExportSheetId(h.spreadsheetId); setExportResult(null); }}
-                        style={{ fontSize: 11, background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}
+                        style={{ fontSize: 11, background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
                       >
                         Use
                       </button>
-                      <a href={h.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 5, padding: "3px 8px", textDecoration: "none", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                      <a href={h.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 5, padding: "3px 8px", textDecoration: "none", fontFamily: "var(--font-sans), sans-serif" }}>
                         Open ↗
                       </a>
                       <button
@@ -587,11 +587,11 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
           )}
           {exportResult && (
             <div style={{ marginTop: 10 }}>
-              <p style={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", color: exportResult.ok ? "#34D399" : "var(--red)" }}>
+              <p style={{ fontSize: 12, fontFamily: "var(--font-sans), sans-serif", color: exportResult.ok ? "#34D399" : "var(--red)" }}>
                 {exportResult.msg}
               </p>
               {exportResult.url && (
-                <a href={exportResult.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace", textDecoration: "none", display: "inline-block", marginTop: 6 }}>
+                <a href={exportResult.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-sans), sans-serif", textDecoration: "none", display: "inline-block", marginTop: 6 }}>
                   Open new sheet ↗
                 </a>
               )}
@@ -618,14 +618,14 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                 placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
                 className="adm-input"
               />
-              <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginTop: 4 }}>
+              <p style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif", marginTop: 4 }}>
                 The long string between <strong style={{ color: "var(--text)" }}>/d/</strong> and <strong style={{ color: "var(--text)" }}>/edit</strong> in the sheet URL.{" "}
-                <button type="button" onClick={() => setShowSheetHelp(!showSheetHelp)} style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                <button type="button" onClick={() => setShowSheetHelp(!showSheetHelp)} style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 11, fontFamily: "var(--font-sans), sans-serif", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
                   How to set it up {showSheetHelp ? "▲" : "▼"}
                 </button>
               </p>
               {showSheetHelp && (
-                <div style={{ marginTop: 8, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.8 }}>
+                <div style={{ marginTop: 8, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 7, border: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-sans), sans-serif", lineHeight: 1.8 }}>
                   <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
                     <li>Open the budget spreadsheet in Google Sheets</li>
                     <li>Click <strong style={{ color: "var(--text)" }}>Share</strong> and add this email as <strong style={{ color: "var(--text)" }}>Editor</strong>:<br />
@@ -640,7 +640,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               <button type="submit" disabled={defaultSheetSaving} className="adm-btn">
                 {defaultSheetSaving ? "Saving…" : "Save Sheet"}
               </button>
-              {defaultSheetSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "'IBM Plex Mono', monospace" }}>Saved ✓</span>}
+              {defaultSheetSaved && <span style={{ fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-sans), sans-serif" }}>Saved ✓</span>}
             </div>
           </form>
         </div>
@@ -652,9 +652,9 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
         </div>
         <div className="adm-card-body">
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.6 }}>
-            Syncs the Master Roll Numbers Google Sheet into <code style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>chapter_roster</code> (upsert all rows) and adds <strong style={{ color: "var(--text)" }}>brand-new initiates</strong> to the Members tab as <strong style={{ color: "var(--text)" }}>active</strong>. A sheet row only becomes a new member if its roll # is higher than every roll we already know, AND the name doesn{"'"}t match any existing member. Retroactive historical additions stay roster-only. Existing members are never modified. Runs nightly at 11:59 PM.
+            Syncs the Master Roll Numbers Google Sheet into <code style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--gold)" }}>chapter_roster</code> (upsert all rows) and adds <strong style={{ color: "var(--text)" }}>brand-new initiates</strong> to the Members tab as <strong style={{ color: "var(--text)" }}>active</strong>. A sheet row only becomes a new member if its roll # is higher than every roll we already know, AND the name doesn{"'"}t match any existing member. Retroactive historical additions stay roster-only. Existing members are never modified. Runs nightly at 11:59 PM.
           </p>
-          <div style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace", marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif", marginBottom: 16 }}>
             Last synced:{" "}
             {lastRosterSyncAt
               ? `${new Date(lastRosterSyncAt).toLocaleString()} (${timeAgo(lastRosterSyncAt)})`
@@ -810,7 +810,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                       const s = e.time_seconds % 60;
                       return (
                         <tr key={e.id} style={e.flagged_suspect ? { background: "rgba(239, 68, 68, 0.08)" } : undefined}>
-                          <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
+                          <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
                           <td>
                             {e.username}
                             {e.flagged_suspect && (
@@ -823,15 +823,15 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                               </span>
                             )}
                           </td>
-                          <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
-                          <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
+                          <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
+                          <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
                           <td style={{ textAlign: "right" }}>
                             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                               {e.flagged_suspect && (
                                 <button
                                   onClick={() => approveLeaderboardEntry(e.id, e.username)}
                                   disabled={approvingId === e.id}
-                                  style={{ fontSize: 11, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", color: "#34D399", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}
+                                  style={{ fontSize: 11, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", color: "#34D399", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
                                 >
                                   {approvingId === e.id ? "Approving…" : "Approve"}
                                 </button>
@@ -871,14 +871,14 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
             onClick={toggleTrapVisible}
             aria-expanded={trapVisible}
             aria-controls="trap-questions-body"
-            style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", whiteSpace: "nowrap" }}
+            style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap" }}
           >
             {trapVisible ? "Hide ▲" : "Show ▼"}
           </button>
         </div>
         {!trapVisible ? (
           <div id="trap-questions-body" className="adm-card-body">
-            <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0, fontFamily: "'IBM Plex Mono', monospace" }}>
+            <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0, fontFamily: "var(--font-sans), sans-serif" }}>
               Hidden — {triviaEntries.length} trap question{triviaEntries.length === 1 ? "" : "s"} loaded.
               Click Show to view or edit them.
             </p>
@@ -960,7 +960,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{t.question_text}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'IBM Plex Mono', monospace" }}>
+                      <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
                         {["A", "B", "C", "D"].map((letter, idx) => (
                           <span key={letter} style={{ marginRight: 12, color: idx === t.correct_index ? "var(--gold)" : undefined }}>
                             {letter}: {t[`option_${letter.toLowerCase()}` as "option_a" | "option_b" | "option_c" | "option_d"]}
