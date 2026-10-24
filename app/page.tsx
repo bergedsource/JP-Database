@@ -430,7 +430,28 @@ export default function Home() {
         }
         .jp-arrow:hover { border-color: var(--gold); color: var(--gold-light); }
         .jp-dot:focus-visible, .jp-arrow:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-        .jp-panel { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+        /* Panels slide like a carousel: the old one pushes out left as the new one comes in
+           from the right (reversed for "previous"). The viewport reaches the card's edges
+           so panels travel all the way to the border instead of vanishing mid-card. */
+        .card-jp { --jp-pad: 28px; }
+        .jp-viewport {
+          position: relative;
+          flex: 1;
+          display: flex;
+          overflow: hidden;
+          margin: 0 calc(-1 * var(--jp-pad));
+          padding: 0 var(--jp-pad);
+        }
+        .jp-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+        .jp-out { position: absolute; top: 0; bottom: 0; left: var(--jp-pad); right: var(--jp-pad); pointer-events: none; }
+        .jp-in.jp-next  { animation: jpInFromRight 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+        .jp-out.jp-next { animation: jpOutToLeft   0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+        .jp-in.jp-prev  { animation: jpInFromLeft  0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+        .jp-out.jp-prev { animation: jpOutToRight  0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+        @keyframes jpInFromRight { from { transform: translateX(calc(100% + 2 * var(--jp-pad))); } to { transform: none; } }
+        @keyframes jpOutToLeft   { from { transform: none; opacity: 1; } to { transform: translateX(calc(-100% - 2 * var(--jp-pad))); opacity: 0.3; } }
+        @keyframes jpInFromLeft  { from { transform: translateX(calc(-100% - 2 * var(--jp-pad))); } to { transform: none; } }
+        @keyframes jpOutToRight  { from { transform: none; opacity: 1; } to { transform: translateX(calc(100% + 2 * var(--jp-pad))); opacity: 0.3; } }
         .jp-panel .card-text strong { color: var(--cream); }
         .jp-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
         .jp-big {
@@ -592,6 +613,7 @@ export default function Home() {
           .crest-ring { width: 240px; height: 240px; }
           .crest-ring img { width: 128px; height: 170px; }
           .card { padding: 22px; }
+          .card-jp { --jp-pad: 22px; }
           .balance-amount, .jp-big { font-size: 46px; }
           /* Keep the sticky bar to one row on phones; the hero button and cards cover lookup/pay */
           .nav-inner { gap: 8px 16px; padding-top: 10px; padding-bottom: 10px; }
