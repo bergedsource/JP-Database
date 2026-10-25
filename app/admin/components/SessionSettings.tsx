@@ -10,6 +10,10 @@ import {
   DEFAULT_START,
   formatTime,
   parseHearingMinutes,
+  parseLearned,
+  learnedScale,
+  MIN_LEARNED_SLOTS,
+  type LearnedTiming,
   parseNextSession,
   type HearingMinutes,
   type HearingTier,
@@ -54,6 +58,7 @@ export default function SessionSettings() {
   const [minsMsg, setMinsMsg] = useState("");
   const [minsErr, setMinsErr] = useState("");
   const [minsSaving, setMinsSaving] = useState(false);
+  const [learned, setLearned] = useState<LearnedTiming | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -66,6 +71,7 @@ export default function SessionSettings() {
           setPlace(next.place);
         }
         setMins(toDraft(parseHearingMinutes(d[HEARING_MINUTES_KEY])));
+        setLearned(parseLearned(d[HEARING_MINUTES_KEY]));
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
@@ -159,6 +165,7 @@ export default function SessionSettings() {
           <span className="ses-card-hint">Used for each brother&rsquo;s wait on the homepage</span>
         </summary>
         <form className="adm-card-body" onSubmit={saveMinutes}>
+          <p className="ses-learned">{learnedSummary(learned)}</p>
           {TIERS.map((t) => (
             <div key={t} className="ses-timing-row">
               <span className="ses-timing-name">{TIER_LABELS[t]}</span>
@@ -217,4 +224,17 @@ function toDraft(m: HearingMinutes): Record<keyof HearingMinutes, string> {
     longest: String(m.longest),
     perBrother: String(m.perBrother),
   };
+}
+
+// What the site has learned from past sessions' decision timestamps.
+function learnedSummary(l: LearnedTiming | null): string {
+  if (!l || l.slots === 0) {
+    return "Not enough data yet. Each closed session teaches the site how long hearings really take, so keep clicking decisions live during JP.";
+  }
+  if (l.slots < MIN_LEARNED_SLOTS) {
+    return `Learned from ${l.slots} hearing${l.slots !== 1 ? "s" : ""} so far. Wait estimates start adjusting after ${MIN_LEARNED_SLOTS}.`;
+  }
+  const scale = learnedScale(l);
+  const pace = Math.abs(scale - 1) < 0.05 ? "right on your estimates" : `${scale.toFixed(1)}× your estimates`;
+  return `Learned from ${l.slots} hearings: JP runs ${pace}. Wait times on the homepage are adjusted automatically.`;
 }

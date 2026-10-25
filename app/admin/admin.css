@@ -652,6 +652,7 @@
 .ses-next-preview { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
 .ses-next-preview strong { color: var(--text); }
 .ses-saved { margin: 0; font-size: 14px; color: var(--gold); }
+.ses-learned { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: var(--text-soft); }
 .ses-timing summary { cursor: pointer; list-style: none; }
 .ses-timing summary::-webkit-details-marker { display: none; }
 .ses-timing:not([open]) summary { border-bottom: 0; }

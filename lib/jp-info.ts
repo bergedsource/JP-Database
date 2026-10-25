@@ -210,6 +210,39 @@ export function parseHearingMinutes(raw: string | null | undefined): HearingMinu
   return out;
 }
 
+// ── Learning from real sessions ──
+// Stored alongside the tier minutes (same setting) as running totals across sessions:
+// how long hearings actually took vs. what the tiers predicted for them.
+export type LearnedTiming = { actual: number; predicted: number; slots: number };
+export const MIN_LEARNED_SLOTS = 5;
+
+export function parseLearned(raw: string | null | undefined): LearnedTiming | null {
+  try {
+    const l = raw ? JSON.parse(raw)?.learned : null;
+    if (l && [l.actual, l.predicted, l.slots].every((n) => typeof n === "number" && isFinite(n) && n >= 0)) {
+      return { actual: l.actual, predicted: l.predicted, slots: l.slots };
+    }
+  } catch {}
+  return null;
+}
+
+// Actual ÷ predicted once there's enough data (kept between 0.5× and 3× so one odd
+// night can't wreck the estimates); 1 until then.
+export function learnedScale(l: LearnedTiming | null): number {
+  if (!l || l.slots < MIN_LEARNED_SLOTS || l.predicted <= 0) return 1;
+  return Math.min(3, Math.max(0.5, l.actual / l.predicted));
+}
+
+export function scaleMinutes(m: HearingMinutes, scale: number): HearingMinutes {
+  return {
+    quick: m.quick * scale,
+    standard: m.standard * scale,
+    long: m.long * scale,
+    longest: m.longest * scale,
+    perBrother: m.perBrother * scale,
+  };
+}
+
 // "19:00" → "7:00 pm"
 export function formatTime(hhmm: string): string {
   const [h, m] = hhmm.split(":").map(Number);
