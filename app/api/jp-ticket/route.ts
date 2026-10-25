@@ -19,14 +19,16 @@ export async function POST(req: NextRequest) {
   // proxy's, and the chair reaches them instead.
   const bySnap = body.contact === "snapchat";
   const phone = !bySnap && typeof body.phone === "string" ? normalizePhone(body.phone) : null;
-  const snapchat = bySnap && typeof body.snapchat === "string" ? normalizeSnapchat(body.snapchat) : null;
+  // By Snapchat for himself: the chair already has his Snapchat, so no username is
+  // asked for and "" is stored to mean "Snapchat him". A proxy's username is required.
+  const snapchat = !bySnap ? null : body.proxy === true ? normalizeSnapchat(typeof body.snapchat === "string" ? body.snapchat : "") : "";
   const proxyName = typeof body.proxy_name === "string" ? body.proxy_name.trim().slice(0, 60) : "";
   if (body.proxy === true && !proxyName) return NextResponse.json({ error: "Enter your proxy's name." }, { status: 400 });
   if (!memberId) return NextResponse.json({ error: "Missing member" }, { status: 400 });
   // A ticket is for one fining officer's group; he must say which.
   const officer = typeof body.fining_officer === "string" ? body.fining_officer.trim() : "";
   if (!officer) return NextResponse.json({ error: "Choose your fining officer." }, { status: 400 });
-  if (bySnap && !snapchat) return NextResponse.json({ error: "Enter a Snapchat username (3–15 letters, numbers, . _ -)." }, { status: 400 });
+  if (bySnap && snapchat === null) return NextResponse.json({ error: "Enter your proxy's Snapchat username (3–15 letters, numbers, . _ -)." }, { status: 400 });
   if (!bySnap && !phone) return NextResponse.json({ error: "Enter a 10-digit US phone number." }, { status: 400 });
 
   const service = createServiceClient();

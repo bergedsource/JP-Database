@@ -104,7 +104,7 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
           {r.requeued ? ", came back late" : ""}
           {r.ticket?.proxyName ? `, proxy: ${r.ticket.proxyName}` : ""}
           {r.ticket?.phoneDisplay ? `, ${r.ticket.phoneDisplay}` : ""}
-          {r.ticket?.snapchat ? `, snap @${r.ticket.snapchat}` : ""}
+          {r.ticket?.snapchat ? `, snap @${r.ticket.snapchat}` : r.ticket?.snapchat === "" ? ", via Snapchat" : ""}
         </span>
       </span>
       {status && status !== "done" && <span className={`ses-queue-status s-${status}`}>{STATUS_LABEL[status] ?? status}</span>}
@@ -119,6 +119,11 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
           >
             Snap
           </a>
+        )}
+        {r.ticket?.snapchat === "" && status === "waiting" && (
+          <button type="button" className="ses-choice" disabled={busy} onClick={() => act("call", r.memberId, r.officer)}>
+            Snapped
+          </button>
         )}
         {r.ticket?.phone && (
           <>
