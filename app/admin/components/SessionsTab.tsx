@@ -37,6 +37,7 @@ type SessionDetail = {
   session: JpSession;
   fines: JpSessionFine[];
   changes: JpSessionChange[];
+  absences?: { member_id: string; member_name: string }[];
 };
 
 export default function SessionsTab({ members, isPrivileged, refresh }: { members: Member[]; isPrivileged: boolean; refresh: () => Promise<void> }) {
@@ -106,7 +107,11 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   }
 
   async function closeSession(id: string) {
-    if (!confirm("Close this session? Owner and root can still make changes after closing.")) return;
+    const undecided = new Set((sessionDetail?.fines ?? []).filter((f) => f.status === "pending").map((f) => f.member_id)).size;
+    const warning = undecided > 0
+      ? `\n\n${undecided} brother${undecided !== 1 ? "s" : ""} still ha${undecided !== 1 ? "ve" : "s"} an undecided fine and will be recorded as absent this week. Their fines stay pending for next session.`
+      : "";
+    if (!confirm(`Close this session?${warning}`)) return;
     setSessionError("");
     const res = await fetch(`/api/admin/sessions/${id}/close`, { method: "POST" });
     if (res.ok) {
@@ -456,6 +461,19 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
                 )}
               </section>
 
+              {sessionDetail.session.closed_at && (sessionDetail.absences?.length ?? 0) > 0 && (
+                <aside className="ses-log adm-card ses-absent" aria-label="No-shows">
+                  <div className="adm-card-header">
+                    <span className="adm-card-title">No-shows ({sessionDetail.absences!.length})</span>
+                  </div>
+                  <div className="adm-card-body">
+                    <p className="ses-absent-note">Fine still undecided when the session closed, so recorded as absent this week. Their fines carry over to next session.</p>
+                    <ul className="ses-absent-list">
+                      {sessionDetail.absences!.map((a) => <li key={a.member_id}>{a.member_name}</li>)}
+                    </ul>
+                  </div>
+                </aside>
+              )}
               <aside className="ses-log adm-card" aria-label="Changes this session">
                 <div className="adm-card-header">
                   <span className="adm-card-title">Changes this session</span>
