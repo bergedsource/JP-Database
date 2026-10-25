@@ -42,7 +42,7 @@ Scheduled jobs:
 - **Jan 4**: annual deletion of all fines, JP sessions, auto soc-pro entries
   - Aborts if fine count is 0 (safety guard against double-fire or misconfiguration)
 - **Term rollover dates** (Jan 5, Apr 1, Jul 1, Sep 1): reminder emails
-- **Daily**: auto-escalate pending fines >2 weeks old → `upheld`; auto-manage social probation
+- **Daily**: auto social probation (§10-270) for any brother whose upheld fines total > $20 or include one older than 2 weeks; lifted automatically once resolved. (Pending fines are no longer auto-upheld — overdue ones are flagged in the admin UI.)
 
 ## Rate Limiting (`lib/rate-limit.ts`)
 - `publicLimiter` — 30 req/min per IP, applied to all public endpoints
