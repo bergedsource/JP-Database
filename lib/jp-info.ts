@@ -166,9 +166,11 @@ export function docketOrder(pending: PendingFine[], rollOf: Map<string, number |
 
 // A brother's wait: everything before his first slot, minus brothers the chair has
 // skipped (they're not being heard right now). Null when he has nothing pending.
-export function waitFor(memberId: string, slots: DocketSlot[], minutes: HearingMinutes, skipped: Set<string> = new Set()): JpWait {
+// With `officer`, the wait counts to his slot in that officer's group (a ticket is for
+// one group); otherwise to his first slot.
+export function waitFor(memberId: string, slots: DocketSlot[], minutes: HearingMinutes, skipped: Set<string> = new Set(), officer?: string): JpWait {
   const active = slots.filter((s) => s.memberId === memberId || !skipped.has(s.memberId));
-  const firstIdx = active.findIndex((s) => s.memberId === memberId);
+  const firstIdx = active.findIndex((s) => s.memberId === memberId && (officer === undefined || s.officer === officer));
   if (firstIdx === -1) return { onDocket: false };
 
   const queue = active.map((s) => brotherMinutes(s.fines, minutes));
@@ -266,6 +268,7 @@ export type TicketView = {
   name: string;
   roll: number | null;
   status: TicketStatus;
+  officer: string; // the fining officer's group this ticket is for
   proxyName: string | null; // someone attending JP on his behalf; the chair calls the proxy
   sessionLive: boolean;
   nowHearing: { roll: number | null; officer: string } | null;

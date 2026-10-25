@@ -33,13 +33,13 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
     return () => { clearTimeout(first); clearInterval(t); };
   }, [load, refreshKey]);
 
-  async function act(action: string, memberId?: string) {
-    setBusy(memberId ?? action);
+  async function act(action: string, memberId?: string, officer?: string) {
+    setBusy(memberId ? `${memberId}|${officer ?? ""}` : action);
     setError("");
     const res = await fetch(`/api/admin/sessions/${sessionId}/queue`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, member_id: memberId }),
+      body: JSON.stringify({ action, member_id: memberId, officer }),
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
@@ -81,7 +81,7 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
               {g.officer} <span>{g.brothers} brother{g.brothers !== 1 ? "s" : ""}, {g.fines} fine{g.fines !== 1 ? "s" : ""}</span>
             </h3>
             <ul className="ses-queue-list">
-              {g.rows.map((r) => <Row key={`${g.officer}:${r.memberId}`} r={r} busy={busy === r.memberId} act={act} />)}
+              {g.rows.map((r) => <Row key={`${g.officer}:${r.memberId}`} r={r} busy={busy === `${r.memberId}|${r.officer}` || busy === `${r.memberId}|`} act={act} />)}
             </ul>
           </div>
         ))}
@@ -90,7 +90,7 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
   );
 }
 
-function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?: string) => void }) {
+function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?: string, o?: string) => void }) {
   const status = r.ticket?.status ?? null;
   const skipped = status === "skipped";
   return (
@@ -115,7 +115,7 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
             href={`https://www.snapchat.com/add/${encodeURIComponent(r.ticket.snapchat)}`}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => status === "waiting" && act("call", r.memberId)}
+            onClick={() => status === "waiting" && act("call", r.memberId, r.officer)}
           >
             Snap
           </a>
@@ -123,7 +123,7 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
         {r.ticket?.phone && (
           <>
             <a className="ses-choice" href={`tel:${r.ticket.phone}`}>Call</a>
-            <a className="ses-choice" href={`sms:${r.ticket.phone}?&body=${encodeURIComponent(r.ticket.proxyName ? proxyText(r.name) : TEXT_BODY)}`} onClick={() => status === "waiting" && act("call", r.memberId)}>Text</a>
+            <a className="ses-choice" href={`sms:${r.ticket.phone}?&body=${encodeURIComponent(r.ticket.proxyName ? proxyText(r.name) : TEXT_BODY)}`} onClick={() => status === "waiting" && act("call", r.memberId, r.officer)}>Text</a>
           </>
         )}
         {skipped ? (

@@ -115,7 +115,7 @@ export default function JpInfoCard({
             ) : (
               <>
                 <WaitDetail wait={wait} firstName={firstName} roll={member.roll ?? null} startTime={info?.sessionLive ? "" : next?.time || ""} live={!!info?.sessionLive} />
-                <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} />
+                <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={wait.groups.map((g) => g.officer)} />
               </>
             )}
           </>
