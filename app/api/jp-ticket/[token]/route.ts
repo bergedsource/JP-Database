@@ -66,7 +66,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ t
   const { service, ticket } = await findTicket(token);
   if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
 
-  const { error } = await service.from("jp_tickets").update({ status: "cancelled", phone: null, proxy_name: null }).eq("id", ticket.id);
+  const { error } = await service.from("jp_tickets").update({ status: "cancelled", phone: null, snapchat: null, proxy_name: null }).eq("id", ticket.id);
   if (error) return NextResponse.json({ error: "Couldn't cancel. Try again." }, { status: 500 });
   return NextResponse.json({ success: true });
 }

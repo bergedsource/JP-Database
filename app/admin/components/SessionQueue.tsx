@@ -104,10 +104,22 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
           {r.requeued ? ", came back late" : ""}
           {r.ticket?.proxyName ? `, proxy: ${r.ticket.proxyName}` : ""}
           {r.ticket?.phoneDisplay ? `, ${r.ticket.phoneDisplay}` : ""}
+          {r.ticket?.snapchat ? `, snap @${r.ticket.snapchat}` : ""}
         </span>
       </span>
       {status && status !== "done" && <span className={`ses-queue-status s-${status}`}>{STATUS_LABEL[status] ?? status}</span>}
       <span className="ses-queue-actions">
+        {r.ticket?.snapchat && (
+          <a
+            className="ses-choice"
+            href={`https://www.snapchat.com/add/${encodeURIComponent(r.ticket.snapchat)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => status === "waiting" && act("call", r.memberId)}
+          >
+            Snap
+          </a>
+        )}
         {r.ticket?.phone && (
           <>
             <a className="ses-choice" href={`tel:${r.ticket.phone}`}>Call</a>

@@ -38,7 +38,7 @@ export async function POST(
     .neq("status", "cancelled");
   await service
     .from("jp_tickets")
-    .update({ phone: null, token_hash: null, proxy_name: null })
+    .update({ phone: null, snapchat: null, token_hash: null, proxy_name: null })
     .eq("session_date", session.date_held);
 
   return NextResponse.json({ success: true });

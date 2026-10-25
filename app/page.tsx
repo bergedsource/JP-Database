@@ -514,6 +514,22 @@ export default function Home() {
         .jp-ticket-btn:disabled { opacity: 0.6; cursor: wait; }
         .jp-ticket-btn:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
         .jp-ticket-form { display: flex; flex-direction: column; gap: 8px; }
+        .jp-contact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .jp-contact-opt {
+          min-height: 44px;
+          border-radius: 10px;
+          border: 1.5px solid var(--black-border);
+          background: var(--black);
+          color: var(--cream);
+          font-family: var(--font-sans), sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .jp-contact-opt:hover { border-color: rgba(207,181,59,0.45); }
+        .jp-contact-opt.on { border-color: var(--gold); background: rgba(207,181,59,0.12); color: var(--gold-light); }
+        .jp-contact-opt:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
         .jp-ticket-check { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px; color: var(--cream); cursor: pointer; }
         .jp-ticket-check input { width: 18px; height: 18px; accent-color: var(--gold); }
         .jp-ticket-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
