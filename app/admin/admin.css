@@ -673,6 +673,42 @@
   .ses-timing-desc { grid-column: 1 / -1; }
 }
 
+/* Ticket queue (open session) */
+.ses-queue summary { cursor: pointer; list-style: none; }
+.ses-queue summary::-webkit-details-marker { display: none; }
+.ses-queue-body { display: flex; flex-direction: column; gap: 16px; }
+.ses-queue-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.ses-queue-now { margin: 0; font-size: 15px; color: var(--text-muted); }
+.ses-queue-now strong { color: var(--text); }
+.ses-queue-officer { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--gold); }
+.ses-queue-officer span { font-weight: 400; color: var(--text-muted); font-size: 13px; margin-left: 6px; }
+.ses-queue-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.ses-queue-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-light);
+  border-radius: 6px;
+}
+.ses-queue-row.now { background: rgba(207, 181, 59, 0.1); box-shadow: inset 3px 0 0 var(--gold); }
+.ses-queue-row.skipped { opacity: 0.6; }
+.ses-queue-roll { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ses-queue-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ses-queue-name { font-weight: 700; }
+.ses-queue-meta { font-size: 13px; color: var(--text-muted); }
+.ses-queue-status { font-size: 12px; font-weight: 700; border-radius: 4px; padding: 3px 8px; background: var(--surface-3); color: var(--text-soft); white-space: nowrap; }
+.ses-queue-status.s-called { background: var(--gold); color: var(--bg); }
+.ses-queue-status.s-here { background: #1f3a2a; color: #9ee0b5; }
+.ses-queue-status.s-skipped { background: #3a2420; color: #F0A090; }
+.ses-queue-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.ses-queue-actions .ses-choice { min-height: 36px; padding: 0 12px; text-decoration: none; }
+@media (max-width: 640px) {
+  .ses-queue-row { grid-template-columns: 40px minmax(0, 1fr) auto; }
+  .ses-queue-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
 .adm-roll { margin-left: 8px; font-size: 13px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 .ses-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }

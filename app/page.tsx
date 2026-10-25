@@ -488,6 +488,38 @@ export default function Home() {
         .jp-common-meta { font-size: 12px; color: var(--cream-dim); }
         .jp-common-amount { font-size: 15px; font-weight: 700; color: var(--gold-light); white-space: nowrap; }
 
+        /* Take a ticket */
+        .jp-ticket { padding-top: 14px; border-top: 1px solid var(--black-border); }
+        .jp-ticket-line { font-size: 14px; line-height: 1.5; color: var(--cream-dim); }
+        .jp-ticket-line strong { color: var(--gold-light); font-variant-numeric: tabular-nums; }
+        .jp-ticket-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 46px;
+          padding: 0 20px;
+          border: 0;
+          border-radius: 10px;
+          background: var(--gold);
+          color: var(--black);
+          font-family: var(--font-sans), sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          text-decoration: none;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.15s;
+        }
+        .jp-ticket-btn:hover { background: var(--gold-light); color: var(--black); }
+        .jp-ticket-btn:disabled { opacity: 0.6; cursor: wait; }
+        .jp-ticket-btn:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+        .jp-ticket-form { display: flex; flex-direction: column; gap: 8px; }
+        .jp-ticket-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+        .jp-ticket-row { display: flex; gap: 8px; }
+        .jp-ticket-input { height: 46px; flex: 1; min-width: 0; }
+        .jp-ticket-error { font-size: 13px; color: #F08A7A; }
+        .jp-ticket-fine { font-size: 12px; line-height: 1.5; color: var(--cream-dim); }
+
         /* ── Member record ── */
         .record {
           max-width: 760px;

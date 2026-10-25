@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import FineDetailsEditor from "./FineDetailsEditor";
 import SessionSettings from "./SessionSettings";
+import SessionQueue from "./SessionQueue";
 import { rollMap, sortFines, type FineSort } from "./rollSort";
 import type { FineStatus, JpSession, JpSessionChange, JpSessionFine, Member } from "@/lib/types";
 
@@ -287,6 +288,10 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
               </button>
             )}
           </div>
+
+          {isPrivileged && !sessionDetail.session.closed_at && (
+            <SessionQueue sessionId={sessionDetail.session.id} refreshKey={decidedCount} />
+          )}
 
           {sessionDetailLoading ? (
             <p className="adm-empty">Loading…</p>

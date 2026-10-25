@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { clockAfter, formatTime, waitRange, type JpInfo, type JpWait } from "@/lib/jp-info";
+import { clockAfter, formatTime, waitLabel, waitRange, type JpInfo, type JpWait } from "@/lib/jp-info";
+import TicketBox, { TicketWindowLine } from "./TicketBox";
 
 type Slide = "wait" | "session" | "common";
 const SLIDES: { id: Slide; label: string }[] = [
@@ -112,7 +113,10 @@ export default function JpInfoCard({
                 <p className="jp-big plain">You&rsquo;re clear</p>
               </>
             ) : (
-              <WaitDetail wait={wait} firstName={firstName} roll={member.roll ?? null} startTime={next?.time || ""} />
+              <>
+                <WaitDetail wait={wait} firstName={firstName} roll={member.roll ?? null} startTime={info?.sessionLive ? "" : next?.time || ""} live={!!info?.sessionLive} />
+                <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} />
+              </>
             )}
           </>
         )}
@@ -131,6 +135,7 @@ export default function JpInfoCard({
                     {next.time || next.place ? ". " : ""}
                     {daysUntil(next.date)}
                   </p>
+                  {info?.tickets && <TicketWindowLine window={info.tickets} />}
                 </div>
               </>
             ) : (
@@ -238,11 +243,13 @@ function WaitDetail({
   firstName,
   roll,
   startTime,
+  live,
 }: {
   wait: Extract<JpWait, { onDocket: true }>;
   firstName: string;
   roll: number | null;
   startTime: string;
+  live: boolean;
 }) {
   const { lo, hi } = waitRange(wait.minutesAhead);
   const first = wait.minutesAhead === 0;
@@ -256,15 +263,21 @@ function WaitDetail({
   return (
     <>
       <p className="card-text">
-        {firstName}, you&rsquo;re <strong>{ordinal(wait.place)}</strong> of {wait.docketSize} brothers on the docket{roll != null ? ` (roll #${roll})` : ""}.
+        {firstName}, you&rsquo;re <strong>{ordinal(wait.place)}</strong> in line{roll != null ? ` (roll #${roll})` : ""}.{" "}
+        {wait.groups.map((g, i) => (
+          <span key={g.officer}>
+            {i === 0 ? "You’re in the " : " and the "}
+            <strong>{g.officer}</strong> group ({ordinal(g.place)} of {g.size}){i === wait.groups.length - 1 ? "." : ""}
+          </span>
+        ))}
       </p>
       <div className="jp-bottom">
-        <p className="jp-big">{first ? "You’re first" : `${lo}–${hi} min`}</p>
+        <p className="jp-big">{first ? (live ? "You’re next" : "You’re first") : waitLabel(wait.minutesAhead)}</p>
         <p className="jp-sub">
           {first
             ? startTime ? `Be there when JP starts at ${formatTime(startTime)}.` : "Be there when JP starts."
             : `${wait.brothersAhead} brother${wait.brothersAhead !== 1 ? "s" : ""} with ${wait.finesAhead} fine${wait.finesAhead !== 1 ? "s" : ""} go before you.` +
-              (startTime ? ` Expect to be called between ${clockAfter(startTime, lo)} and ${clockAfter(startTime, hi)}.` : " That’s after JP starts.")}
+              (live ? " That’s from right now." : startTime ? ` Expect to be called between ${clockAfter(startTime, lo)} and ${clockAfter(startTime, hi)}.` : " That’s after JP starts.")}
         </p>
         <p className="jp-sub">Your own hearing: about {Math.max(1, Math.round(wait.ownMinutes))} min for {own}.</p>
       </div>

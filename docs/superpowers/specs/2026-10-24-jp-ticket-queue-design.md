@@ -1,7 +1,7 @@
 # JP Ticket Queue — Design
 
 **Date:** 2026-10-24
-**Status:** Planned, not started
+**Status:** Phase 1 built 2026-10-25 (ticket queue, officer-grouped order, tap-to-call/text). Phases 2–3 not started.
 **Feature:** "Take a ticket" for JP sessions, so brothers can wait in their rooms and get called when they're up.
 
 ---

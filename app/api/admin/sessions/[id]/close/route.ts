@@ -15,7 +15,7 @@ export async function POST(
 
   const { data: session } = await service
     .from("jp_sessions")
-    .select("closed_at")
+    .select("closed_at, date_held")
     .eq("id", id)
     .single();
 
@@ -28,5 +28,18 @@ export async function POST(
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // The night is over: drop every phone number and ticket link taken for it, and
+  // close the tickets that were still open.
+  await service
+    .from("jp_tickets")
+    .update({ status: "done", done_at: new Date().toISOString() })
+    .eq("session_date", session.date_held)
+    .neq("status", "cancelled");
+  await service
+    .from("jp_tickets")
+    .update({ phone: null, token_hash: null })
+    .eq("session_date", session.date_held);
+
   return NextResponse.json({ success: true });
 }
