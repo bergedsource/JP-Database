@@ -39,6 +39,7 @@ export default function SessionSettings() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("19:00");
   const [place, setPlace] = useState("");
+  const [ticketsOpen, setTicketsOpen] = useState("17:00");
   const [sessionMsg, setSessionMsg] = useState("");
   const [sessionErr, setSessionErr] = useState("");
   const [sessionSaving, setSessionSaving] = useState(false);
@@ -57,6 +58,7 @@ export default function SessionSettings() {
           setDate(next.date);
           setTime(next.time || "19:00");
           setPlace(next.place);
+          setTicketsOpen(next.ticketsOpen || "17:00");
         }
         setMins(toDraft(parseHearingMinutes(d[HEARING_MINUTES_KEY])));
         setLoaded(true);
@@ -69,7 +71,7 @@ export default function SessionSettings() {
     setSessionSaving(true);
     setSessionErr("");
     setSessionMsg("");
-    const err = await saveSetting(NEXT_SESSION_KEY, JSON.stringify({ date, time, place: place.trim() }));
+    const err = await saveSetting(NEXT_SESSION_KEY, JSON.stringify({ date, time, place: place.trim(), ticketsOpen }));
     if (err) setSessionErr(err);
     else setSessionMsg("Saved. It's on the homepage now.");
     setSessionSaving(false);
@@ -128,6 +130,10 @@ export default function SessionSettings() {
               <label className="adm-label" htmlFor="ns-time">Start time</label>
               <input id="ns-time" type="time" className="adm-input" value={time} onChange={(e) => setTime(e.target.value)} />
             </div>
+            <div>
+              <label className="adm-label" htmlFor="ns-tickets">Tickets open</label>
+              <input id="ns-tickets" type="time" className="adm-input" value={ticketsOpen} onChange={(e) => setTicketsOpen(e.target.value)} />
+            </div>
             <div className="ses-next-place">
               <label className="adm-label" htmlFor="ns-place">Place</label>
               <input id="ns-place" type="text" className="adm-input" maxLength={80} placeholder="Chapter room" value={place} onChange={(e) => setPlace(e.target.value)} />
@@ -138,7 +144,7 @@ export default function SessionSettings() {
             )}
           </div>
           <p className="ses-next-preview">
-            {date ? <>Members see: <strong>{preview(date, time, place.trim())}</strong> </> : "Nothing posted, so the homepage says the next session isn't scheduled yet. "}
+            {date ? <>Members see: <strong>{preview(date, time, place.trim())}</strong> Tickets open at <strong>{ticketsOpen ? formatTime(ticketsOpen) : "the start time"}</strong> that day, with a countdown until then. </> : "Nothing posted, so the homepage says the next session isn't scheduled yet. "}
             Starting a session on or after this date takes it down automatically.
           </p>
           {sessionErr && <p className="adm-error" role="alert">{sessionErr}</p>}

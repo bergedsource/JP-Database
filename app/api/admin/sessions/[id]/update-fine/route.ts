@@ -85,7 +85,7 @@ export async function POST(
   // Current values, for the change log and audit trail
   const { data: fine } = await service
     .from("fines")
-    .select("status, amount, fine_type, members(name)")
+    .select("status, amount, fine_type, member_id, members(name)")
     .eq("id", fine_id)
     .single();
 
@@ -108,6 +108,26 @@ export async function POST(
     .eq("id", fine_id);
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+
+  // Last pending fine decided → his JP ticket for tonight is done.
+  if (hasStatus && new_status !== "pending") {
+    const { count } = await service
+      .from("fines")
+      .select("id", { count: "exact", head: true })
+      .eq("member_id", fine.member_id)
+      .eq("status", "pending");
+    if (count === 0) {
+      const { data: s } = await service.from("jp_sessions").select("date_held").eq("id", session_id).single();
+      if (s) {
+        await service
+          .from("jp_tickets")
+          .update({ status: "done", done_at: new Date().toISOString() })
+          .eq("session_date", s.date_held)
+          .eq("member_id", fine.member_id)
+          .neq("status", "cancelled");
+      }
+    }
+  }
 
   const auditTable = current.role === "root" ? "system_events" : "audit_logs";
 

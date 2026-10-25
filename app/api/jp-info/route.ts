@@ -1,7 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
-import { NEXT_SESSION_KEY, parseNextSession, type CommonFine, type JpInfo } from "@/lib/jp-info";
+import { type CommonFine, type JpInfo } from "@/lib/jp-info";
+import { loadDocket } from "@/lib/jp-docket";
 
 // GET /api/jp-info — public data for the homepage JP card: the next session the
 // chair has posted and the five most common fine types on record. Aggregates only;
@@ -13,17 +14,17 @@ export async function GET(req: Request) {
 
   const service = createServiceClient();
 
-  // Reads curated views only (see migration_public_read_views.sql and
-  // migration_jp_info_settings.sql). Until the settings migration runs, the
-  // next-session key just isn't visible and the card shows "not scheduled".
-  const { data: settingRows } = await service
-    .from("public_settings")
-    .select("key, value")
-    .eq("key", NEXT_SESSION_KEY);
-  // A date that has already passed is stale (nobody cleared it) — don't advertise it.
-  const posted = parseNextSession(settingRows?.[0]?.value);
-  const todayPacific = new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-  const nextSession = posted && posted.date >= todayPacific ? posted : null;
+  // Next session + whether tickets are open (shared with the ticket routes so they
+  // agree). Until migration_jp_info_settings.sql runs, nothing is "posted".
+  let nextSession: JpInfo["nextSession"] = null;
+  let tickets: JpInfo["tickets"] = { state: "none" };
+  let sessionLive = false;
+  try {
+    const docket = await loadDocket(service);
+    nextSession = docket.nextSession;
+    tickets = docket.tickets;
+    sessionLive = !!docket.liveSession;
+  } catch {}
 
   // The fines table only holds the current year (it's wiped every Jan 4), so this
   // counts everything on record. Paged because PostgREST caps a response at 1000 rows.
@@ -52,9 +53,9 @@ export async function GET(req: Request) {
     .slice(0, 5)
     .map(([fineType, amounts]) => ({ fineType, count: amounts.length, amount: typicalAmount(amounts) }));
 
-  const body: JpInfo = { nextSession, commonFines, totalFines: rows.length };
+  const body: JpInfo = { nextSession, commonFines, totalFines: rows.length, tickets, sessionLive };
   return NextResponse.json(body, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+    headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
   });
 }
 

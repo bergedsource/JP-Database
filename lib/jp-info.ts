@@ -69,12 +69,21 @@ export function waitRange(minutes: number): { lo: number; hi: number } {
   };
 }
 
+// "15–25 min", or "Under 10 min" when the low end rounds to zero.
+export function waitLabel(minutes: number): string {
+  const { lo, hi } = waitRange(minutes);
+  return lo === 0 ? `Under ${hi} min` : `${lo}–${hi} min`;
+}
+
 // ── Settings parsing (values are stored as JSON strings in `settings`) ──
 
 export const NEXT_SESSION_KEY = "next_jp_session";
 export const HEARING_MINUTES_KEY = "jp_hearing_minutes";
 
-export type NextSession = { date: string; time: string; place: string };
+// ticketsOpen: time on `date` when brothers can start taking tickets ("" = when the session starts).
+export type NextSession = { date: string; time: string; place: string; ticketsOpen: string };
+
+const HHMM = /^\d{2}:\d{2}$/;
 
 export function parseNextSession(raw: string | null | undefined): NextSession | null {
   if (!raw) return null;
@@ -83,12 +92,100 @@ export function parseNextSession(raw: string | null | undefined): NextSession | 
     if (typeof v?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.date)) {
       return {
         date: v.date,
-        time: typeof v.time === "string" && /^\d{2}:\d{2}$/.test(v.time) ? v.time : "",
+        time: typeof v.time === "string" && HHMM.test(v.time) ? v.time : "",
         place: typeof v.place === "string" ? v.place.slice(0, 80) : "",
+        ticketsOpen: typeof v.ticketsOpen === "string" && HHMM.test(v.ticketsOpen) ? v.ticketsOpen : "",
       };
     }
   } catch {}
   return null;
+}
+
+// ── Pacific time (the chapter's clock, whatever timezone the server runs in) ──
+
+const PACIFIC = "America/Los_Angeles";
+
+// "YYYY-MM-DD" + "HH:MM" in Pacific time → the real instant (handles PST/PDT).
+export function pacificToDate(date: string, hhmm: string): Date {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = hhmm.split(":").map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: PACIFIC, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).formatToParts(new Date(guess));
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  const asIfUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
+  return new Date(guess + (guess - asIfUtc));
+}
+
+export function todayPacific(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: PACIFIC });
+}
+
+// ── Hearing order ──
+// JP hears fines grouped by fining officer: the officer who fined the most brothers
+// goes first (ties alphabetical); inside a group brothers go by roll # low to high,
+// no-roll last. A brother fined by two officers is heard once in each group.
+
+export type PendingFine = { member_id: string; fine_type: string; fining_officer: string | null };
+
+export type DocketSlot = { memberId: string; officer: string; roll: number | null; fines: string[] };
+
+export const NO_OFFICER = "No officer listed";
+
+export function docketOrder(pending: PendingFine[], rollOf: Map<string, number | null>): DocketSlot[] {
+  const groups = new Map<string, Map<string, string[]>>();
+  for (const f of pending) {
+    const officer = f.fining_officer?.trim() || NO_OFFICER;
+    const byMember = groups.get(officer) ?? new Map<string, string[]>();
+    byMember.set(f.member_id, [...(byMember.get(f.member_id) ?? []), f.fine_type]);
+    groups.set(officer, byMember);
+  }
+  const officers = [...groups.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0]));
+  const slots: DocketSlot[] = [];
+  for (const [officer, byMember] of officers) {
+    const members = [...byMember.entries()]
+      .map(([memberId, fines]) => ({ memberId, officer, fines, roll: rollOf.get(memberId) ?? null }))
+      .sort((a, b) => {
+        if (a.roll === b.roll) return a.memberId.localeCompare(b.memberId);
+        if (a.roll === null) return 1;
+        if (b.roll === null) return -1;
+        return a.roll - b.roll;
+      });
+    slots.push(...members);
+  }
+  return slots;
+}
+
+// A brother's wait: everything before his first slot, minus brothers the chair has
+// skipped (they're not being heard right now). Null when he has nothing pending.
+export function waitFor(memberId: string, slots: DocketSlot[], minutes: HearingMinutes, skipped: Set<string> = new Set()): JpWait {
+  const active = slots.filter((s) => s.memberId === memberId || !skipped.has(s.memberId));
+  const firstIdx = active.findIndex((s) => s.memberId === memberId);
+  if (firstIdx === -1) return { onDocket: false };
+
+  const queue = active.map((s) => brotherMinutes(s.fines, minutes));
+  const ahead = active.slice(0, firstIdx);
+  const own = active.filter((s) => s.memberId === memberId);
+  const counts = new Map<string, number>();
+  for (const s of own) for (const t of s.fines) counts.set(t, (counts.get(t) ?? 0) + 1);
+
+  return {
+    onDocket: true,
+    place: firstIdx + 1,
+    docketSize: active.length,
+    brothersAhead: ahead.length,
+    finesAhead: ahead.reduce((n, s) => n + s.fines.length, 0),
+    minutesAhead: queue.slice(0, firstIdx).reduce((n, m) => n + m, 0),
+    ownMinutes: own.reduce((n, s) => n + brotherMinutes(s.fines, minutes), 0),
+    ownFines: [...counts.entries()].map(([fineType, count]) => ({ fineType, count })),
+    queue,
+    queueIndex: firstIdx,
+    groups: own.map((s) => {
+      const group = active.filter((g) => g.officer === s.officer);
+      return { officer: s.officer, place: group.indexOf(s) + 1, size: group.length };
+    }),
+  };
 }
 
 export function parseHearingMinutes(raw: string | null | undefined): HearingMinutes {
@@ -122,10 +219,17 @@ export function clockAfter(hhmm: string, minutes: number): string {
 
 export type CommonFine = { fineType: string; count: number; amount: string };
 
+export type TicketWindow =
+  | { state: "none" }                  // no session posted or running: tickets unavailable
+  | { state: "soon"; opensAt: string } // posted; tickets open at this ISO instant
+  | { state: "open" };                 // take a ticket now
+
 export type JpInfo = {
   nextSession: NextSession | null;
   commonFines: CommonFine[];
   totalFines: number;
+  tickets: TicketWindow;
+  sessionLive: boolean; // a JP session is running right now
 };
 
 export type JpWait =
@@ -139,7 +243,37 @@ export type JpWait =
       minutesAhead: number;
       ownMinutes: number;
       ownFines: { fineType: string; count: number }[];
-      // Each brother's minutes in calling order, and which one is you — for the progress bar.
+      // Each slot's minutes in calling order, and where you first come up — for the progress bar.
       queue: number[];
       queueIndex: number;
+      // Your place in each fining officer's group you're in.
+      groups: { officer: string; place: number; size: number }[];
     };
+
+// ── Tickets ──
+
+export type TicketStatus = "waiting" | "here" | "called" | "done" | "skipped" | "cancelled";
+
+export type TicketView = {
+  ticketNo: number;
+  name: string;
+  roll: number | null;
+  status: TicketStatus;
+  sessionLive: boolean;
+  nowHearing: { roll: number | null; officer: string } | null;
+  wait: JpWait;
+  startTime: string; // "HH:MM" of the session, "" if unknown
+};
+
+// "(541) 555-1234", "541.555.1234", "+1 541 555 1234" → "+15415551234"; null if not a US number.
+export function normalizePhone(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return null;
+}
+
+export function formatPhone(e164: string): string {
+  const d = e164.replace(/^\+1/, "");
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : e164;
+}
