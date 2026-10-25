@@ -106,16 +106,28 @@ export async function markHere(service: SupabaseClient, memberId: string): Promi
   const mine = docket.slots.findIndex((s) => s.memberId === memberId);
   const passed = docket.skipped.has(memberId) && now !== -1 && mine !== -1 && mine < now;
 
-  const { data: existing } = await service
+  // Here/skip apply to the brother, so every row he has tonight (each officer's
+  // ticket plus any chair row) changes together.
+  const { data: rows } = await service
     .from("jp_tickets")
-    .select("id, requeued")
+    .select("id, requeued, status")
     .eq("session_date", docket.ticketDate)
-    .eq("member_id", memberId)
-    .maybeSingle();
-  const patch = { status: "here", requeued: (existing?.requeued ?? false) || passed };
-  const { error } = existing
-    ? await service.from("jp_tickets").update(patch).eq("id", existing.id)
-    : await service.from("jp_tickets").insert({ session_date: docket.ticketDate, member_id: memberId, source: "chair", ...patch });
+    .eq("member_id", memberId);
+  const open = (rows ?? []).filter((r) => r.status !== "cancelled" && r.status !== "done");
+  const requeued = open.some((r) => r.requeued) || passed;
+  const { error } = open.length
+    ? await service.from("jp_tickets").update({ status: "here", requeued }).in("id", open.map((r) => r.id))
+    : await service.from("jp_tickets").insert({ session_date: docket.ticketDate, member_id: memberId, source: "chair", status: "here", requeued });
+  return error ? "Couldn't update. Try again." : null;
+}
+
+// Skip a brother tonight (all his rows), creating a chair row if he has none.
+export async function markSkipped(service: SupabaseClient, date: string, memberId: string): Promise<string | null> {
+  const { data: rows } = await service.from("jp_tickets").select("id, status").eq("session_date", date).eq("member_id", memberId);
+  const open = (rows ?? []).filter((r) => r.status !== "cancelled" && r.status !== "done");
+  const { error } = open.length
+    ? await service.from("jp_tickets").update({ status: "skipped" }).in("id", open.map((r) => r.id))
+    : await service.from("jp_tickets").insert({ session_date: date, member_id: memberId, source: "chair", status: "skipped" });
   return error ? "Couldn't update. Try again." : null;
 }
 

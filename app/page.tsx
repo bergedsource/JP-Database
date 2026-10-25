@@ -536,6 +536,8 @@ export default function Home() {
         .jp-ticket-row { display: flex; gap: 8px; }
         .jp-ticket-input { height: 46px; flex: 1; min-width: 0; }
         .jp-ticket-form > .jp-ticket-input { flex: none; }
+        .jp-ticket-select { cursor: pointer; appearance: auto; }
+        .jp-ticket-links { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .jp-ticket-error { font-size: 13px; color: #F08A7A; }
         .jp-ticket-fine { font-size: 12px; line-height: 1.5; color: var(--cream-dim); }
 

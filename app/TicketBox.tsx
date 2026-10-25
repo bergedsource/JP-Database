@@ -8,20 +8,25 @@ import type { TicketWindow } from "@/lib/jp-info";
 const TICKET_STORE = "jp-tickets";
 const TICKET_TTL_MS = 18 * 60 * 60 * 1000;
 
-function savedTicket(memberId: string): { token: string; ticketNo: number } | null {
+type Saved = { officer: string; token: string; ticketNo: number; at: number };
+
+// A brother can hold one ticket per fining officer, so they're kept per member+officer.
+function savedTickets(memberId: string): Saved[] {
   try {
     const all = JSON.parse(localStorage.getItem(TICKET_STORE) ?? "{}");
-    const t = all[memberId];
-    return t && Date.now() - t.at < TICKET_TTL_MS ? t : null;
+    return Object.entries(all)
+      .filter(([k]) => k.startsWith(memberId + "|"))
+      .map(([k, v]) => ({ ...(v as Omit<Saved, "officer">), officer: k.slice(memberId.length + 1) }))
+      .filter((t) => Date.now() - t.at < TICKET_TTL_MS);
   } catch {
-    return null;
+    return [];
   }
 }
 
-function saveTicket(memberId: string, token: string, ticketNo: number) {
+function saveTicket(memberId: string, officer: string, token: string, ticketNo: number) {
   try {
     const all = JSON.parse(localStorage.getItem(TICKET_STORE) ?? "{}");
-    all[memberId] = { token, ticketNo, at: Date.now() };
+    all[`${memberId}|${officer}`] = { token, ticketNo, at: Date.now() };
     localStorage.setItem(TICKET_STORE, JSON.stringify(all));
   } catch {}
 }
@@ -63,9 +68,11 @@ export function TicketWindowLine({ window: w }: { window: TicketWindow }) {
 
 // Under "Your wait at JP": take a ticket so you can wait in your room; the JP Chair
 // calls or texts when you're close.
-export default function TicketBox({ window: w, memberId }: { window: TicketWindow; memberId: string }) {
+// officers: the fining officers he has pending fines from (one ticket each).
+export default function TicketBox({ window: w, memberId, officers }: { window: TicketWindow; memberId: string; officers: string[] }) {
   const now = useNow(1000);
-  const [saved, setSaved] = useState<{ token: string; ticketNo: number } | null>(null);
+  const [saved, setSaved] = useState<Saved[]>([]);
+  const [officer, setOfficer] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   // Nothing chosen until he taps Phone # or Snapchat; then that box appears.
   const [contact, setContact] = useState<"phone" | "snapchat" | null>(null);
@@ -78,7 +85,7 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
 
   // localStorage only exists in the browser, so read it after mount.
   useEffect(() => {
-    const t = setTimeout(() => setSaved(savedTicket(memberId)), 0);
+    const t = setTimeout(() => setSaved(savedTickets(memberId)), 0);
     return () => clearTimeout(t);
   }, [memberId]);
 
@@ -94,13 +101,18 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
     );
   }
 
-  if (saved) {
-    return (
-      <div className="jp-ticket">
-        <a className="jp-ticket-btn" href={`/ticket/${saved.token}`}>View my ticket #{saved.ticketNo}</a>
-      </div>
-    );
-  }
+  const mine = saved.filter((t) => officers.includes(t.officer));
+  const remaining = officers.filter((o) => !mine.some((t) => t.officer === o));
+  const links = mine.length > 0 && (
+    <div className="jp-ticket-links">
+      {mine.map((t) => (
+        <a key={t.officer} className="jp-ticket-btn" href={`/ticket/${t.token}`}>
+          View ticket #{t.ticketNo}{officers.length > 1 ? ` (${t.officer})` : ""}
+        </a>
+      ))}
+    </div>
+  );
+  if (remaining.length === 0) return <div className="jp-ticket">{links}</div>;
 
   async function take(e: React.FormEvent) {
     e.preventDefault();
@@ -109,11 +121,11 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
     const res = await fetch("/api/jp-ticket", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member_id: memberId, contact, phone, snapchat, proxy, proxy_name: proxy ? proxyName : "" }),
+      body: JSON.stringify({ member_id: memberId, fining_officer: officer, contact, phone, snapchat, proxy, proxy_name: proxy ? proxyName : "" }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.token) {
-      saveTicket(memberId, data.token, data.ticketNo);
+      saveTicket(memberId, officer, data.token, data.ticketNo);
       window.location.href = `/ticket/${data.token}`;
       return;
     }
@@ -123,10 +135,24 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
 
   return (
     <div className="jp-ticket">
+      {links}
       {!formOpen ? (
-        <button type="button" className="jp-ticket-btn" onClick={() => setFormOpen(true)}>Take a ticket</button>
+        <button type="button" className="jp-ticket-btn" onClick={() => setFormOpen(true)}>
+          {mine.length ? "Take another ticket" : "Take a ticket"}
+        </button>
       ) : (
         <form onSubmit={take} className="jp-ticket-form">
+          <label htmlFor="jp-officer" className="jp-ticket-label">Fining officer</label>
+          <select
+            id="jp-officer"
+            className="search-input jp-ticket-input jp-ticket-select"
+            value={officer}
+            onChange={(e) => { setOfficer(e.target.value); setError(""); }}
+            required
+          >
+            <option value="" disabled>Choose who fined you</option>
+            {remaining.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
           <label className="jp-ticket-check">
             <input type="checkbox" checked={proxy} onChange={(e) => { setProxy(e.target.checked); setError(""); }} />
             I&rsquo;m sending a proxy

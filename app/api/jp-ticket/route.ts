@@ -4,7 +4,8 @@ import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
 import { normalizePhone, normalizeSnapchat } from "@/lib/jp-info";
 import { loadDocket, newTicketToken } from "@/lib/jp-docket";
 
-// POST /api/jp-ticket — a brother takes a ticket for tonight's JP: { member_id, phone }.
+// POST /api/jp-ticket — a brother takes a ticket for tonight's JP:
+// { member_id, fining_officer, contact: "phone" | "snapchat", phone | snapchat, proxy?, proxy_name? }.
 // Allowed only while tickets are open and only for brothers with a pending fine.
 // Returns the ticket link's secret once; only its hash is stored.
 export async function POST(req: NextRequest) {
@@ -22,6 +23,9 @@ export async function POST(req: NextRequest) {
   const proxyName = typeof body.proxy_name === "string" ? body.proxy_name.trim().slice(0, 60) : "";
   if (body.proxy === true && !proxyName) return NextResponse.json({ error: "Enter your proxy's name." }, { status: 400 });
   if (!memberId) return NextResponse.json({ error: "Missing member" }, { status: 400 });
+  // A ticket is for one fining officer's group; he must say which.
+  const officer = typeof body.fining_officer === "string" ? body.fining_officer.trim() : "";
+  if (!officer) return NextResponse.json({ error: "Choose your fining officer." }, { status: 400 });
   if (bySnap && !snapchat) return NextResponse.json({ error: "Enter a Snapchat username (3–15 letters, numbers, . _ -)." }, { status: 400 });
   if (!bySnap && !phone) return NextResponse.json({ error: "Enter a 10-digit US phone number." }, { status: 400 });
 
@@ -39,20 +43,24 @@ export async function POST(req: NextRequest) {
   if (!docket.slots.some((s) => s.memberId === memberId)) {
     return NextResponse.json({ error: "Tickets are only for brothers with a fine on tonight's docket." }, { status: 409 });
   }
+  if (!docket.slots.some((s) => s.memberId === memberId && s.officer === officer)) {
+    return NextResponse.json({ error: `You don't have a pending fine from ${officer}.` }, { status: 409 });
+  }
 
   const date = docket.ticketDate;
   const { data: existing } = await service
     .from("jp_tickets")
-    .select("id, source, status, phone, snapchat")
+    .select("id, status")
     .eq("session_date", date)
     .eq("member_id", memberId)
+    .eq("fining_officer", officer)
     .maybeSingle();
 
-  // One ticket per brother per night. A row the chair made (he was skipped) or a
-  // cancelled ticket can be turned into a fresh one.
-  const reusable = existing && (existing.status === "cancelled" || (existing.source === "chair" && !existing.phone && !existing.snapchat));
-  if (existing && !reusable) {
-    return NextResponse.json({ error: "You already have a ticket. Ask the JP Chair if you lost the link." }, { status: 409 });
+  // One ticket per brother per fining officer per night, whatever contact he gives.
+  // Only a cancelled ticket can be replaced.
+  const duplicate = `You already have a ticket for ${officer}. Ask the JP Chair if you lost the link.`;
+  if (existing && existing.status !== "cancelled") {
+    return NextResponse.json({ error: duplicate }, { status: 409 });
   }
 
   const { data: last } = await service
@@ -68,6 +76,7 @@ export async function POST(req: NextRequest) {
   const row = {
     session_date: date,
     member_id: memberId,
+    fining_officer: officer,
     ticket_no: ticketNo,
     phone,
     snapchat,
@@ -82,10 +91,8 @@ export async function POST(req: NextRequest) {
     ? await service.from("jp_tickets").update(row).eq("id", existing.id)
     : await service.from("jp_tickets").insert(row);
   if (error) {
-    // Unique (session_date, member_id): a double-tap raced us.
-    if (error.code === "23505") {
-      return NextResponse.json({ error: "You already have a ticket. Ask the JP Chair if you lost the link." }, { status: 409 });
-    }
+    // Unique (session_date, member_id, fining_officer): a double-tap raced us.
+    if (error.code === "23505") return NextResponse.json({ error: duplicate }, { status: 409 });
     return NextResponse.json({ error: "Couldn't create the ticket. Try again." }, { status: 500 });
   }
 

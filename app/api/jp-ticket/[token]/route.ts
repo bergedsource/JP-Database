@@ -10,7 +10,7 @@ async function findTicket(token: string) {
   const service = createServiceClient();
   const { data } = await service
     .from("jp_tickets")
-    .select("id, member_id, ticket_no, status, session_date, proxy_name")
+    .select("id, member_id, ticket_no, status, session_date, proxy_name, fining_officer")
     .eq("token_hash", hashTicketToken(token))
     .maybeSingle();
   return { service, ticket: data };
@@ -36,9 +36,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   const member = docket.members.get(ticket.member_id);
   const skipped = new Set(docket.skipped);
   skipped.delete(ticket.member_id); // his own estimate counts from his real spot
-  const wait = waitFor(ticket.member_id, docket.slots, docket.minutes, skipped);
+  // Counted to his slot in the officer group this ticket is for.
+  const wait = waitFor(ticket.member_id, docket.slots, docket.minutes, skipped, ticket.fining_officer ?? undefined);
 
-  // Once all his fines are decided he's done, whatever the stored status says.
+  // Once that group's fines are decided he's done, whatever the stored status says.
   let status = ticket.status as TicketStatus;
   if (!wait.onDocket && status !== "cancelled") status = "done";
 
@@ -48,6 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     name: member?.name ?? "Brother",
     roll: member?.roll ?? null,
     status,
+    officer: ticket.fining_officer ?? "",
     proxyName: ticket.proxy_name ?? null,
     sessionLive: !!docket.liveSession,
     nowHearing: hearing ? { roll: docket.members.get(hearing.memberId)?.roll ?? null, officer: hearing.officer } : null,

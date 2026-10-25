@@ -1,6 +1,7 @@
 import { getCurrentRole } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
+import { NO_OFFICER } from "@/lib/jp-info";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/sessions/[id]/update-fine — update a fine's status and/or amount, log the change
@@ -85,7 +86,7 @@ export async function POST(
   // Current values, for the change log and audit trail
   const { data: fine } = await service
     .from("fines")
-    .select("status, amount, fine_type, member_id, members(name)")
+    .select("status, amount, fine_type, member_id, fining_officer, members(name)")
     .eq("id", fine_id)
     .single();
 
@@ -109,13 +110,14 @@ export async function POST(
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-  // Last pending fine decided → his JP ticket for tonight is done.
+  // Last pending fine from this officer decided → his ticket for that officer's group is done.
   if (hasStatus && new_status !== "pending") {
-    const { count } = await service
+    const pendingQuery = service
       .from("fines")
       .select("id", { count: "exact", head: true })
       .eq("member_id", fine.member_id)
       .eq("status", "pending");
+    const { count } = await (fine.fining_officer ? pendingQuery.eq("fining_officer", fine.fining_officer) : pendingQuery.is("fining_officer", null));
     if (count === 0) {
       const { data: s } = await service.from("jp_sessions").select("date_held").eq("id", session_id).single();
       if (s) {
@@ -124,6 +126,7 @@ export async function POST(
           .update({ status: "done", done_at: new Date().toISOString() })
           .eq("session_date", s.date_held)
           .eq("member_id", fine.member_id)
+          .eq("fining_officer", fine.fining_officer?.trim() || NO_OFFICER)
           .neq("status", "cancelled");
       }
     }
