@@ -36,7 +36,7 @@ async function saveSetting(key: string, value: string): Promise<string | null> {
 
 function preview(date: string, time: string, place: string): string {
   const day = new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-  return `${day}${time ? `, ${formatTime(time)}` : ""}${place ? ` in the ${place.replace(/^the\s+/i, "").toLowerCase()}` : ""}.`;
+  return `${day}${time ? `, ${formatTime(time)}` : ""}${place ? ` at ${place}` : ""}.`;
 }
 
 // Owner/root controls on the Sessions list: the next session shown on the member

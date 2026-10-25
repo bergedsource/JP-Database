@@ -131,7 +131,7 @@ export default function JpInfoCard({
                   <span className="jp-weekday">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}</span>
                   <p className="jp-big plain">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
                   <p className="jp-sub">
-                    {[next.time && formatTime(next.time), next.place && `in the ${next.place.replace(/^the\s+/i, "").toLowerCase()}`].filter(Boolean).join(" ")}
+                    {[next.time && formatTime(next.time), next.place && `at ${next.place}`].filter(Boolean).join(" ")}
                     {next.time || next.place ? ". " : ""}
                     {daysUntil(next.date)}
                   </p>
