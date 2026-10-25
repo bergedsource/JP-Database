@@ -10,7 +10,7 @@ async function findTicket(token: string) {
   const service = createServiceClient();
   const { data } = await service
     .from("jp_tickets")
-    .select("id, member_id, ticket_no, status, session_date")
+    .select("id, member_id, ticket_no, status, session_date, proxy_name")
     .eq("token_hash", hashTicketToken(token))
     .maybeSingle();
   return { service, ticket: data };
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     name: member?.name ?? "Brother",
     roll: member?.roll ?? null,
     status,
+    proxyName: ticket.proxy_name ?? null,
     sessionLive: !!docket.liveSession,
     nowHearing: hearing ? { roll: docket.members.get(hearing.memberId)?.roll ?? null, officer: hearing.officer } : null,
     wait,
@@ -65,7 +66,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ t
   const { service, ticket } = await findTicket(token);
   if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
 
-  const { error } = await service.from("jp_tickets").update({ status: "cancelled", phone: null }).eq("id", ticket.id);
+  const { error } = await service.from("jp_tickets").update({ status: "cancelled", phone: null, proxy_name: null }).eq("id", ticket.id);
   if (error) return NextResponse.json({ error: "Couldn't cancel. Try again." }, { status: 500 });
   return NextResponse.json({ success: true });
 }

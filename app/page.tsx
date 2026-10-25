@@ -514,9 +514,12 @@ export default function Home() {
         .jp-ticket-btn:disabled { opacity: 0.6; cursor: wait; }
         .jp-ticket-btn:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
         .jp-ticket-form { display: flex; flex-direction: column; gap: 8px; }
+        .jp-ticket-check { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px; color: var(--cream); cursor: pointer; }
+        .jp-ticket-check input { width: 18px; height: 18px; accent-color: var(--gold); }
         .jp-ticket-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
         .jp-ticket-row { display: flex; gap: 8px; }
         .jp-ticket-input { height: 46px; flex: 1; min-width: 0; }
+        .jp-ticket-form > .jp-ticket-input { flex: none; }
         .jp-ticket-error { font-size: 13px; color: #F08A7A; }
         .jp-ticket-fine { font-size: 12px; line-height: 1.5; color: var(--cream-dim); }
 

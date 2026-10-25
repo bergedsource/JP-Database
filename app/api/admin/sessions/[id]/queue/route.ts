@@ -12,7 +12,7 @@ export type QueueRow = {
   fines: number;
   isNow: boolean;
   requeued: boolean;
-  ticket: { no: number | null; status: TicketStatus; phone: string | null; phoneDisplay: string | null } | null;
+  ticket: { no: number | null; status: TicketStatus; phone: string | null; phoneDisplay: string | null; proxyName: string | null } | null;
 };
 export type QueueGroup = { officer: string; brothers: number; fines: number; rows: QueueRow[] };
 export type QueueResponse = {
@@ -44,7 +44,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const docket = await loadDocket(service);
   const { data: ticketRows } = await service
     .from("jp_tickets")
-    .select("member_id, ticket_no, status, phone, requeued")
+    .select("member_id, ticket_no, status, phone, requeued, proxy_name")
     .eq("session_date", session.date_held);
   const tickets = new Map((ticketRows ?? []).map((t) => [t.member_id as string, t]));
 
@@ -68,7 +68,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       isNow: slot === now,
       requeued: !!t?.requeued,
       ticket: t && t.status !== "cancelled"
-        ? { no: t.ticket_no, status: t.status as TicketStatus, phone: t.phone, phoneDisplay: t.phone ? formatPhone(t.phone) : null }
+        ? { no: t.ticket_no, status: t.status as TicketStatus, phone: t.phone, phoneDisplay: t.phone ? formatPhone(t.phone) : null, proxyName: t.proxy_name ?? null }
         : null,
     });
   }

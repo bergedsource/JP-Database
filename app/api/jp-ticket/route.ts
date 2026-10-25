@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const memberId = typeof body.member_id === "string" ? body.member_id : "";
   const phone = typeof body.phone === "string" ? normalizePhone(body.phone) : null;
+  // Sending a proxy: the phone number given is the proxy's, and the chair calls them.
+  const proxyName = typeof body.proxy_name === "string" ? body.proxy_name.trim().slice(0, 60) : "";
+  if (body.proxy === true && !proxyName) return NextResponse.json({ error: "Enter your proxy's name." }, { status: 400 });
   if (!memberId) return NextResponse.json({ error: "Missing member" }, { status: 400 });
   if (!phone) return NextResponse.json({ error: "Enter a 10-digit US phone number." }, { status: 400 });
 
@@ -63,6 +66,7 @@ export async function POST(req: NextRequest) {
     member_id: memberId,
     ticket_no: ticketNo,
     phone,
+    proxy_name: proxyName || null,
     token_hash: hash,
     source: "member",
     status: "waiting",

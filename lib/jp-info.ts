@@ -80,8 +80,16 @@ export function waitLabel(minutes: number): string {
 export const NEXT_SESSION_KEY = "next_jp_session";
 export const HEARING_MINUTES_KEY = "jp_hearing_minutes";
 
-// ticketsOpen: time on `date` when brothers can start taking tickets ("" = when the session starts).
-export type NextSession = { date: string; time: string; place: string; ticketsOpen: string };
+export type NextSession = { date: string; time: string; place: string };
+
+// Tickets open this long before the posted start time (7:00 pm session → 7:00 am).
+export const TICKETS_OPEN_HOURS = 12;
+// Used when the chair posts a date without a start time.
+export const DEFAULT_START = "19:00";
+
+export function ticketsOpenAt(next: NextSession): Date {
+  return new Date(pacificToDate(next.date, next.time || DEFAULT_START).getTime() - TICKETS_OPEN_HOURS * 3600 * 1000);
+}
 
 const HHMM = /^\d{2}:\d{2}$/;
 
@@ -94,7 +102,6 @@ export function parseNextSession(raw: string | null | undefined): NextSession | 
         date: v.date,
         time: typeof v.time === "string" && HHMM.test(v.time) ? v.time : "",
         place: typeof v.place === "string" ? v.place.slice(0, 80) : "",
-        ticketsOpen: typeof v.ticketsOpen === "string" && HHMM.test(v.ticketsOpen) ? v.ticketsOpen : "",
       };
     }
   } catch {}
@@ -259,6 +266,7 @@ export type TicketView = {
   name: string;
   roll: number | null;
   status: TicketStatus;
+  proxyName: string | null; // someone attending JP on his behalf; the chair calls the proxy
   sessionLive: boolean;
   nowHearing: { roll: number | null; officer: string } | null;
   wait: JpWait;

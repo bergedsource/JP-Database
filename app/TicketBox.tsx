@@ -68,6 +68,8 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
   const [saved, setSaved] = useState<{ token: string; ticketNo: number } | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [phone, setPhone] = useState("");
+  const [proxy, setProxy] = useState(false);
+  const [proxyName, setProxyName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -104,7 +106,7 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
     const res = await fetch("/api/jp-ticket", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member_id: memberId, phone }),
+      body: JSON.stringify({ member_id: memberId, phone, proxy, proxy_name: proxy ? proxyName : "" }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.token) {
@@ -122,7 +124,27 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
         <button type="button" className="jp-ticket-btn" onClick={() => setFormOpen(true)}>Take a ticket</button>
       ) : (
         <form onSubmit={take} className="jp-ticket-form">
-          <label htmlFor="jp-phone" className="jp-ticket-label">Your phone number</label>
+          <label className="jp-ticket-check">
+            <input type="checkbox" checked={proxy} onChange={(e) => { setProxy(e.target.checked); setError(""); }} />
+            I&rsquo;m sending a proxy
+          </label>
+          {proxy && (
+            <>
+              <label htmlFor="jp-proxy" className="jp-ticket-label">Proxy&rsquo;s name</label>
+              <input
+                id="jp-proxy"
+                type="text"
+                autoComplete="off"
+                maxLength={60}
+                placeholder="Who's going for you"
+                className="search-input jp-ticket-input"
+                value={proxyName}
+                onChange={(e) => { setProxyName(e.target.value); setError(""); }}
+                required
+              />
+            </>
+          )}
+          <label htmlFor="jp-phone" className="jp-ticket-label">{proxy ? "Proxy’s phone number" : "Your phone number"}</label>
           <div className="jp-ticket-row">
             <input
               id="jp-phone"
@@ -139,7 +161,11 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
             <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : "Take ticket"}</button>
           </div>
           {error && <p className="jp-ticket-error" role="alert">{error}</p>}
-          <p className="jp-ticket-fine">The JP Chair uses this number to call or text you when you&rsquo;re up. It&rsquo;s deleted when the session ends.</p>
+          <p className="jp-ticket-fine">
+            {proxy
+              ? "The JP Chair calls or texts your proxy at this number when it’s your turn. It’s deleted when the session ends."
+              : "The JP Chair uses this number to call or text you when you’re up. It’s deleted when the session ends."}
+          </p>
         </form>
       )}
     </div>
