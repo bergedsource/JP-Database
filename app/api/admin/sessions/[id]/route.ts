@@ -145,5 +145,14 @@ export async function GET(
     fine_type: c.fines?.fine_type ?? "",
   }));
 
-  return NextResponse.json({ session, fines, changes: changeLog });
+  // Brothers recorded absent when this session closed (undecided fines).
+  const { data: absenceRows } = await service
+    .from("jp_absences")
+    .select("member_id, members ( name )")
+    .eq("session_id", id);
+  const absences = ((absenceRows ?? []) as unknown as { member_id: string; members: { name: string | null } | null }[])
+    .map((a) => ({ member_id: a.member_id, member_name: a.members?.name ?? "Unknown" }))
+    .sort((a, b) => a.member_name.localeCompare(b.member_name));
+
+  return NextResponse.json({ session, fines, changes: changeLog, absences });
 }

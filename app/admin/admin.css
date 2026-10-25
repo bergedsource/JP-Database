@@ -652,6 +652,10 @@
 .ses-next-preview { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
 .ses-next-preview strong { color: var(--text); }
 .ses-saved { margin: 0; font-size: 14px; color: var(--gold); }
+.ses-absent { border-color: #5a3a30; }
+.ses-absent-note { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.ses-absent-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; }
+.adm-noshow { font-size: 12px; font-weight: 700; color: #F0A090; background: #3a2420; border-radius: 4px; padding: 2px 8px; white-space: nowrap; }
 .ses-learned { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: var(--text-soft); }
 .ses-timing summary { cursor: pointer; list-style: none; }
 .ses-timing summary::-webkit-details-marker { display: none; }

@@ -22,6 +22,14 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
   const [bbResults, setBbResults] = useState<Array<{ roll: number; name: string; initiation_class: string | null }>>([]);
   const [showBbSuggestions, setShowBbSuggestions] = useState(false);
   const [rosterMap, setRosterMap] = useState<Map<number, { name: string; big_brother_roll: number | null }>>(new Map());
+  // JP sessions each brother was recorded absent from (undecided fine at close).
+  const [absences, setAbsences] = useState<Record<string, { count: number; dates: string[] }>>({});
+  useEffect(() => {
+    fetch("/api/admin/absences")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setAbsences)
+      .catch(() => {});
+  }, []);
 
   // Suggestions are hidden by deriving during render rather than by clearing the
   // state from inside the effect below — a synchronous setState in an effect
@@ -372,6 +380,7 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                 <th>Big Bro</th>
                 <th>Status</th>
                 <th>Fines</th>
+                <th>JP no-shows</th>
                 <th />
               </tr>
             </thead>
@@ -581,6 +590,15 @@ export default function MembersTab({ members, fines, isPrivileged, refresh }: Me
                         <span style={{ color: "var(--text-dim)", fontSize: 11, marginLeft: 6 }}>
                           ({memberFines.length} total)
                         </span>
+                      )}
+                    </td>
+                    <td>
+                      {absences[m.id] ? (
+                        <span className="adm-noshow" title={`Absent: ${absences[m.id].dates.map((d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })).join(", ")}`}>
+                          {absences[m.id].count} no-show{absences[m.id].count !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--text-dim)", fontSize: 12 }}>—</span>
                       )}
                     </td>
                     <td style={{ textAlign: "right" }}>
