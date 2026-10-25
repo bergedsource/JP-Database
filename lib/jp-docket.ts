@@ -9,9 +9,9 @@ import {
   HEARING_MINUTES_KEY,
   NEXT_SESSION_KEY,
   docketOrder,
-  pacificToDate,
   parseHearingMinutes,
   parseNextSession,
+  ticketsOpenAt,
   todayPacific,
   type DocketSlot,
   type HearingMinutes,
@@ -53,15 +53,15 @@ export async function loadDocket(service: SupabaseClient): Promise<Docket> {
   const rollOf = new Map([...members].map(([id, m]) => [id, m.roll]));
   const slots = docketOrder((pendingRes.data ?? []) as PendingFine[], rollOf);
 
-  // Tickets: open while a session is running; otherwise open on the posted date from
-  // the posted "tickets open" time (or the start time if none was set).
+  // Tickets: open while a session is running; otherwise from 12 hours before the
+  // posted start time.
   let tickets: TicketWindow = { state: "none" };
   let ticketDate: string | null = null;
   if (live) {
     tickets = { state: "open" };
     ticketDate = live.date;
   } else if (nextSession) {
-    const opensAt = pacificToDate(nextSession.date, nextSession.ticketsOpen || nextSession.time || "00:00");
+    const opensAt = ticketsOpenAt(nextSession);
     ticketDate = nextSession.date;
     tickets = Date.now() >= opensAt.getTime() ? { state: "open" } : { state: "soon", opensAt: opensAt.toISOString() };
   }

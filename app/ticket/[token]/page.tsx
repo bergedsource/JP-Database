@@ -109,6 +109,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
                   <p className="tk-kicker">Ticket #{t.ticketNo}</p>
                   <h1 className="tk-title">{t.name}</h1>
                   {t.roll != null && <p className="tk-text">Roll #{t.roll}</p>}
+                  {t.proxyName && <p className="tk-proxy">Proxy: <strong>{t.proxyName}</strong> will be called</p>}
                 </div>
                 <span className={`tk-status s-${t.status}`}>{STATUS_LABEL[t.status]}</span>
               </div>
@@ -189,6 +190,8 @@ const CSS = `
   .tk-kicker { margin: 0; font-size: 13px; font-weight: 700; color: #CFB53B; }
   .tk-title { margin: 4px 0 0; font-family: var(--font-serif), serif; font-size: 34px; font-weight: 600; line-height: 1.05; }
   .tk-text { margin: 0; font-size: 15px; line-height: 1.6; color: #A89870; }
+  .tk-proxy { margin: 4px 0 0; font-size: 14px; color: #A89870; }
+  .tk-proxy strong { color: #E2CC6A; }
   .tk-status { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 4px 10px; background: #2A2A2A; color: #F0E8D0; white-space: nowrap; }
   .tk-status.s-called { background: #CFB53B; color: #0A0A0A; }
   .tk-status.s-here { background: #1f3a2a; color: #9ee0b5; }

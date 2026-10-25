@@ -5,6 +5,7 @@ import type { QueueResponse, QueueRow } from "@/app/api/admin/sessions/[id]/queu
 
 const POLL_MS = 15000;
 const TEXT_BODY = "JP: you're up in about 5 minutes. Head to JP now. – JP Chair";
+const proxyText = (brother: string) => `JP: you're up as ${brother}'s proxy in about 5 minutes. Head to JP now. – JP Chair`;
 
 const STATUS_LABEL: Record<string, string> = {
   waiting: "Waiting",
@@ -101,6 +102,7 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
           {r.fines} fine{r.fines !== 1 ? "s" : ""}
           {r.ticket?.no ? `, ticket #${r.ticket.no}` : ""}
           {r.requeued ? ", came back late" : ""}
+          {r.ticket?.proxyName ? `, proxy: ${r.ticket.proxyName}` : ""}
           {r.ticket?.phoneDisplay ? `, ${r.ticket.phoneDisplay}` : ""}
         </span>
       </span>
@@ -109,7 +111,7 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
         {r.ticket?.phone && (
           <>
             <a className="ses-choice" href={`tel:${r.ticket.phone}`}>Call</a>
-            <a className="ses-choice" href={`sms:${r.ticket.phone}?&body=${encodeURIComponent(TEXT_BODY)}`} onClick={() => status === "waiting" && act("call", r.memberId)}>Text</a>
+            <a className="ses-choice" href={`sms:${r.ticket.phone}?&body=${encodeURIComponent(r.ticket.proxyName ? proxyText(r.name) : TEXT_BODY)}`} onClick={() => status === "waiting" && act("call", r.memberId)}>Text</a>
           </>
         )}
         {skipped ? (
