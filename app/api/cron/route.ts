@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const month = now.getUTCMonth() + 1; // 1-indexed
   const day = now.getUTCDate();
-  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  // Upheld fines older than this put a brother on social probation (§10-270).
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const today = now.toISOString().split("T")[0];
 
   // --- Annual warning: January 3rd ---
@@ -175,7 +176,7 @@ export async function GET(req: NextRequest) {
 
     const qualifying = new Set<string>();
     for (const [memberId, data] of memberData) {
-      if (data.totalOwed > 20 || data.oldestCreated < oneWeekAgo) qualifying.add(memberId);
+      if (data.totalOwed > 20 || data.oldestCreated < twoWeeksAgo) qualifying.add(memberId);
     }
 
     const alreadyOn = new Set((autoSP ?? []).map((sp: { id: string; member_id: string }) => sp.member_id));
