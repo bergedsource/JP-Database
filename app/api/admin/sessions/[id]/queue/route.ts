@@ -12,7 +12,7 @@ export type QueueRow = {
   fines: number;
   isNow: boolean;
   requeued: boolean;
-  ticket: { no: number | null; status: TicketStatus; phone: string | null; phoneDisplay: string | null; proxyName: string | null } | null;
+  ticket: { no: number | null; status: TicketStatus; phone: string | null; phoneDisplay: string | null; snapchat: string | null; proxyName: string | null } | null;
 };
 export type QueueGroup = { officer: string; brothers: number; fines: number; rows: QueueRow[] };
 export type QueueResponse = {
@@ -44,7 +44,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const docket = await loadDocket(service);
   const { data: ticketRows } = await service
     .from("jp_tickets")
-    .select("member_id, ticket_no, status, phone, requeued, proxy_name")
+    .select("member_id, ticket_no, status, phone, snapchat, requeued, proxy_name")
     .eq("session_date", session.date_held);
   const tickets = new Map((ticketRows ?? []).map((t) => [t.member_id as string, t]));
 
@@ -68,12 +68,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       isNow: slot === now,
       requeued: !!t?.requeued,
       ticket: t && t.status !== "cancelled"
-        ? { no: t.ticket_no, status: t.status as TicketStatus, phone: t.phone, phoneDisplay: t.phone ? formatPhone(t.phone) : null, proxyName: t.proxy_name ?? null }
+        ? { no: t.ticket_no, status: t.status as TicketStatus, phone: t.phone, phoneDisplay: t.phone ? formatPhone(t.phone) : null, snapchat: t.snapchat ?? null, proxyName: t.proxy_name ?? null }
         : null,
     });
   }
 
-  const live = (ticketRows ?? []).filter((t) => t.status !== "cancelled" && t.phone);
+  const live = (ticketRows ?? []).filter((t) => t.status !== "cancelled" && (t.phone || t.snapchat));
   const body: QueueResponse = {
     open: true,
     nowHearing: now ? { name: docket.members.get(now.memberId)?.name ?? "Unknown", roll: docket.members.get(now.memberId)?.roll ?? null, officer: now.officer } : null,
@@ -112,8 +112,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (action === "call-next") {
     const docket = await loadDocket(service);
-    const { data: rows } = await service.from("jp_tickets").select("member_id, status, phone").eq("session_date", date);
-    const waiting = new Set((rows ?? []).filter((t) => t.status === "waiting" && t.phone).map((t) => t.member_id as string));
+    const { data: rows } = await service.from("jp_tickets").select("member_id, status, phone, snapchat").eq("session_date", date);
+    const waiting = new Set((rows ?? []).filter((t) => t.status === "waiting" && (t.phone || t.snapchat)).map((t) => t.member_id as string));
     const start = Math.max(0, docket.slots.findIndex((s) => !docket.skipped.has(s.memberId)));
     const next = docket.slots.slice(start).find((s) => waiting.has(s.memberId));
     if (!next) return NextResponse.json({ error: "Nobody with a ticket is waiting." }, { status: 409 });

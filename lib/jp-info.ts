@@ -281,6 +281,13 @@ export function normalizePhone(raw: string): string | null {
   return null;
 }
 
+// "@Jordan.Lee" → "jordan.lee"; null unless it looks like a Snapchat username
+// (3–15 chars, starts with a letter, letters/digits/. _ -).
+export function normalizeSnapchat(raw: string): string | null {
+  const u = raw.trim().replace(/^@/, "").toLowerCase();
+  return /^[a-z][a-z0-9._-]{2,14}$/.test(u) ? u : null;
+}
+
 export function formatPhone(e164: string): string {
   const d = e164.replace(/^\+1/, "");
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : e164;

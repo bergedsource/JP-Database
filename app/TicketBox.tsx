@@ -67,7 +67,10 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
   const now = useNow(1000);
   const [saved, setSaved] = useState<{ token: string; ticketNo: number } | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  // Nothing chosen until he taps Phone # or Snapchat; then that box appears.
+  const [contact, setContact] = useState<"phone" | "snapchat" | null>(null);
   const [phone, setPhone] = useState("");
+  const [snapchat, setSnapchat] = useState("");
   const [proxy, setProxy] = useState(false);
   const [proxyName, setProxyName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -106,7 +109,7 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
     const res = await fetch("/api/jp-ticket", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member_id: memberId, phone, proxy, proxy_name: proxy ? proxyName : "" }),
+      body: JSON.stringify({ member_id: memberId, contact, phone, snapchat, proxy, proxy_name: proxy ? proxyName : "" }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.token) {
@@ -144,28 +147,65 @@ export default function TicketBox({ window: w, memberId }: { window: TicketWindo
               />
             </>
           )}
-          <label htmlFor="jp-phone" className="jp-ticket-label">{proxy ? "Proxy’s phone number" : "Your phone number"}</label>
-          <div className="jp-ticket-row">
-            <input
-              id="jp-phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="(541) 555-1234"
-              className="search-input jp-ticket-input"
-              value={phone}
-              onChange={(e) => { setPhone(e.target.value); setError(""); }}
-              required
-              autoFocus
-            />
-            <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : "Take ticket"}</button>
+          <span className="jp-ticket-label" id="jp-contact-label">{proxy ? "How to reach your proxy" : "How to reach you"}</span>
+          <div className="jp-contact" role="radiogroup" aria-labelledby="jp-contact-label">
+            {(["phone", "snapchat"] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={contact === c}
+                className={`jp-contact-opt${contact === c ? " on" : ""}`}
+                onClick={() => { setContact(c); setError(""); }}
+              >
+                {c === "phone" ? "Phone #" : "Snapchat"}
+              </button>
+            ))}
           </div>
+          {contact && (
+            <div className="jp-ticket-row">
+              {contact === "phone" ? (
+                <input
+                  key="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  aria-label={proxy ? "Proxy's phone number" : "Your phone number"}
+                  placeholder="(541) 555-1234"
+                  className="search-input jp-ticket-input"
+                  value={phone}
+                  onChange={(e) => { setPhone(e.target.value); setError(""); }}
+                  required
+                  autoFocus
+                />
+              ) : (
+                <input
+                  key="snap"
+                  type="text"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-label={proxy ? "Proxy's Snapchat username" : "Your Snapchat username"}
+                  placeholder="@username"
+                  className="search-input jp-ticket-input"
+                  value={snapchat}
+                  onChange={(e) => { setSnapchat(e.target.value); setError(""); }}
+                  required
+                  autoFocus
+                />
+              )}
+              <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : "Take ticket"}</button>
+            </div>
+          )}
           {error && <p className="jp-ticket-error" role="alert">{error}</p>}
-          <p className="jp-ticket-fine">
-            {proxy
-              ? "The JP Chair calls or texts your proxy at this number when it’s your turn. It’s deleted when the session ends."
-              : "The JP Chair uses this number to call or text you when you’re up. It’s deleted when the session ends."}
-          </p>
+          {contact && (
+            <p className="jp-ticket-fine">
+              {contact === "phone"
+                ? (proxy ? "The JP Chair calls or texts your proxy at this number when it’s your turn." : "The JP Chair calls or texts you at this number when you’re up.")
+                : (proxy ? "The JP Chair messages your proxy on Snapchat when it’s your turn." : "The JP Chair messages you on Snapchat when you’re up.")}
+              {" "}It&rsquo;s deleted when the session ends.
+            </p>
+          )}
         </form>
       )}
     </div>

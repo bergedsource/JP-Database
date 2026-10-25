@@ -1,7 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
-import { normalizePhone } from "@/lib/jp-info";
+import { normalizePhone, normalizeSnapchat } from "@/lib/jp-info";
 import { loadDocket, newTicketToken } from "@/lib/jp-docket";
 
 // POST /api/jp-ticket — a brother takes a ticket for tonight's JP: { member_id, phone }.
@@ -14,12 +14,16 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const memberId = typeof body.member_id === "string" ? body.member_id : "";
-  const phone = typeof body.phone === "string" ? normalizePhone(body.phone) : null;
-  // Sending a proxy: the phone number given is the proxy's, and the chair calls them.
+  // Contact by phone (default) or Snapchat. Sending a proxy: the contact given is the
+  // proxy's, and the chair reaches them instead.
+  const bySnap = body.contact === "snapchat";
+  const phone = !bySnap && typeof body.phone === "string" ? normalizePhone(body.phone) : null;
+  const snapchat = bySnap && typeof body.snapchat === "string" ? normalizeSnapchat(body.snapchat) : null;
   const proxyName = typeof body.proxy_name === "string" ? body.proxy_name.trim().slice(0, 60) : "";
   if (body.proxy === true && !proxyName) return NextResponse.json({ error: "Enter your proxy's name." }, { status: 400 });
   if (!memberId) return NextResponse.json({ error: "Missing member" }, { status: 400 });
-  if (!phone) return NextResponse.json({ error: "Enter a 10-digit US phone number." }, { status: 400 });
+  if (bySnap && !snapchat) return NextResponse.json({ error: "Enter a Snapchat username (3–15 letters, numbers, . _ -)." }, { status: 400 });
+  if (!bySnap && !phone) return NextResponse.json({ error: "Enter a 10-digit US phone number." }, { status: 400 });
 
   const service = createServiceClient();
   let docket;
@@ -39,14 +43,14 @@ export async function POST(req: NextRequest) {
   const date = docket.ticketDate;
   const { data: existing } = await service
     .from("jp_tickets")
-    .select("id, source, status, phone")
+    .select("id, source, status, phone, snapchat")
     .eq("session_date", date)
     .eq("member_id", memberId)
     .maybeSingle();
 
   // One ticket per brother per night. A row the chair made (he was skipped) or a
   // cancelled ticket can be turned into a fresh one.
-  const reusable = existing && (existing.status === "cancelled" || (existing.source === "chair" && !existing.phone));
+  const reusable = existing && (existing.status === "cancelled" || (existing.source === "chair" && !existing.phone && !existing.snapchat));
   if (existing && !reusable) {
     return NextResponse.json({ error: "You already have a ticket. Ask the JP Chair if you lost the link." }, { status: 409 });
   }
@@ -66,6 +70,7 @@ export async function POST(req: NextRequest) {
     member_id: memberId,
     ticket_no: ticketNo,
     phone,
+    snapchat,
     proxy_name: proxyName || null,
     token_hash: hash,
     source: "member",
