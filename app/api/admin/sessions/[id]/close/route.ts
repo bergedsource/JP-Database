@@ -1,5 +1,6 @@
 import { requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { learnFromSession } from "@/lib/jp-docket";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/sessions/[id]/close — mark a session as closed
@@ -28,6 +29,11 @@ export async function POST(
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Learn how long tonight's hearings really took, so future wait estimates improve.
+  try {
+    await learnFromSession(service, id);
+  } catch {}
 
   // The night is over: drop every phone number and ticket link taken for it, and
   // close the tickets that were still open.

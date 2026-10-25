@@ -8,9 +8,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   HEARING_MINUTES_KEY,
   NEXT_SESSION_KEY,
+  NO_OFFICER,
+  brotherMinutes,
   docketOrder,
+  learnedScale,
   parseHearingMinutes,
+  parseLearned,
   parseNextSession,
+  scaleMinutes,
   ticketsOpenAt,
   todayPacific,
   type DocketSlot,
@@ -41,7 +46,9 @@ export async function loadDocket(service: SupabaseClient): Promise<Docket> {
   if (pendingRes.error || membersRes.error) throw new Error("Failed to load docket");
 
   const setting = (k: string) => settingsRes.data?.find((r) => r.key === k)?.value;
-  const minutes = parseHearingMinutes(setting(HEARING_MINUTES_KEY));
+  // Tier minutes, scaled by what past sessions actually took (once there's enough data).
+  const rawMinutes = setting(HEARING_MINUTES_KEY);
+  const minutes = scaleMinutes(parseHearingMinutes(rawMinutes), learnedScale(parseLearned(rawMinutes)));
   const posted = parseNextSession(setting(NEXT_SESSION_KEY));
   const today = todayPacific();
   const nextSession = posted && posted.date >= today ? posted : null;
@@ -145,4 +152,74 @@ export function hashTicketToken(token: string): string {
 // Who's being heard now: the first slot not belonging to a skipped brother.
 export function nowHearing(d: Docket): DocketSlot | null {
   return d.slots.find((s) => !d.skipped.has(s.memberId)) ?? null;
+}
+
+// Mark the next waiting ticket holder in hearing order (from whoever's up now) as
+// called. Returns who, or null if no ticket holder is waiting.
+export async function callNext(service: SupabaseClient, date: string): Promise<{ memberId: string; officer: string } | null> {
+  const docket = await loadDocket(service);
+  const { data: rows } = await service.from("jp_tickets").select("member_id, fining_officer, status, phone, snapchat").eq("session_date", date);
+  const waiting = new Set(
+    (rows ?? []).filter((t) => t.status === "waiting" && t.fining_officer && (t.phone || t.snapchat != null)).map((t) => `${t.member_id}|${t.fining_officer}`)
+  );
+  const start = Math.max(0, docket.slots.findIndex((s) => !docket.skipped.has(s.memberId)));
+  const next = docket.slots.slice(start).find((s) => !docket.skipped.has(s.memberId) && waiting.has(`${s.memberId}|${s.officer}`));
+  if (!next) return null;
+  const { error } = await service
+    .from("jp_tickets")
+    .update({ status: "called", called_at: new Date().toISOString() })
+    .eq("session_date", date)
+    .eq("member_id", next.memberId)
+    .eq("fining_officer", next.officer);
+  return error ? null : { memberId: next.memberId, officer: next.officer };
+}
+
+// Gaps longer than this between decisions are breaks, not hearing time.
+const MAX_GAP_MIN = 20;
+
+// When a session closes: measure how long each brother's hearing (one officer group)
+// actually took from the decision timestamps, compare with what the tiers predicted,
+// and add both to the running totals stored with the hearing minutes.
+export async function learnFromSession(service: SupabaseClient, sessionId: string): Promise<void> {
+  const { data: changes } = await service
+    .from("jp_session_changes")
+    .select("fine_id, changed_at")
+    .eq("session_id", sessionId)
+    .order("changed_at", { ascending: true });
+  if (!changes || changes.length < 2) return;
+
+  const fineIds = [...new Set(changes.map((c) => c.fine_id as string))];
+  const { data: fines } = await service.from("fines").select("id, member_id, fine_type, fining_officer").in("id", fineIds);
+  const fineInfo = new Map((fines ?? []).map((f) => [f.id as string, f]));
+
+  // Each gap between consecutive decisions is time spent on the later decision's hearing.
+  const slots = new Map<string, { actual: number; types: Map<string, string> }>();
+  for (let i = 1; i < changes.length; i++) {
+    const f = fineInfo.get(changes[i].fine_id as string);
+    if (!f) continue;
+    const gap = (new Date(changes[i].changed_at).getTime() - new Date(changes[i - 1].changed_at).getTime()) / 60000;
+    if (gap <= 0 || gap > MAX_GAP_MIN) continue;
+    const key = `${f.member_id}|${f.fining_officer?.trim() || NO_OFFICER}`;
+    const slot = slots.get(key) ?? { actual: 0, types: new Map<string, string>() };
+    slot.actual += gap;
+    slot.types.set(f.id as string, f.fine_type as string);
+    slots.set(key, slot);
+  }
+  if (slots.size === 0) return;
+
+  const { data: row } = await service.from("settings").select("value").eq("key", HEARING_MINUTES_KEY).maybeSingle();
+  const tiers = parseHearingMinutes(row?.value);
+  const prev = parseLearned(row?.value) ?? { actual: 0, predicted: 0, slots: 0 };
+  let actual = 0;
+  let predicted = 0;
+  for (const s of slots.values()) {
+    actual += s.actual;
+    predicted += brotherMinutes([...s.types.values()], tiers);
+  }
+  const learned = { actual: prev.actual + actual, predicted: prev.predicted + predicted, slots: prev.slots + slots.size };
+  await service.from("settings").upsert({
+    key: HEARING_MINUTES_KEY,
+    value: JSON.stringify({ ...tiers, learned }),
+    updated_at: new Date().toISOString(),
+  });
 }

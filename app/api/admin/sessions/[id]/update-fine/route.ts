@@ -2,6 +2,7 @@ import { getCurrentRole } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NO_OFFICER } from "@/lib/jp-info";
+import { callNext } from "@/lib/jp-docket";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/sessions/[id]/update-fine — update a fine's status and/or amount, log the change
@@ -128,6 +129,8 @@ export async function POST(
           .eq("member_id", fine.member_id)
           .eq("fining_officer", fine.fining_officer?.trim() || NO_OFFICER)
           .neq("status", "cancelled");
+        // His hearing for that group is over, so the next ticket holder in line is up.
+        await callNext(service, s.date_held);
       }
     }
   }

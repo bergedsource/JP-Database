@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { formatPhone, type TicketStatus } from "@/lib/jp-info";
-import { loadDocket, markHere, markSkipped, nowHearing } from "@/lib/jp-docket";
+import { callNext, loadDocket, markHere, markSkipped, nowHearing } from "@/lib/jp-docket";
 
 export type QueueRow = {
   memberId: string;
@@ -122,26 +122,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let memberId: string | null = typeof memberIdIn === "string" ? memberIdIn : null;
   let officer: string | null = typeof officerIn === "string" ? officerIn : null;
 
+  let error: string | null = null;
   if (action === "call-next") {
-    const docket = await loadDocket(service);
-    const { data: rows } = await service.from("jp_tickets").select("member_id, fining_officer, status, phone, snapchat").eq("session_date", date);
-    const waiting = new Set(
-      (rows ?? []).filter((t) => t.status === "waiting" && t.fining_officer && (t.phone || t.snapchat != null)).map((t) => `${t.member_id}|${t.fining_officer}`)
-    );
-    const start = Math.max(0, docket.slots.findIndex((s) => !docket.skipped.has(s.memberId)));
-    const next = docket.slots.slice(start).find((s) => !docket.skipped.has(s.memberId) && waiting.has(`${s.memberId}|${s.officer}`));
+    const next = await callNext(service, date);
     if (!next) return NextResponse.json({ error: "Nobody with a ticket is waiting." }, { status: 409 });
     memberId = next.memberId;
     officer = next.officer;
   }
   if (!memberId) return NextResponse.json({ error: "Missing member" }, { status: 400 });
 
-  let error: string | null = null;
-  if (action === "here") {
+  if (action === "call-next") {
+    // Already marked called above.
+  } else if (action === "here") {
     error = await markHere(service, memberId);
   } else if (action === "skip") {
     error = await markSkipped(service, date, memberId);
-  } else if (action === "call-next" || action === "call" || action === "waiting") {
+  } else if (action === "call" || action === "waiting") {
     // Calling is per ticket: one officer group's ticket for this brother.
     if (!officer) return NextResponse.json({ error: "Missing officer" }, { status: 400 });
     const patch: Record<string, unknown> = { status: action === "waiting" ? "waiting" : "called" };

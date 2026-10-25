@@ -1,5 +1,5 @@
 import { getCurrentRole, requireAuth, requireOwner } from "@/lib/admin-auth";
-import { HEARING_MINUTES_KEY, NEXT_SESSION_KEY, parseHearingMinutes, parseNextSession } from "@/lib/jp-info";
+import { HEARING_MINUTES_KEY, NEXT_SESSION_KEY, parseHearingMinutes, parseLearned, parseNextSession } from "@/lib/jp-info";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -55,7 +55,11 @@ export async function PUT(req: NextRequest) {
       stored = JSON.stringify(parsed);
     }
   } else if (key === HEARING_MINUTES_KEY) {
-    stored = JSON.stringify(parseHearingMinutes(typeof value === "string" ? value : JSON.stringify(value)));
+    // Keep what past sessions taught us; the admin form only edits the tier minutes.
+    const { data: current } = await createServiceClient().from("settings").select("value").eq("key", HEARING_MINUTES_KEY).maybeSingle();
+    const learned = parseLearned(current?.value);
+    const tiers = parseHearingMinutes(typeof value === "string" ? value : JSON.stringify(value));
+    stored = JSON.stringify(learned ? { ...tiers, learned } : tiers);
   }
 
   const service = createServiceClient();
