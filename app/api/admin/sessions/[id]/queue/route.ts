@@ -84,7 +84,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     });
   }
 
-  const live = (ticketRows ?? []).filter((t) => t.status !== "cancelled" && t.fining_officer && (t.phone || t.snapchat));
+  const live = (ticketRows ?? []).filter((t) => t.status !== "cancelled" && t.fining_officer && (t.phone || t.snapchat != null));
   const body: QueueResponse = {
     open: true,
     nowHearing: now ? { name: docket.members.get(now.memberId)?.name ?? "Unknown", roll: docket.members.get(now.memberId)?.roll ?? null, officer: now.officer } : null,
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const docket = await loadDocket(service);
     const { data: rows } = await service.from("jp_tickets").select("member_id, fining_officer, status, phone, snapchat").eq("session_date", date);
     const waiting = new Set(
-      (rows ?? []).filter((t) => t.status === "waiting" && t.fining_officer && (t.phone || t.snapchat)).map((t) => `${t.member_id}|${t.fining_officer}`)
+      (rows ?? []).filter((t) => t.status === "waiting" && t.fining_officer && (t.phone || t.snapchat != null)).map((t) => `${t.member_id}|${t.fining_officer}`)
     );
     const start = Math.max(0, docket.slots.findIndex((s) => !docket.skipped.has(s.memberId)));
     const next = docket.slots.slice(start).find((s) => !docket.skipped.has(s.memberId) && waiting.has(`${s.memberId}|${s.officer}`));

@@ -204,14 +204,15 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
                   required
                   autoFocus
                 />
-              ) : (
+              ) : proxy ? (
+                // The chair already has every brother's Snapchat, but not a proxy's.
                 <input
                   key="snap"
                   type="text"
                   autoComplete="off"
                   autoCapitalize="none"
                   spellCheck={false}
-                  aria-label={proxy ? "Proxy's Snapchat username" : "Your Snapchat username"}
+                  aria-label="Proxy's Snapchat username"
                   placeholder="@username"
                   className="search-input jp-ticket-input"
                   value={snapchat}
@@ -219,7 +220,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
                   required
                   autoFocus
                 />
-              )}
+              ) : null}
               <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : "Take ticket"}</button>
             </div>
           )}
@@ -228,8 +229,8 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
             <p className="jp-ticket-fine">
               {contact === "phone"
                 ? (proxy ? "The JP Chair calls or texts your proxy at this number when it’s your turn." : "The JP Chair calls or texts you at this number when you’re up.")
-                : (proxy ? "The JP Chair messages your proxy on Snapchat when it’s your turn." : "The JP Chair messages you on Snapchat when you’re up.")}
-              {" "}It&rsquo;s deleted when the session ends.
+                : (proxy ? "The JP Chair messages your proxy on Snapchat when it’s your turn." : "The JP Chair will Snapchat you when you’re up. No username needed.")}
+              {(contact === "phone" || proxy) && " It’s deleted when the session ends."}
             </p>
           )}
         </form>
