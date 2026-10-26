@@ -19,6 +19,12 @@ import UnbecomingsTab from "./components/UnbecomingsTab";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 import NavIcon, { type NavIconName } from "./components/NavIcon";
 
+// Every fines column the dashboard reads directly — everything except `notes`.
+// Must match the column grant in migration_hide_fine_notes.sql.
+const FINE_COLUMNS =
+  "id, member_id, fine_type, description, amount, status, term, date_issued, date_resolved, " +
+  "labor_completed_at, review_deadline, fining_officer, created_by_user_id, created_at";
+
 type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "soc pro history" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
 type NavItem = {
@@ -50,16 +56,21 @@ export default function AdminPage() {
   const supabase = createClient();
 
   async function loadData() {
-    const [{ data: m }, { data: f }, { data: a }, spRes] = await Promise.all([
+    const [{ data: m }, { data: f }, { data: a }, spRes, notesRes] = await Promise.all([
       supabase.from("members").select("*").order("roll", { ascending: true, nullsFirst: false }).order("name"),
-      supabase.from("fines").select("*, members(name)").order("date_issued", { ascending: false }),
+      // No `notes` here: view-only admins can't read that column. Owners get
+      // notes from /api/admin/fines/notes (403 for admins → no notes).
+      supabase.from("fines").select(`${FINE_COLUMNS}, members(name)`).order("date_issued", { ascending: false }),
       supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200),
       fetch("/api/admin/social-probation").then((r) => r.ok ? r.json() : []),
+      fetch("/api/admin/fines/notes").then((r) => r.ok ? r.json() : {}).catch(() => ({})),
     ]);
+    const notes: Record<string, string> = notesRes ?? {};
     setMembers(m ?? []);
     setFines(
-      (f ?? []).map((fine: Fine & { members?: { name: string } }) => ({
+      ((f ?? []) as unknown as (Omit<Fine, "notes"> & { members?: { name: string } })[]).map((fine) => ({
         ...fine,
+        notes: notes[fine.id] ?? null,
         member_name: fine.members?.name,
       }))
     );

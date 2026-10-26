@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/admin-auth";
+import { getCurrentRole, requireAuth } from "@/lib/admin-auth";
 import type { JpSessionFine, JpSessionChange } from "@/lib/types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
@@ -53,6 +53,9 @@ export async function GET(
 ) {
   const denied = await requireAuth();
   if (denied) return denied;
+  // Private fine notes are for owners/root only, never view-only admins.
+  const current = await getCurrentRole();
+  const canSeeNotes = current?.role === "owner" || current?.role === "root";
 
   const { id } = await params;
   const service = createServiceClient();
@@ -108,7 +111,7 @@ export async function GET(
     term: row.fines?.term ?? "",
     date_issued: row.fines?.date_issued ?? "",
     fining_officer: row.fines?.fining_officer ?? null,
-    notes: row.fines?.notes ?? null,
+    notes: canSeeNotes ? row.fines?.notes ?? null : null,
     created_by_user_id: row.fines?.created_by_user_id ?? null,
     member_id: row.fines?.member_id ?? "",
     member_name: row.fines?.members?.name ?? "",
