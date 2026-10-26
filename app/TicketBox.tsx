@@ -79,7 +79,6 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
   // Nothing chosen until he taps Phone # or Snapchat; then that box appears.
   const [contact, setContact] = useState<"phone" | "snapchat" | null>(null);
   const [phone, setPhone] = useState("");
-  const [snapchat, setSnapchat] = useState("");
   const [proxy, setProxy] = useState(false);
   const [proxyName, setProxyName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -134,7 +133,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
       const res = await fetch("/api/jp-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ member_id: memberId, fining_officer: officer, contact, phone, snapchat, proxy, proxy_name: proxy ? proxyName : "" }),
+        body: JSON.stringify({ member_id: memberId, fining_officer: officer, contact, phone, proxy, proxy_name: proxy ? proxyName : "" }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.token) {
@@ -246,23 +245,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
                   required
                   autoFocus
                 />
-              ) : proxy ? (
-                // The chair already has every brother's Snapchat, but not a proxy's.
-                <input
-                  key="snap"
-                  type="text"
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  aria-label="Proxy's Snapchat username"
-                  placeholder="@username"
-                  className="search-input jp-ticket-input"
-                  value={snapchat}
-                  onChange={(e) => { setSnapchat(e.target.value); setError(""); }}
-                  required
-                  autoFocus
-                />
-              ) : null}
+              ) : null /* Snapchat: the chair already has everyone's, so no username box. */}
               <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : chosen.length > 1 ? `Take ${chosen.length} tickets` : "Take ticket"}</button>
             </div>
           )}
@@ -271,8 +254,8 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
             <p className="jp-ticket-fine">
               {contact === "phone"
                 ? (proxy ? "The JP Chair calls or texts your proxy at this number when it’s your turn." : "The JP Chair calls or texts you at this number when you’re up.")
-                : (proxy ? "The JP Chair messages your proxy on Snapchat when it’s your turn." : "The JP Chair will Snapchat you when you’re up. No username needed.")}
-              {(contact === "phone" || proxy) && " It’s deleted when the session ends."}
+                : (proxy ? "The JP Chair messages your proxy on Snapchat when it’s your turn. No username needed." : "The JP Chair will Snapchat you when you’re up. No username needed.")}
+              {contact === "phone" && " It’s deleted when the session ends."}
             </p>
           )}
         </form>
