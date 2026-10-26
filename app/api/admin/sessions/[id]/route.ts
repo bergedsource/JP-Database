@@ -99,10 +99,10 @@ export async function GET(
   }
 
   // Flatten the joined data
-  // Fines paid or added to dues since the session started are settled, so they drop off the session list.
-  const fineRows = ((sessionFines ?? []) as unknown as SessionFineRow[]).filter(
-    (row) => row.fines?.status !== "paid" && row.fines?.status !== "added_to_dues"
-  );
+  // The session list only shows fines still in play: pending, upheld or overturned.
+  // Dismissed, labor, paid and added-to-dues fines drop off (the change log keeps the history).
+  const SHOWN = new Set(["pending", "upheld", "overturned"]);
+  const fineRows = ((sessionFines ?? []) as unknown as SessionFineRow[]).filter((row) => SHOWN.has(row.fines?.status ?? ""));
   const fines: JpSessionFine[] = fineRows.map((row) => ({
     session_id: row.session_id,
     fine_id: row.fine_id,
