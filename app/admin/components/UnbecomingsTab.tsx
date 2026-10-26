@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Member, Unbecoming, UnbecomingAttachment, UnbecomingStatus } from "@/lib/types";
+import PasswordInput from "../PasswordInput";
 
 interface UnbecomingsTabProps {
   members: Member[];
@@ -49,15 +50,13 @@ function UnbecomingsLock({ onUnlock }: { onUnlock: () => void }) {
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <label className="adm-label">Password</label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               className="adm-input"
               autoFocus
               autoComplete="current-password"
-              required
-              style={{ width: "100%" }}
+              marginBottom={0}
             />
           </div>
           {err && <p className="adm-error">{err}</p>}

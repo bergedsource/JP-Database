@@ -3,28 +3,36 @@
 import { useState } from "react";
 
 // Password field with an eye button that shows/hides what's typed.
-// Used by the login and reset-password pages (both style `.login-input`).
+// Used by the login and reset-password pages (`.login-input`) and the
+// Unbecomings unlock (`.adm-input`).
 export default function PasswordInput({
   value,
   onChange,
   autoComplete,
+  autoFocus,
+  className = "login-input",
+  marginBottom = 16,
 }: {
   value: string;
   onChange: (value: string) => void;
   autoComplete?: string;
+  autoFocus?: boolean;
+  className?: string;
+  marginBottom?: number;
 }) {
   const [shown, setShown] = useState(false);
 
   return (
-    <div style={{ position: "relative", marginBottom: 16 }}>
+    <div style={{ position: "relative", marginBottom }}>
       <input
         type={shown ? "text" : "password"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required
         autoComplete={autoComplete}
-        className="login-input"
-        style={{ marginBottom: 0, paddingRight: 40 }}
+        autoFocus={autoFocus}
+        className={className}
+        style={{ width: "100%", marginBottom: 0, paddingRight: 40 }}
       />
       <button
         type="button"
