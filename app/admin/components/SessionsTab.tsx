@@ -128,6 +128,11 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   async function updateSessionFineStatus(sessionId: string, fineId: string, newStatus: FineStatus) {
     setSessionError("");
     setSavingFineId(fineId);
+    // Show the decision immediately; the server catches up (and we undo it if it fails).
+    const previous = sessionDetail?.fines.find((f) => f.fine_id === fineId)?.status;
+    const setLocal = (status: string) =>
+      setSessionDetail((d) => d && { ...d, fines: d.fines.map((f) => (f.fine_id === fineId ? { ...f, status } : f)) });
+    setLocal(newStatus);
     const res = await fetch(`/api/admin/sessions/${sessionId}/update-fine`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -138,6 +143,7 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
       // The fine itself changed, so the Fines/Outstanding tabs' copies are now stale.
       await refresh();
     } else {
+      if (previous) setLocal(previous);
       const data = await res.json().catch(() => ({}));
       setSessionError(data.error ?? "Couldn't save that decision. Try again.");
     }
