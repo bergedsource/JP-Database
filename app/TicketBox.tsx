@@ -81,6 +81,20 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
   const [phone, setPhone] = useState("");
   const [proxy, setProxy] = useState(false);
   const [proxyName, setProxyName] = useState("");
+  // Proxy name autocomplete from the public member list, fetched once when Proxy is ticked.
+  const [roster, setRoster] = useState<{ id: string; name: string; roll: number | null }[] | null>(null);
+  const [proxyOpen, setProxyOpen] = useState(false);
+  useEffect(() => {
+    if (!proxy || roster) return;
+    fetch("/api/members")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setRoster(Array.isArray(d) ? d : []))
+      .catch(() => setRoster([]));
+  }, [proxy, roster]);
+  const proxyQuery = proxyName.trim().toLowerCase();
+  const proxyMatches = proxyQuery && roster
+    ? roster.filter((m) => m.id !== memberId && m.name.toLowerCase().includes(proxyQuery) && m.name.toLowerCase() !== proxyQuery).slice(0, 6)
+    : [];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [justTook, setJustTook] = useState(0); // tickets taken in the last submit (multi-officer)
@@ -201,17 +215,43 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
           {proxy && (
             <>
               <label htmlFor="jp-proxy" className="jp-ticket-label">Proxy&rsquo;s name</label>
-              <input
-                id="jp-proxy"
-                type="text"
-                autoComplete="off"
-                maxLength={60}
-                placeholder="Who's going for you"
-                className="search-input jp-ticket-input"
-                value={proxyName}
-                onChange={(e) => { setProxyName(e.target.value); setError(""); }}
-                required
-              />
+              <div style={{ position: "relative", zIndex: 5 }}>
+                <input
+                  id="jp-proxy"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={60}
+                  placeholder="Start typing his name"
+                  className="search-input jp-ticket-input"
+                  style={{ width: "100%" }}
+                  value={proxyName}
+                  onChange={(e) => { setProxyName(e.target.value); setProxyOpen(true); setError(""); }}
+                  onFocus={() => setProxyOpen(true)}
+                  onBlur={() => setProxyOpen(false)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && proxyOpen && proxyMatches[0]) { e.preventDefault(); setProxyName(proxyMatches[0].name); setProxyOpen(false); } }}
+                  role="combobox"
+                  aria-expanded={proxyOpen && proxyMatches.length > 0}
+                  aria-controls="jp-proxy-list"
+                  required
+                />
+                {proxyOpen && proxyMatches.length > 0 && (
+                  <ul className="suggestions" id="jp-proxy-list" role="listbox">
+                    {proxyMatches.map((m) => (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          className="suggestion-item press"
+                          // pointerdown fires before the input's blur closes the list
+                          onPointerDown={(e) => { e.preventDefault(); setProxyName(m.name); setProxyOpen(false); }}
+                        >
+                          <span className="suggestion-name">{m.name}</span>
+                          <span className="suggestion-status">{m.roll != null ? `Roll #${m.roll}` : ""}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </>
           )}
           <span className="jp-ticket-label" id="jp-contact-label">{proxy ? "How to reach your proxy" : "How to reach you"}</span>
