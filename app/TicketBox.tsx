@@ -68,7 +68,8 @@ export function TicketWindowLine({ window: w }: { window: TicketWindow }) {
 
 // Under "Your wait at JP": take a ticket so you can wait in your room; the JP Chair
 // calls or texts when you're close.
-// officers: the fining officers he has pending fines from (one ticket each).
+// officers: members who fined anyone in the last 30 days, the only ones he can pick
+// (one ticket each; the server still checks he has a pending fine from that officer).
 export default function TicketBox({ window: w, memberId, officers }: { window: TicketWindow; memberId: string; officers: string[] }) {
   const now = useNow(1000);
   const [saved, setSaved] = useState<Saved[]>([]);
@@ -115,8 +116,8 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
   );
   if (remaining.length === 0) return <div className="jp-ticket">{links}</div>;
 
-  // With only one officer left there's nothing to choose.
-  const chosen = remaining.length === 1 ? remaining : picked.filter((o) => remaining.includes(o));
+  const chosen = picked.filter((o) => remaining.includes(o));
+  const addable = remaining.filter((o) => !chosen.includes(o));
 
   async function take(e: React.FormEvent) {
     e.preventDefault();
@@ -161,22 +162,29 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
         </button>
       ) : (
         <form onSubmit={take} className="jp-ticket-form">
-          {remaining.length === 1 ? (
-            <p className="jp-ticket-line">For <strong>{remaining[0]}</strong>&rsquo;s fines</p>
-          ) : (
-            <fieldset className="jp-officers">
-              <legend className="jp-ticket-label">Fining officers (pick one or more)</legend>
-              {remaining.map((o) => (
-                <label key={o} className="jp-ticket-check">
-                  <input
-                    type="checkbox"
-                    checked={picked.includes(o)}
-                    onChange={(e) => { setPicked((p) => (e.target.checked ? [...p, o] : p.filter((x) => x !== o))); setError(""); }}
-                  />
+          <label htmlFor="jp-officer" className="jp-ticket-label">
+            Fining officer{chosen.length > 0 ? "s" : ""} <span className="jp-ticket-hint">(add one for each officer who fined you)</span>
+          </label>
+          {chosen.length > 0 && (
+            <ul className="jp-officer-chips">
+              {chosen.map((o) => (
+                <li key={o} className="jp-officer-chip">
                   {o}
-                </label>
+                  <button type="button" aria-label={`Remove ${o}`} onClick={() => { setPicked((p) => p.filter((x) => x !== o)); setError(""); }}>×</button>
+                </li>
               ))}
-            </fieldset>
+            </ul>
+          )}
+          {addable.length > 0 && (
+            <select
+              id="jp-officer"
+              className="search-input jp-ticket-input jp-ticket-select"
+              value=""
+              onChange={(e) => { const o = e.target.value; if (o) setPicked((p) => [...p, o]); setError(""); }}
+            >
+              <option value="">{chosen.length ? "Add another officer…" : "Choose who fined you"}</option>
+              {addable.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
           )}
           <label className="jp-ticket-check">
             <input type="checkbox" checked={proxy} onChange={(e) => { setProxy(e.target.checked); setError(""); }} />

@@ -278,6 +278,9 @@ export type JpInfo = {
     groups: { officer: string; brothers: number; upNext: { roll: number | null; name: string }[] }[];
     brothers: number; // distinct brothers on the docket
   };
+  // Members who issued a fine in the last 30 days, A–Z: the only officers a
+  // brother can pick when taking a ticket.
+  recentOfficers: string[];
 };
 
 export type JpWait =

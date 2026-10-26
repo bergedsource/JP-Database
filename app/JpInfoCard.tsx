@@ -165,7 +165,7 @@ export function WaitCard({
       ) : (
         <>
           <WaitDetail wait={wait} roll={member.roll ?? null} startTime={info?.sessionLive ? "" : next?.time || ""} live={!!info?.sessionLive} />
-          <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={wait.groups.map((g) => g.officer)} />
+          <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={info?.recentOfficers ?? []} />
         </>
       )}
     </article>

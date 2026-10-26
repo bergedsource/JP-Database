@@ -273,8 +273,11 @@ export default function Home() {
         .jp-contact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: var(--moondust); }
         .jp-contact-opt { min-height: 42px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--black); font: inherit; font-weight: 600; cursor: pointer; }
         .jp-contact-opt.on { background: var(--white); border-color: var(--black); }
-        .jp-officers { border: none; display: flex; flex-direction: column; gap: 2px; }
-        .jp-officers legend { margin-bottom: 6px; }
+        .jp-officer-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+        .jp-officer-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--black); color: var(--white); font-weight: 600; font-size: 14px; }
+        .jp-officer-chip button { width: 28px; height: 28px; border: none; border-radius: 50%; background: transparent; color: var(--white); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+        .jp-officer-chip button:hover { background: var(--orange); }
+        .jp-ticket-hint { font-weight: 400; font-size: 13px; }
         .jp-ticket-check { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 15px; cursor: pointer; }
         .jp-ticket-check input { width: 18px; height: 18px; accent-color: var(--orange); }
         .jp-ticket-label { font-size: 14px; font-weight: 600; }
