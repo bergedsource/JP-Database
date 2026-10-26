@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { syncMasterRoster } from "@/lib/sync-roster";
 import { timingSafeEqualStr } from "@/lib/timing-safe";
+import { upholdMissedFines } from "@/lib/missed-fines";
 
 async function sendEmail(to: string[], subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) return;
@@ -156,6 +157,8 @@ export async function GET(req: NextRequest) {
   }
 
   // Overdue pending fines are no longer auto-upheld — the admin UI flags them (lib/overdue.ts) for an owner to uphold or extend.
+  // Exception: fines missed at a closed JP session are upheld 15 days after that session (lib/missed-fines.ts).
+  await upholdMissedFines(service, now);
 
   // --- Daily: drop JP tickets (and their phone numbers) more than two days old ---
   await service.from("jp_tickets").delete().lt("created_at", new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString());

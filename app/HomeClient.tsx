@@ -152,7 +152,7 @@ export default function HomeClient({
   const summary = !selected || loading ? "" : [
     totalOwed > 0 ? `You owe $${money(totalOwed)} now.` : "You don’t owe anything right now.",
     pendingFines.length > 0
-      ? `${pendingFines.length === 1 ? "One fine" : `${pendingFines.length} fines`}${pendingTotal > 0 ? ` ($${money(pendingTotal)})` : ""} ${pendingFines.length === 1 ? "goes" : "go"} to JP${nextDay ? ` on ${nextDay}` : ""}. Come to speak to ${pendingFines.length === 1 ? "it" : "them"}; if you miss your turn, ${pendingFines.length === 1 ? "it’s" : "they’re"} upheld.`
+      ? `${pendingFines.length === 1 ? "One fine" : `${pendingFines.length} fines`}${pendingTotal > 0 ? ` ($${money(pendingTotal)})` : ""} ${pendingFines.length === 1 ? "goes" : "go"} to JP${nextDay ? ` on ${nextDay}` : ""}. Come to speak to ${pendingFines.length === 1 ? "it" : "them"}; if you miss your turn, ${pendingFines.length === 1 ? "it’s" : "they’re"} upheld 15 days later.`
       : "",
   ].filter(Boolean).join(" ");
 
@@ -555,7 +555,7 @@ export default function HomeClient({
                   <span className="step-num">2</span>
                   <span className="step-text">
                     <strong>Reviewed at JP</strong><br />
-                    Heard at the next session{jpInfo?.nextSession ? <>, {new Date(jpInfo.nextSession.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</> : ""}. Come speak to it. If you miss your turn, it&rsquo;s upheld.
+                    Heard at the next session{jpInfo?.nextSession ? <>, {new Date(jpInfo.nextSession.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</> : ""}. Come speak to it. If you miss your turn, it&rsquo;s upheld 15 days later.
                   </span>
                 </li>
                 <li className="step"><span className="step-num">3</span><span className="step-text"><strong>Decision</strong><br />Upheld, dismissed or overturned.</span></li>

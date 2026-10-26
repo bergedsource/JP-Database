@@ -1,6 +1,7 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { learnFromSession } from "@/lib/jp-docket";
+import { missedUpholdDate } from "@/lib/missed-fines";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/sessions/[id]/close — mark a session as closed
@@ -27,18 +28,21 @@ export async function POST(
   if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const auditTable = current.role === "root" ? "system_events" : "audit_logs";
 
-  // Missed his turn: any fine from this session still undecided at close is upheld
-  // (only those fines, so an officer he did show up for isn't affected), and he is
+  // Missed his turn: any fine from this session still undecided at close stays
+  // pending until 15 days after the session date, then the daily cron upholds it
+  // (only those fines, so an officer he did show up for isn't affected). He is also
   // recorded absent for the week. Both happen BEFORE the session is marked closed,
   // so if either write fails the session stays open and the chair can retry.
   const { data: sessionFines, error: sfError } = await service
     .from("jp_session_fines")
-    .select("fine_id, fines(member_id, status, fine_type)")
+    .select("fine_id, fines(member_id, status, fine_type, review_deadline)")
     .eq("session_id", id);
   if (sfError) return NextResponse.json({ error: "Couldn't read this session's fines. Nothing was changed; try again." }, { status: 500 });
-  const missed = ((sessionFines ?? []) as unknown as { fine_id: string; fines: { member_id: string; status: string; fine_type: string } | null }[])
+  const missed = ((sessionFines ?? []) as unknown as { fine_id: string; fines: { member_id: string; status: string; fine_type: string; review_deadline: string | null } | null }[])
     .filter((r) => r.fines?.status === "pending")
-    .map((r) => ({ fineId: r.fine_id, memberId: r.fines!.member_id, fineType: r.fines!.fine_type }));
+    .map((r) => ({ fineId: r.fine_id, memberId: r.fines!.member_id, fineType: r.fines!.fine_type, deadline: r.fines!.review_deadline }));
+  const upholdOn = missedUpholdDate(session.date_held as string);
+  const upholdAt = `${upholdOn}T12:00:00Z`;
   const absentIds = [...new Set(missed.map((m) => m.memberId))];
 
   if (absentIds.length > 0) {
@@ -48,13 +52,17 @@ export async function POST(
     if (absError) {
       return NextResponse.json({ error: `Couldn't record no-shows (${absError.message}). The session is still open; try closing again.` }, { status: 500 });
     }
-    const { error: upError } = await service
-      .from("fines")
-      .update({ status: "upheld", date_resolved: null, labor_completed_at: null })
-      .in("id", missed.map((m) => m.fineId))
-      .eq("status", "pending");
-    if (upError) {
-      return NextResponse.json({ error: `Couldn't uphold the missed fines (${upError.message}). The session is still open; try closing again.` }, { status: 500 });
+    // Never pull an existing later deadline (e.g. an owner's +1 week) earlier.
+    const toSchedule = missed.filter((m) => !m.deadline || new Date(m.deadline) < new Date(upholdAt)).map((m) => m.fineId);
+    if (toSchedule.length > 0) {
+      const { error: upError } = await service
+        .from("fines")
+        .update({ review_deadline: upholdAt })
+        .in("id", toSchedule)
+        .eq("status", "pending");
+      if (upError) {
+        return NextResponse.json({ error: `Couldn't schedule the missed fines (${upError.message}). The session is still open; try closing again.` }, { status: 500 });
+      }
     }
   }
 
@@ -76,8 +84,8 @@ export async function POST(
       },
       {
         admin_email: current.email,
-        action: "Missed Fines Upheld at Close",
-        details: `${session.date_held}: ${missed.map((m) => `${nameOf.get(m.memberId) ?? "Unknown"} — ${m.fineType}`).join("; ")}`,
+        action: "Missed Fines — Upheld in 15 Days",
+        details: `${session.date_held} (upheld ${upholdOn} unless decided): ${missed.map((m) => `${nameOf.get(m.memberId) ?? "Unknown"} — ${m.fineType}`).join("; ")}`,
       },
     ]);
   }
@@ -86,19 +94,6 @@ export async function POST(
   try {
     await learnFromSession(service, id);
   } catch {}
-
-  if (missed.length > 0) {
-    await service.from("jp_session_changes").insert(
-      missed.map((m) => ({
-        session_id: id,
-        fine_id: m.fineId,
-        changed_by_user_id: current.userId,
-        changed_by_email: `${current.email} (missed, upheld at close)`,
-        old_status: "pending",
-        new_status: "upheld",
-      }))
-    );
-  }
 
   // The night is over: drop every phone number and ticket link taken for it, and
   // close the tickets that were still open.

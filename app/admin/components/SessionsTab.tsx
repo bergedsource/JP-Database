@@ -110,11 +110,11 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   }
 
   async function closeSession(id: string) {
-    // Missed fines are upheld at close, so name who's affected before it happens.
+    // Missed fines are upheld 15 days after the session, so name who's affected before closing.
     const pendingFines = (sessionDetail?.fines ?? []).filter((f) => f.status === "pending");
     const names = [...new Set(pendingFines.map((f) => f.member_name))];
     const warning = pendingFines.length > 0
-      ? `\n\nMissed: ${pendingFines.length} undecided fine${pendingFines.length !== 1 ? "s" : ""} will be UPHELD and ${names.length} brother${names.length !== 1 ? "s" : ""} marked absent this week:\n${names.join(", ")}\n\nDecide anyone you still need to before closing.`
+      ? `\n\nMissed: ${pendingFines.length} undecided fine${pendingFines.length !== 1 ? "s" : ""} will be UPHELD in 15 days (unless decided first) and ${names.length} brother${names.length !== 1 ? "s" : ""} marked absent this week:\n${names.join(", ")}\n\nDecide anyone you still need to before closing.`
       : "";
     if (!confirm(`Close this session?${warning}`)) return;
     setSessionError("");
