@@ -151,7 +151,7 @@ export function WaitCard({
   const next = info?.nextSession ?? null;
 
   return (
-    <article className="card" aria-label="Your wait at JP">
+    <article className="card" id="wait-card" style={{ scrollMarginTop: 16 }} aria-label="Your wait at JP">
       <p className="card-kicker-muted">Your wait at JP</p>
       {!member ? (
         <p className="card-text">Search your name and we&rsquo;ll show when you&rsquo;re likely to be heard.</p>

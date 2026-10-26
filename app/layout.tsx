@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Acacia JP Fines — Oregon State",
   description: "Fine lookup for Oregon State Chapter of Acacia Fraternity",
+  appleWebApp: { capable: true, title: "Acacia JP", statusBarStyle: "default" },
+};
+
+// Tints the phone browser bar Beaver Orange.
+export const viewport: Viewport = {
+  themeColor: "#D73F09",
 };
 
 export default function RootLayout({
