@@ -65,34 +65,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: duplicate }, { status: 409 });
   }
 
-  const { data: last } = await service
-    .from("jp_tickets")
-    .select("ticket_no")
-    .eq("session_date", date)
-    .not("ticket_no", "is", null)
-    .order("ticket_no", { ascending: false })
-    .limit(1);
-  const ticketNo = ((last?.[0]?.ticket_no as number | undefined) ?? 0) + 1;
-
   const { token, hash } = newTicketToken();
-  const row = {
-    session_date: date,
-    member_id: memberId,
-    fining_officer: officer,
-    ticket_no: ticketNo,
-    phone,
-    snapchat,
-    proxy_name: proxyName || null,
-    token_hash: hash,
-    source: "member",
-    status: "waiting",
-    called_at: null,
-    done_at: null,
-  };
-  const { error } = existing
-    ? await service.from("jp_tickets").update(row).eq("id", existing.id)
-    : await service.from("jp_tickets").insert(row);
-  if (error) {
+  // Next number for the night. Two brothers submitting at once can pick the same one;
+  // the unique index (migration_jp_ticket_no_unique.sql) refuses the second, so retry.
+  let ticketNo = 0;
+  for (let attempt = 0; ; attempt++) {
+    const { data: last } = await service
+      .from("jp_tickets")
+      .select("ticket_no")
+      .eq("session_date", date)
+      .not("ticket_no", "is", null)
+      .order("ticket_no", { ascending: false })
+      .limit(1);
+    ticketNo = ((last?.[0]?.ticket_no as number | undefined) ?? 0) + 1;
+
+    const row = {
+      session_date: date,
+      member_id: memberId,
+      fining_officer: officer,
+      ticket_no: ticketNo,
+      phone,
+      snapchat,
+      proxy_name: proxyName || null,
+      token_hash: hash,
+      source: "member",
+      status: "waiting",
+      called_at: null,
+      done_at: null,
+    };
+    const { error } = existing
+      ? await service.from("jp_tickets").update(row).eq("id", existing.id)
+      : await service.from("jp_tickets").insert(row);
+    if (!error) break;
+    if (error.code === "23505" && /ticket_no|jp_tickets_no_unique/.test(`${error.message} ${error.details ?? ""}`) && attempt < 5) continue;
     // Unique (session_date, member_id, fining_officer): a double-tap raced us.
     if (error.code === "23505") return NextResponse.json({ error: duplicate }, { status: 409 });
     return NextResponse.json({ error: "Couldn't create the ticket. Try again." }, { status: 500 });

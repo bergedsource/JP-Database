@@ -223,3 +223,49 @@ export async function learnFromSession(service: SupabaseClient, sessionId: strin
     updated_at: new Date().toISOString(),
   });
 }
+
+// A fine was just decided. When it went from pending to a decision and it was the
+// brother's last pending fine from that officer, his ticket for that officer's group
+// is done and the next waiting ticket holder is called. Shared by every path that
+// changes a fine's status (JP session screen, Fines tab), so the line always moves.
+// Re-deciding an already-decided fine does nothing here (no extra call-forward).
+// sessionDate: the night the tickets belong to; defaults to the running session's.
+export async function afterDecision(
+  service: SupabaseClient,
+  fine: { member_id: string; fining_officer: string | null },
+  oldStatus: string,
+  newStatus: string,
+  sessionDate?: string
+): Promise<void> {
+  if (oldStatus !== "pending" || newStatus === "pending") return;
+  const officer = fine.fining_officer?.trim() || NO_OFFICER;
+
+  // Same officer key as the docket: trimmed name, blank → "No officer listed".
+  const { data: pending } = await service
+    .from("fines")
+    .select("fining_officer")
+    .eq("member_id", fine.member_id)
+    .eq("status", "pending");
+  if ((pending ?? []).some((p) => ((p.fining_officer as string | null)?.trim() || NO_OFFICER) === officer)) return;
+
+  let date = sessionDate;
+  if (!date) {
+    const { data: live } = await service
+      .from("jp_sessions")
+      .select("date_held")
+      .is("closed_at", null)
+      .order("date_held", { ascending: false })
+      .limit(1);
+    date = live?.[0]?.date_held as string | undefined;
+  }
+  if (!date) return; // no JP running: nothing to move
+
+  await service
+    .from("jp_tickets")
+    .update({ status: "done", done_at: new Date().toISOString() })
+    .eq("session_date", date)
+    .eq("member_id", fine.member_id)
+    .eq("fining_officer", officer)
+    .neq("status", "cancelled");
+  await callNext(service, date);
+}

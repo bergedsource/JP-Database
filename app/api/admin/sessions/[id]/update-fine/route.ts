@@ -1,8 +1,7 @@
 import { getCurrentRole } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
-import { NO_OFFICER } from "@/lib/jp-info";
-import { callNext } from "@/lib/jp-docket";
+import { afterDecision } from "@/lib/jp-docket";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/sessions/[id]/update-fine — update a fine's status and/or amount, log the change
@@ -111,28 +110,11 @@ export async function POST(
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-  // Last pending fine from this officer decided → his ticket for that officer's group is done.
-  if (hasStatus && new_status !== "pending") {
-    const pendingQuery = service
-      .from("fines")
-      .select("id", { count: "exact", head: true })
-      .eq("member_id", fine.member_id)
-      .eq("status", "pending");
-    const { count } = await (fine.fining_officer ? pendingQuery.eq("fining_officer", fine.fining_officer) : pendingQuery.is("fining_officer", null));
-    if (count === 0) {
-      const { data: s } = await service.from("jp_sessions").select("date_held").eq("id", session_id).single();
-      if (s) {
-        await service
-          .from("jp_tickets")
-          .update({ status: "done", done_at: new Date().toISOString() })
-          .eq("session_date", s.date_held)
-          .eq("member_id", fine.member_id)
-          .eq("fining_officer", fine.fining_officer?.trim() || NO_OFFICER)
-          .neq("status", "cancelled");
-        // His hearing for that group is over, so the next ticket holder in line is up.
-        await callNext(service, s.date_held);
-      }
-    }
+  // Pending → decided: if that was his last fine from this officer, his ticket for
+  // that group is done and the next ticket holder is called (shared with the Fines tab).
+  if (hasStatus) {
+    const { data: s } = await service.from("jp_sessions").select("date_held").eq("id", session_id).single();
+    if (s) await afterDecision(service, fine, old_status, new_status, s.date_held);
   }
 
   const auditTable = current.role === "root" ? "system_events" : "audit_logs";

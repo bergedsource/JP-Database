@@ -1,6 +1,7 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { exportFineToSheets } from "@/lib/export-to-sheets";
+import { afterDecision } from "@/lib/jp-docket";
 import { NextRequest, NextResponse } from "next/server";
 
 const VALID_STATUSES = ["pending", "upheld", "dismissed", "overturned", "paid", "labor", "added_to_dues"];
@@ -30,7 +31,7 @@ export async function PUT(
 
   const { data: fine } = await service
     .from("fines")
-    .select("fine_type, description, amount, member_id, members(name)")
+    .select("fine_type, description, amount, member_id, status, fining_officer, members(name)")
     .eq("id", id)
     .single();
 
@@ -41,6 +42,10 @@ export async function PUT(
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Decided from the Fines tab during a running JP: move the ticket line just like
+  // the session screen does.
+  if (fine) await afterDecision(service, fine, fine.status, status);
 
   if (fine) {
     const memberName = (fine as unknown as { members?: { name: string } }).members?.name ?? "Unknown";

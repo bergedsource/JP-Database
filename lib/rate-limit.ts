@@ -13,6 +13,20 @@ export const publicLimiter = new Ratelimit({
   prefix: "rl:public",
 });
 
+// Ticket pages poll every 15 s, and on JP night many brothers share the house
+// wifi (one IP). So ticket polling is limited per ticket, with a roomier per-IP
+// cap behind it that still stops someone hammering random tokens.
+export const ticketLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, "1 m"),
+  prefix: "rl:ticket",
+});
+export const ticketIpLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(400, "1 m"),
+  prefix: "rl:ticket-ip",
+});
+
 // Admin export endpoint
 export const exportLimiter = new Ratelimit({
   redis,
