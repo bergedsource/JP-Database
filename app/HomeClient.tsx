@@ -168,6 +168,10 @@ export default function HomeClient({
         }
         /* Dark mode: black and white swap; orange and the secondaries stay. */
         :root[data-theme="dark"] { --black: #FFFFFF; --white: #000000; color-scheme: dark; }
+        /* Moondust fills keep black text in dark mode; the footer stays black. */
+        :root[data-theme="dark"] :is(.card-note, .pay-cashapp, .jp-ticket-select, .jp-ticket-done, .suggestion-item:hover, .suggestion-item:focus-visible, .suggestion-item:active, .jp-contact-opt:not(.on)) { color: #000000; }
+        :root[data-theme="dark"] .footer { background: #000000; color: #FFFFFF; border-top: 1px solid var(--moondust); }
+        :root[data-theme="dark"] .footer a { color: #FFFFFF; }
         .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--moondust); background: var(--white); color: var(--black); cursor: pointer; flex-shrink: 0; }
         .theme-toggle:hover { border-color: var(--orange); color: var(--orange); }
         .theme-toggle:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
@@ -583,7 +587,10 @@ export default function HomeClient({
               <p style={{ fontWeight: 700 }}>Acacia Fraternity</p>
               <p>Oregon State Chapter · Corvallis</p>
             </div>
-            <p className="footer-right">Questions? Contact the JP Chair.</p>
+            <p className="footer-right">
+              Questions? Contact the JP Chair. ·{" "}
+              <a href="mailto:bergedillon@gmail.com?subject=JP Site Bug Report&body=What happened (and on which page)?%0A%0A">Report a bug</a>
+            </p>
           </div>
         </footer>
       </div>
