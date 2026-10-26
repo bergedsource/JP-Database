@@ -433,7 +433,7 @@ export default function HomeClient({
           <header className="hero">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/crest.webp" alt="" width={88} height={88} style={{ objectFit: "contain" }} />
-            <h1 className="hero-title">Know where you stand.</h1>
+            <h1 className="hero-title">Jurisprudence</h1>
             <p className="hero-sub">Your fines, your balance, and your spot in line at JP, all in one place.</p>
             <div className="search-wrap" ref={wrapperRef}>
               <label htmlFor="member-search" className="visually-hidden">Your name</label>
