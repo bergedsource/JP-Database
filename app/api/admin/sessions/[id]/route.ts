@@ -99,7 +99,10 @@ export async function GET(
   }
 
   // Flatten the joined data
-  const fineRows = (sessionFines ?? []) as unknown as SessionFineRow[];
+  // The session list only shows fines still in play: pending, upheld or overturned.
+  // Dismissed, labor, paid and added-to-dues fines drop off (the change log keeps the history).
+  const SHOWN = new Set(["pending", "upheld", "overturned"]);
+  const fineRows = ((sessionFines ?? []) as unknown as SessionFineRow[]).filter((row) => SHOWN.has(row.fines?.status ?? ""));
   const fines: JpSessionFine[] = fineRows.map((row) => ({
     session_id: row.session_id,
     fine_id: row.fine_id,
