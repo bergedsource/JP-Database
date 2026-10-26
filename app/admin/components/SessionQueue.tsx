@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { QueueResponse, QueueRow } from "@/app/api/admin/sessions/[id]/queue/route";
 
-const POLL_MS = 15000;
+const POLL_MS = 5000;
 const TEXT_BODY = "JP: you're up in about 5 minutes. Head to JP now. – JP Chair";
 const proxyText = (brother: string) => `JP: you're up as ${brother}'s proxy in about 5 minutes. Head to JP now. – JP Chair`;
 
