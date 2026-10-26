@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import FineDetailsEditor from "./FineDetailsEditor";
 import SessionSettings from "./SessionSettings";
+import TicketsSoFar from "./TicketsSoFar";
 import SessionQueue from "./SessionQueue";
 import { rollMap, sortFines, type FineSort } from "./rollSort";
 import { NO_OFFICER } from "@/lib/jp-info";
@@ -217,6 +218,7 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
       {sessionError && <p className="adm-error" role="alert">{sessionError}</p>}
 
       {isPrivileged && sessionView === "list" && <SessionSettings />}
+      {isPrivileged && sessionView === "list" && <TicketsSoFar />}
 
       {isPrivileged && sessionView === "list" && (
         <div className="adm-card">
