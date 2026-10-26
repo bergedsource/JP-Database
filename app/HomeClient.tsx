@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { flushSync } from "react-dom";
 import { Figtree } from "next/font/google";
 import type { Fine, Member } from "@/lib/types";
 import type { JpInfo } from "@/lib/jp-info";
@@ -109,24 +110,30 @@ export default function HomeClient({
   }
 
   async function selectMember(member: Member) {
-    setQuery(member.name);
-    setShowSuggestions(false);
-    setSuggestions([]);
-    setSelected(member);
-    setShowPast(false);
-    setLoading(true);
+    withTransition(() => {
+      setQuery(member.name);
+      setShowSuggestions(false);
+      setSuggestions([]);
+      setSelected(member);
+      setShowPast(false);
+      setLoading(true);
+    });
     requestAnimationFrame(() => recordRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     const data = await finesFor(member.id);
     prefetch.current = null;
-    setFines(data);
-    setLoading(false);
+    withTransition(() => {
+      setFines(data);
+      setLoading(false);
+    });
   }
 
   function clearSelection() {
-    setSelected(null);
-    setFines([]);
-    setQuery("");
-    setSuggestions([]);
+    withTransition(() => {
+      setSelected(null);
+      setFines([]);
+      setQuery("");
+      setSuggestions([]);
+    });
   }
 
   const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
@@ -156,6 +163,7 @@ export default function HomeClient({
           --black: #000000;
           --white: #FFFFFF;
           --moondust: #C6DAE7;
+          --ease: cubic-bezier(0.2, 0, 0, 1);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
@@ -262,7 +270,7 @@ export default function HomeClient({
         .jp-line-panel { animation: lineIn 0.35s ease both; }
         @keyframes lineIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
         .jp-line-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .jp-line-tab { min-height: 32px; padding: 0 12px; border: 1px solid var(--white); border-radius: 999px; background: var(--black); color: var(--white); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .jp-line-tab { min-height: 44px; padding: 0 12px; border: 1px solid var(--white); border-radius: 999px; background: var(--black); color: var(--white); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
         .jp-line-tab.on { background: var(--white); color: var(--black); }
         .jp-line-tab:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
         .jp-line-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; margin: 0 -10px; border-radius: 10px; }
@@ -303,8 +311,8 @@ export default function HomeClient({
         .jp-contact-opt { min-height: 42px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--black); font: inherit; font-weight: 600; cursor: pointer; }
         .jp-contact-opt.on { background: var(--white); border-color: var(--black); }
         .jp-officer-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
-        .jp-officer-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--black); color: var(--white); font-weight: 600; font-size: 14px; }
-        .jp-officer-chip button { width: 28px; height: 28px; border: none; border-radius: 50%; background: transparent; color: var(--white); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+        .jp-officer-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--black); color: var(--white); font-weight: 600; font-size: 14px; }
+        .jp-officer-chip button { width: 40px; height: 40px; border: none; border-radius: 50%; background: transparent; color: var(--white); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
         .jp-officer-chip button:hover { background: var(--orange); }
         .jp-ticket-hint { font-weight: 400; font-size: 13px; }
         .jp-ticket-check { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 15px; cursor: pointer; }
@@ -334,7 +342,7 @@ export default function HomeClient({
         /* Instant tap feedback (phones never hover) */
         a, button, select, input, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .press, .nav-login, .nav-link, .back-btn, .pay-btn, .past-toggle, .jp-ticket-btn, .jp-contact-opt, .jp-line-tab, .suggestion-item, .search-go {
-          transition: transform 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+          transition: transform 0.12s var(--ease), background-color 0.12s var(--ease), color 0.12s var(--ease);
         }
         .press:active, .nav-login:active, .nav-link:active, .back-btn:active, .pay-btn:active, .past-toggle:active,
         .jp-ticket-btn:active, .jp-contact-opt:active, .jp-line-tab:active, .search-go:active { transform: scale(0.96); }
@@ -342,7 +350,9 @@ export default function HomeClient({
         .pay-venmo:active, .jp-ticket-btn:active, .action-pay:active { background: var(--black); color: var(--white); }
 
         /* Loading placeholders */
-        .skeleton { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; }
+        /* Only shown if loading takes over 300 ms, so fast lookups never flash it. */
+        .skeleton { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; animation: skShow 0s linear 0.3s both; }
+        @keyframes skShow { from { visibility: hidden; } to { visibility: visible; } }
         .sk { display: block; border-radius: 10px; background: var(--moondust); animation: skPulse 1s ease-in-out infinite alternate; }
         .sk-line { height: 22px; }
         .sk-big { height: 60px; width: 45%; }
@@ -350,7 +360,15 @@ export default function HomeClient({
         @keyframes skPulse { from { opacity: 1; } to { opacity: 0.45; } }
 
         /* Results slide in */
-        .card-record { animation: cardIn 0.25s ease both; }
+        .card-record { animation: cardIn 0.25s var(--ease) both; view-transition-name: record; }
+        @supports (view-transition-name: none) { .card-record { animation: none; } }
+        ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.2s; animation-timing-function: var(--ease); }
+        ::view-transition-group(record) { animation-duration: 0.25s; animation-timing-function: var(--ease); }
+        ::view-transition-new(record):only-child { animation: cardIn 0.25s var(--ease) both; }
+        .paid-up { display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+        .paid-check { width: 40px; height: 40px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; animation: popIn 0.4s var(--ease) both; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+        .jp-ticket-done { font-weight: 700; color: var(--black); padding: 12px 14px; border-radius: 14px; background: var(--moondust); }
         @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
         /* Phone action bar */
@@ -464,8 +482,19 @@ export default function HomeClient({
                       <p className="summary">{summary}</p>
                       <div className="balance-row">
                         <div>
-                          <p style={{ fontWeight: 500 }}>Owe now</p>
-                          <p className="balance-amount">${money(totalOwed)}</p>
+                          {totalOwed > 0 ? (
+                            <>
+                              <p style={{ fontWeight: 500 }}>Owe now</p>
+                              <p className="balance-amount"><CountUp value={totalOwed} /></p>
+                            </>
+                          ) : (
+                            <p className="paid-up">
+                              <span className="paid-check" aria-hidden="true">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 12.5 10 17.5 19 7" /></svg>
+                              </span>
+                              You&rsquo;re all paid up
+                            </p>
+                          )}
                           {pendingTotal > 0 && <p className="pending-line">+ ${money(pendingTotal)} pending JP</p>}
                         </div>
                         <div className="pay-buttons">
@@ -487,7 +516,7 @@ export default function HomeClient({
                         {fines.length === 0 && <p className="empty-text">No fines on record.</p>}
                         {pastFines.length > 0 && (
                           <>
-                            <button type="button" className="past-toggle" aria-expanded={showPast} onClick={() => setShowPast((v) => !v)}>
+                            <button type="button" className="past-toggle" aria-expanded={showPast} onClick={() => withTransition(() => setShowPast((v) => !v))}>
                               {showPast ? "Hide" : "Show"} {pastFines.length} resolved fine{pastFines.length !== 1 ? "s" : ""}
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
                             </button>
@@ -553,6 +582,39 @@ export default function HomeClient({
       </div>
     </>
   );
+}
+
+// Runs a state change as a View Transition where supported (smooth cross-fade /
+// card morph), otherwise just applies it.
+function withTransition(update: () => void) {
+  const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  if (!d.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    update();
+    return;
+  }
+  d.startViewTransition(() => flushSync(update));
+}
+
+// The balance counts up to its amount (instant with reduced motion).
+function CountUp({ value }: { value: number }) {
+  const [shown, setShown] = useState(0);
+  const from = useRef(0);
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const start = performance.now();
+    const a = from.current;
+    const dur = reduce ? 0 : 600;
+    let raf = 0;
+    const step = (now: number) => {
+      const p = dur === 0 ? 1 : Math.min(1, (now - start) / dur);
+      setShown(a + (value - a) * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(step);
+      else from.current = value;
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>${money(shown)}</>;
 }
 
 function money(n: number): string {

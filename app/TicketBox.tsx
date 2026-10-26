@@ -84,6 +84,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
   const [proxyName, setProxyName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [justTook, setJustTook] = useState(0); // tickets taken in the last submit (multi-officer)
 
   // localStorage only exists in the browser, so read it after mount.
   useEffect(() => {
@@ -114,7 +115,9 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
       ))}
     </div>
   );
-  if (remaining.length === 0) return <div className="jp-ticket">{links}</div>;
+  if (remaining.length === 0) return <div className="jp-ticket">{justTook > 1 && (
+        <p className="jp-ticket-done" role="status">✓ {justTook} tickets taken. Open each one to watch your place in line.</p>
+      )}{links}</div>;
 
   const chosen = picked.filter((o) => remaining.includes(o));
   const addable = remaining.filter((o) => !chosen.includes(o));
@@ -144,11 +147,12 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
     // A short buzz confirms it (Android; iPhones ignore it).
     if (made.length) navigator.vibrate?.(60);
     if (made.length === 1 && failed.length === 0) {
-      window.location.assign(`/ticket/${made[0].token}`);
+      window.location.assign(`/ticket/${made[0].token}?new=1`);
       return;
     }
     // Several tickets: stay here and list them, so he can open each one.
     setSaved(savedTickets(memberId));
+    setJustTook(made.length);
     setPicked([]);
     if (failed.length === 0) setFormOpen(false);
     setError(failed.join(" "));
@@ -157,6 +161,9 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
 
   return (
     <div className="jp-ticket">
+      {justTook > 1 && (
+        <p className="jp-ticket-done" role="status">✓ {justTook} tickets taken. Open each one to watch your place in line.</p>
+      )}
       {links}
       {!formOpen ? (
         <button type="button" className="jp-ticket-btn" onClick={() => setFormOpen(true)}>

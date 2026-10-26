@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   title: "Acacia JP Fines — Oregon State",
   description: "Fine lookup for Oregon State Chapter of Acacia Fraternity",
   appleWebApp: { capable: true, title: "Acacia JP", statusBarStyle: "default" },
+  metadataBase: new URL("https://jp-database.vercel.app"),
+  openGraph: {
+    title: "Acacia JP",
+    description: "Look up your fines, pay your balance, and take a ticket for JP. Oregon State Chapter of Acacia.",
+    url: "/",
+    siteName: "Acacia JP",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title: "Acacia JP", description: "Your fines, your balance and your spot in line at JP." },
 };
 
 // Tints the phone browser bar Beaver Orange.

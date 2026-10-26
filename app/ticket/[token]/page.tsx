@@ -38,6 +38,11 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [loadedAt, setLoadedAt] = useState(0);
+  const [now, setNow] = useState(0);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  // Shown once right after taking the ticket (?new=1): the "you're in" moment.
+  const [celebrate, setCelebrate] = useState(false);
   const alerted = useRef(false);
 
   const load = useCallback(async () => {
@@ -46,6 +51,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
     if (!res.ok) return;
     const data: TicketView = await res.json();
     setT(data);
+    setLoadedAt(Date.now());
     const upNext = data.status === "called" || (data.sessionLive && data.wait.onDocket && data.wait.place <= 2);
     if (upNext && !alerted.current) {
       alerted.current = true;
@@ -56,17 +62,40 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
 
   useEffect(() => {
     const first = setTimeout(load, 0);
-    const t = setInterval(load, POLL_MS);
+    const poll = setInterval(load, POLL_MS);
+    const tick = setInterval(() => setNow(Date.now()), 1000);
     const onVisible = () => { if (document.visibilityState === "visible") load(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => { clearTimeout(first); clearInterval(t); document.removeEventListener("visibilitychange", onVisible); };
+    return () => { clearTimeout(first); clearInterval(poll); clearInterval(tick); document.removeEventListener("visibilitychange", onVisible); };
   }, [load]);
 
-  async function act(method: "POST" | "DELETE", path: string) {
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") !== "1") return;
+    window.history.replaceState(null, "", window.location.pathname);
+    navigator.vibrate?.([40, 60, 40]);
+    const show = setTimeout(() => setCelebrate(true), 0);
+    const hide = setTimeout(() => setCelebrate(false), 3200);
+    return () => { clearTimeout(show); clearTimeout(hide); };
+  }, []);
+
+  // "Tap again to cancel" resets if he doesn't follow through.
+  useEffect(() => {
+    if (!confirmCancel) return;
+    const r = setTimeout(() => setConfirmCancel(false), 4000);
+    return () => clearTimeout(r);
+  }, [confirmCancel]);
+
+  // The button changes right away; the server catches up (undone if it fails).
+  async function act(kind: "here" | "cancel") {
     setBusy(true);
     setError("");
-    const res = await fetch(`/api/jp-ticket/${token}${path}`, { method });
+    setConfirmCancel(false);
+    const before = t;
+    setT((x) => x && { ...x, status: kind === "here" ? "here" : "cancelled" });
+    navigator.vibrate?.(30);
+    const res = await fetch(`/api/jp-ticket/${token}${kind === "here" ? "/here" : ""}`, { method: kind === "here" ? "POST" : "DELETE" });
     if (!res.ok) {
+      setT(before);
       const d = await res.json().catch(() => ({}));
       setError(d.error ?? "Something went wrong. Try again.");
     }
@@ -80,10 +109,23 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
   const closed = t && (t.status === "done" || t.status === "cancelled");
   const called = t?.status === "called";
   const upNext = !closed && (called || (t?.sessionLive && queued && queued.place <= 2));
+  const ago = loadedAt && now ? Math.max(0, Math.round((now - loadedAt) / 1000)) : 0;
 
   return (
     <main className={`tk ${sans.variable}`}>
       <style>{CSS}</style>
+
+      {celebrate && t && (
+        <div className="tk-celebrate" role="status" onClick={() => setCelebrate(false)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/crest.webp" alt="" className="tk-stamp" width={120} height={120} />
+          <p className="tk-cel-no">Ticket #{t.ticketNo}</p>
+          <p className="tk-cel-title">You&rsquo;re in line.</p>
+          <p className="tk-cel-text">Go back to your room. We&rsquo;ll reach {t.proxyName ? `${t.proxyName}` : "you"} when it&rsquo;s your turn.</p>
+          <button type="button" className="tk-btn primary tk-cel-btn">See my place in line</button>
+        </div>
+      )}
+
       <div className="tk-wrap">
         <Link href="/" className="tk-home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -97,7 +139,20 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
             <p className="tk-text">This ticket has ended or the link is wrong. Tickets close when the JP session ends. Ask the JP Chair if you think that&rsquo;s a mistake.</p>
           </section>
         ) : !t ? (
-          <section className="tk-card"><p className="tk-text">Loading your ticket&hellip;</p></section>
+          <section className="tk-card" aria-busy="true">
+            <span className="tk-sk" style={{ width: "40%" }} />
+            <span className="tk-sk tk-sk-big" />
+            <span className="tk-sk" style={{ width: "70%" }} />
+          </section>
+        ) : t.status === "done" ? (
+          <section className="tk-card tk-done">
+            <span className="tk-check" aria-hidden="true">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 12.5 10 17.5 19 7" /></svg>
+            </span>
+            <h1 className="tk-title">You&rsquo;re done for tonight.</h1>
+            <p className="tk-text">Your fines for {t.officer} have been heard. Look yourself up on the homepage to see the decisions.</p>
+            <Link href="/" className="tk-btn primary tk-link-btn">See my fines</Link>
+          </section>
         ) : (
           <>
             {upNext && (
@@ -119,33 +174,41 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
               </div>
 
               {closed ? (
-                <p className="tk-text">{t.status === "done" ? "Your fines have been heard. You’re done for tonight." : "You cancelled this ticket."}</p>
+                <p className="tk-text">You cancelled this ticket.</p>
               ) : queued ? (
                 <>
-                  {t.nowHearing && (
-                    <p className="tk-now">
-                      Now hearing: <strong>{t.nowHearing.roll != null ? `roll #${t.nowHearing.roll}` : "a brother"}</strong> in the {t.nowHearing.officer} group
+                  <div>
+                    <p className="tk-big">
+                      {queued.brothersAhead === 0 ? "You’re next" : `${queued.brothersAhead} ahead of you`}
                     </p>
-                  )}
-                  <div className="tk-place">
-                    <span className="tk-big">{ordinal(queued.place)}</span>
-                    <span className="tk-text">in line</span>
+                    <p className="tk-wait">
+                      {queued.minutesAhead === 0
+                        ? (t.sessionLive ? "Head to JP." : "You’re first when JP starts.")
+                        : t.sessionLive
+                          ? `${waitLabel(queued.minutesAhead)} from now.`
+                          : t.startTime
+                            ? `Likely ${clockAfter(t.startTime, range!.lo)}–${clockAfter(t.startTime, range!.hi)}.`
+                            : `${waitLabel(queued.minutesAhead)} after JP starts.`}
+                    </p>
                   </div>
-                  <p className="tk-wait">
-                    {queued.minutesAhead === 0
-                      ? (t.sessionLive ? "You’re next." : "You’re first when JP starts.")
-                      : t.sessionLive
-                        ? `${waitLabel(queued.minutesAhead)} from now.`
-                        : t.startTime
-                          ? `${waitLabel(queued.minutesAhead)} after JP starts: ${clockAfter(t.startTime, range!.lo)} to ${clockAfter(t.startTime, range!.hi)}.`
-                          : `${waitLabel(queued.minutesAhead)} after JP starts.`}
+                  {/* The line ahead of him shrinks as brothers are heard. */}
+                  <div className="tk-progress" role="img" aria-label={`${queued.brothersAhead} ahead of you, ${ordinal(queued.place)} in line`}>
+                    {queued.queue.map((m, i) => (
+                      <span key={i} style={{ flexGrow: m }} className={i < queued.queueIndex ? "ahead" : i === queued.queueIndex ? "you" : ""} />
+                    ))}
+                  </div>
+                  <p className="tk-now">
+                    {t.nowHearing
+                      ? <>Now hearing <strong>{t.nowHearing.roll != null ? `#${t.nowHearing.roll}` : "a brother"}</strong> · {t.nowHearing.officer}</>
+                      : t.sessionLive ? "JP is in session" : "JP hasn’t started yet"}
+                    {loadedAt > 0 && ` · updated ${ago < 5 ? "just now" : `${ago} sec ago`}`}
                   </p>
                   <ul className="tk-groups">
                     {queued.groups.map((g) => (
-                      <li key={g.officer}><strong>{g.officer}</strong> group: {ordinal(g.place)} of {g.size}</li>
+                      <li key={g.officer}><strong>{g.officer}</strong>&rsquo;s group: {ordinal(g.place)} of {g.size}</li>
                     ))}
                   </ul>
-                  <p className="tk-fine">This page updates on its own. Keep it open and turn your volume up; it chimes when you&rsquo;re almost up.</p>
+                  <p className="tk-fine">This page updates on its own. Keep it open and your volume up; it chimes when you&rsquo;re almost up.</p>
                 </>
               ) : null}
 
@@ -154,15 +217,15 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
               {!closed && (
                 <div className="tk-actions">
                   {t.status !== "here" && (
-                    <button type="button" className="tk-btn primary" disabled={busy} onClick={() => act("POST", "/here")}>I&rsquo;m here</button>
+                    <button type="button" className="tk-btn primary" disabled={busy} onClick={() => act("here")}>I&rsquo;m here</button>
                   )}
                   <button
                     type="button"
-                    className="tk-btn"
+                    className={`tk-btn${confirmCancel ? " confirm" : ""}`}
                     disabled={busy}
-                    onClick={() => { if (confirm("Cancel your ticket? Your number will be deleted.")) act("DELETE", ""); }}
+                    onClick={() => (confirmCancel ? act("cancel") : setConfirmCancel(true))}
                   >
-                    Cancel ticket
+                    {confirmCancel ? "Tap again to cancel" : "Cancel ticket"}
                   </button>
                 </div>
               )}
@@ -225,4 +288,25 @@ const CSS = `
     .tk-wrap { padding-bottom: 110px; }
     .tk-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #000000; border-top: 1px solid #FFFFFF; }
   }
+  .tk-link-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; }
+  .tk-btn.confirm { background: #FFFFFF; color: #D73F09; border-color: #D73F09; }
+  .tk-big { font-size: 44px; }
+  .tk-progress { display: flex; gap: 3px; }
+  .tk-progress span { flex-basis: 0; height: 10px; border-radius: 5px; border: 1px solid #FFFFFF; transition: flex-grow 0.4s cubic-bezier(0.2, 0, 0, 1); }
+  .tk-progress span.ahead { background: #FFFFFF; }
+  .tk-progress span.you { background: #D73F09; border-color: #D73F09; }
+  .tk-sk { display: block; height: 18px; border-radius: 9px; background: #FFFFFF; opacity: 0.25; }
+  .tk-sk-big { height: 56px; width: 60%; }
+  .tk-done { align-items: flex-start; }
+  .tk-check { width: 72px; height: 72px; border-radius: 50%; background: #D73F09; display: flex; align-items: center; justify-content: center; animation: tkPop 0.45s cubic-bezier(0.2, 0, 0, 1) both; }
+  .tk-celebrate { position: fixed; inset: 0; z-index: 50; background: #D73F09; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; animation: tkFade 0.25s ease both; }
+  .tk-stamp { object-fit: contain; animation: tkStamp 0.5s cubic-bezier(0.2, 0, 0, 1) 0.1s both; }
+  .tk-cel-no { margin: 8px 0 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tk-cel-title { margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.03em; }
+  .tk-cel-text { margin: 0; max-width: 320px; font-size: 17px; line-height: 1.5; }
+  .tk-btn.tk-cel-btn { flex: 0 0 auto; min-height: 52px; margin-top: 12px; background: #000000 !important; border-color: #000000 !important; padding: 0 28px; }
+  @keyframes tkFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tkStamp { from { opacity: 0; transform: scale(1.6) rotate(-8deg); } to { opacity: 1; transform: none; } }
+  @keyframes tkPop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .tk *, .tk-celebrate { animation: none !important; transition: none !important; } }
 `;
