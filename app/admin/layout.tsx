@@ -1,13 +1,13 @@
-import { Cormorant_Garamond, Lato } from "next/font/google";
+import { Figtree } from "next/font/google";
 
-// Self-hosted by next/font so the CSP's font-src 'self' allows them (same pair as the homepage).
-const serif = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-serif" });
-const sans = Lato({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-sans" });
+// Self-hosted by next/font so the CSP's font-src 'self' allows it (same face as the homepage).
+const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div className={`${serif.variable} ${sans.variable}`}>{children}</div>;
+  // One typeface everywhere: headings that ask for --font-serif get Figtree too.
+  return <div className={sans.variable} style={{ ["--font-serif" as string]: "var(--font-sans)" }}>{children}</div>;
 }

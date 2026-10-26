@@ -5,16 +5,17 @@ import FineDetailsEditor from "./FineDetailsEditor";
 import SessionSettings from "./SessionSettings";
 import SessionQueue from "./SessionQueue";
 import { rollMap, sortFines, type FineSort } from "./rollSort";
+import { NO_OFFICER } from "@/lib/jp-info";
 import type { FineStatus, JpSession, JpSessionChange, JpSessionFine, Member } from "@/lib/types";
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
-  pending:    { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
-  upheld:     { bg: "rgba(239,68,68,0.1)",    color: "#F87171", border: "rgba(239,68,68,0.3)" },
-  overturned: { bg: "rgba(251,146,60,0.1)",   color: "#FB923C", border: "rgba(251,146,60,0.3)" },
-  dismissed:  { bg: "rgba(52,211,153,0.1)",   color: "#34D399", border: "rgba(52,211,153,0.3)" },
-  paid:       { bg: "rgba(96,165,250,0.1)",   color: "#60A5FA", border: "rgba(96,165,250,0.3)" },
-  added_to_dues: { bg: "rgba(45,212,191,0.1)", color: "#5EEAD4", border: "rgba(45,212,191,0.3)" },
-  labor:      { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
+  pending:    { bg: "#FDD26E",   color: "#000000", border: "#FDD26E" },
+  upheld:     { bg: "#FFFFFF",    color: "#D73F09", border: "#D73F09" },
+  overturned: { bg: "#C4D6A4",   color: "#000000", border: "#C4D6A4" },
+  dismissed:  { bg: "#C4D6A4",   color: "#000000", border: "#C4D6A4" },
+  paid:       { bg: "#C6DAE7",   color: "#000000", border: "#C6DAE7" },
+  added_to_dues: { bg: "#FFFFFF", color: "#000000", border: "#000000" },
+  labor:      { bg: "#B8DDE1",  color: "#000000", border: "#B8DDE1" },
 };
 
 // Every status a fine can take, in the order the chair usually reaches for them.
@@ -50,6 +51,8 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
   const [savingFineId, setSavingFineId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<FineSort>("newest");
+  // Officer tab on the session screen; null = the first group that still has undecided fines.
+  const [officerTab, setOfficerTab] = useState<string | null>(null);
   // Inline amount editing, one fine at a time.
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
   const [amountDraft, setAmountDraft] = useState("");
@@ -184,9 +187,20 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   const decidedCount = sessionDetail ? sessionDetail.fines.filter((f) => f.status !== "pending").length : 0;
   const totalCount = sessionDetail?.fines.length ?? 0;
   const rolls = rollMap(members);
-  const docket = sessionDetail
-    ? sortFines(sessionDetail.fines, sortBy, rolls)
-    : [];
+  const sorted = sessionDetail ? sortFines(sessionDetail.fines, sortBy, rolls) : [];
+  // Officer groups in hearing order: whoever fined the most brothers first, ties A–Z.
+  const officerOf = (f: JpSessionFine) => f.fining_officer?.trim() || NO_OFFICER;
+  const officers = [...new Set(sorted.map(officerOf))]
+    .map((name) => {
+      const mine = sorted.filter((f) => officerOf(f) === name);
+      return { name, brothers: new Set(mine.map((f) => f.member_id)).size, left: mine.filter((f) => f.status === "pending").length };
+    })
+    .sort((a, b) => b.brothers - a.brothers || a.name.localeCompare(b.name));
+  const activeOfficer =
+    officerTab === "all" || officers.some((o) => o.name === officerTab)
+      ? officerTab
+      : officers.find((o) => o.left > 0)?.name ?? officers[0]?.name ?? "all";
+  const docket = activeOfficer === "all" ? sorted : sorted.filter((f) => officerOf(f) === activeOfficer);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -317,6 +331,31 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
                       <option value="roll">Roll #, low to high</option>
                       <option value="roll-desc">Roll #, high to low</option>
                     </select>
+                  </div>
+                )}
+                {officers.length > 1 && (
+                  <div className="ses-officer-tabs" role="tablist" aria-label="Fining officer">
+                    {officers.map((o) => (
+                      <button
+                        key={o.name}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeOfficer === o.name}
+                        className={`ses-officer-tab${activeOfficer === o.name ? " on" : ""}`}
+                        onClick={() => setOfficerTab(o.name)}
+                      >
+                        {o.name} · {o.left === 0 ? "done" : `${o.left} left`}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeOfficer === "all"}
+                      className={`ses-officer-tab${activeOfficer === "all" ? " on" : ""}`}
+                      onClick={() => setOfficerTab("all")}
+                    >
+                      All · {totalCount - decidedCount} left
+                    </button>
                   </div>
                 )}
                 {totalCount > 0 && (

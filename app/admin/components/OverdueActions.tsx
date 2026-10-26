@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Fine } from "@/lib/types";
 import { daysOverdue } from "@/lib/overdue";
 
-export const OVERDUE_ROW_STYLE = { borderLeftColor: "var(--red)", background: "rgba(239,68,68,0.07)" };
+export const OVERDUE_ROW_STYLE = { borderLeftColor: "var(--red)", background: "#FFFFFF" };
 
 interface OverdueActionsProps {
   fine: Fine;
@@ -37,7 +37,7 @@ export default function OverdueActions({ fine, now, isPrivileged, refresh }: Ove
   const days = daysOverdue(fine, now);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-      <span className="adm-status-badge" style={{ background: "rgba(239,68,68,0.15)", color: "var(--red)", borderColor: "rgba(239,68,68,0.5)", fontWeight: 700 }}>
+      <span className="adm-status-badge" style={{ background: "#FFFFFF", color: "var(--red)", borderColor: "#D73F09", fontWeight: 700 }}>
         overdue · {days}d
       </span>
       {isPrivileged && (

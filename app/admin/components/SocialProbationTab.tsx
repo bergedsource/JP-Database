@@ -95,7 +95,7 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
               <label className="adm-label">Member <span className="adm-req">*</span></label>
               {spSelectedMember ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ background: "rgba(207,181,59,0.15)", color: "var(--gold)", border: "1px solid rgba(207,181,59,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 13, fontWeight: 500 }}>
+                  <span style={{ background: "#C6DAE7", color: "var(--gold)", border: "1px solid #C6DAE7", borderRadius: 6, padding: "4px 10px", fontSize: 13, fontWeight: 500 }}>
                     {spSelectedMember.name}
                   </span>
                   <button type="button" onClick={() => { setSpSelectedMember(null); setSpMemberSearch(""); }} style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
@@ -205,9 +205,9 @@ export default function SocialProbationTab({ members, socialProbations, isPrivil
                       fontFamily: "var(--font-sans), sans-serif",
                       padding: "2px 8px",
                       borderRadius: 4,
-                      background: sp.source === "auto" ? "rgba(251,191,36,0.1)" : "rgba(96,165,250,0.1)",
-                      color: sp.source === "auto" ? "#FCD34D" : "#60A5FA",
-                      border: `1px solid ${sp.source === "auto" ? "rgba(251,191,36,0.3)" : "rgba(96,165,250,0.3)"}`,
+                      background: sp.source === "auto" ? "#FDD26E" : "#C6DAE7",
+                      color: sp.source === "auto" ? "#000000" : "#000000",
+                      border: `1px solid ${sp.source === "auto" ? "#FDD26E" : "#C6DAE7"}`,
                     }}>
                       {sp.source}
                     </span>

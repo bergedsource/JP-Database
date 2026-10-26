@@ -222,7 +222,7 @@ function UnbecomingRow({
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={6} style={{ background: "rgba(255,255,255,0.02)" }}>
+          <td colSpan={6} style={{ background: "transparent" }}>
             <UnbecomingDetail id={unbecoming.id} members={members} onChange={onChange} onClose={onToggle} />
           </td>
         </tr>
@@ -323,7 +323,7 @@ function UnbecomingReadView({ detail, onEdit }: { detail: Unbecoming; onEdit: ()
       {detail.body && (
         <div>
           <div className="adm-label">Write-up</div>
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, margin: 0, color: "var(--text-base, #e9e3d6)" }}>
+          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, margin: 0, color: "var(--text-base, #000000)" }}>
             {detail.body}
           </pre>
         </div>
@@ -331,7 +331,7 @@ function UnbecomingReadView({ detail, onEdit }: { detail: Unbecoming; onEdit: ()
       {detail.decision && (
         <div>
           <div className="adm-label">Decision</div>
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, margin: 0, color: "var(--text-base, #e9e3d6)" }}>
+          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, margin: 0, color: "var(--text-base, #000000)" }}>
             {detail.decision}
           </pre>
         </div>
@@ -340,7 +340,7 @@ function UnbecomingReadView({ detail, onEdit }: { detail: Unbecoming; onEdit: ()
       {detail.sanction && (
         <div>
           <div className="adm-label">Sanction</div>
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, margin: 0, color: "var(--text-base, #e9e3d6)" }}>
+          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, margin: 0, color: "var(--text-base, #000000)" }}>
             {detail.sanction}
           </pre>
         </div>

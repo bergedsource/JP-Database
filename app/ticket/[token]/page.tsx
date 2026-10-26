@@ -2,11 +2,10 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Cormorant_Garamond, Lato } from "next/font/google";
+import { Figtree } from "next/font/google";
 import { clockAfter, waitLabel, waitRange, type TicketView } from "@/lib/jp-info";
 
-const serif = Cormorant_Garamond({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-serif" });
-const sans = Lato({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-sans" });
+const sans = Figtree({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-sans" });
 
 const POLL_MS = 15000;
 
@@ -83,10 +82,14 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
   const upNext = !closed && (called || (t?.sessionLive && queued && queued.place <= 2));
 
   return (
-    <main className={`tk ${serif.variable} ${sans.variable}`}>
+    <main className={`tk ${sans.variable}`}>
       <style>{CSS}</style>
       <div className="tk-wrap">
-        <Link href="/" className="tk-home">Acacia JP</Link>
+        <Link href="/" className="tk-home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/crest.webp" alt="" width={32} height={32} style={{ objectFit: "contain" }} />
+          Acacia JP
+        </Link>
 
         {missing ? (
           <section className="tk-card">
@@ -109,7 +112,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
                   <p className="tk-kicker">Ticket #{t.ticketNo}</p>
                   <h1 className="tk-title">{t.name}</h1>
                   {t.roll != null && <p className="tk-text">Roll #{t.roll}</p>}
-                  {t.officer && <p className="tk-text">For the <strong className="tk-officer">{t.officer}</strong> group</p>}
+                  {t.officer && <p className="tk-text">For <strong className="tk-officer">{t.officer}</strong>&rsquo;s fines</p>}
                   {t.proxyName && <p className="tk-proxy">Proxy: <strong>{t.proxyName}</strong> will be called</p>}
                 </div>
                 <span className={`tk-status s-${t.status}`}>{STATUS_LABEL[t.status]}</span>
@@ -181,35 +184,37 @@ const STATUS_LABEL: Record<TicketView["status"], string> = {
 };
 
 const CSS = `
-  body { margin: 0; background: #0A0A0A; }
-  .tk { min-height: 100vh; background: #0A0A0A; color: #F0E8D0; font-family: var(--font-sans), sans-serif; }
-  .tk-wrap { max-width: 520px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
-  .tk-home { font-family: var(--font-serif), serif; font-size: 22px; font-weight: 700; color: #F0E8D0; text-decoration: none; }
-  .tk-banner { background: #CFB53B; color: #0A0A0A; font-weight: 700; font-size: 17px; padding: 16px 18px; border-radius: 12px; }
-  .tk-card { background: #141414; border: 1px solid #2A2A2A; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  body { margin: 0; background: #FFFFFF; }
+  .tk { min-height: 100vh; background: #FFFFFF; color: #000000; font-family: var(--font-sans), system-ui, sans-serif; border-top: 6px solid #D73F09; }
+  .tk-wrap { max-width: 520px; margin: 0 auto; padding: 16px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  .tk-home { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 19px; font-weight: 700; color: #000000; text-decoration: none; align-self: flex-start; }
+  .tk-banner { background: #D73F09; color: #FFFFFF; font-weight: 700; font-size: 18px; padding: 16px 18px; border-radius: 18px; }
+  .tk-card { position: relative; overflow: hidden; background: #000000; color: #FFFFFF; border-radius: 22px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .tk-card::after { content: ""; position: absolute; right: -30px; top: -10px; width: 170px; height: 170px; background: url(/crest.webp) center / contain no-repeat; opacity: 0.12; pointer-events: none; }
+  .tk-card > * { position: relative; z-index: 1; }
   .tk-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .tk-kicker { margin: 0; font-size: 13px; font-weight: 700; color: #CFB53B; }
-  .tk-title { margin: 4px 0 0; font-family: var(--font-serif), serif; font-size: 34px; font-weight: 600; line-height: 1.05; }
-  .tk-text { margin: 0; font-size: 15px; line-height: 1.6; color: #A89870; }
-  .tk-officer { color: #F0E8D0; }
-  .tk-proxy { margin: 4px 0 0; font-size: 14px; color: #A89870; }
-  .tk-proxy strong { color: #E2CC6A; }
-  .tk-status { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 4px 10px; background: #2A2A2A; color: #F0E8D0; white-space: nowrap; }
-  .tk-status.s-called { background: #CFB53B; color: #0A0A0A; }
-  .tk-status.s-here { background: #1f3a2a; color: #9ee0b5; }
-  .tk-status.s-skipped { background: #3a2420; color: #F0A090; }
-  .tk-now { margin: 0; font-size: 15px; color: #A89870; }
-  .tk-now strong { color: #F0E8D0; }
+  .tk-kicker { margin: 0; font-size: 14px; font-weight: 700; color: #D73F09; }
+  .tk-title { margin: 4px 0 0; font-size: 32px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+  .tk-text { margin: 0; font-size: 15px; line-height: 1.6; color: #FFFFFF; }
+  .tk-officer { color: #FFFFFF; }
+  .tk-proxy { margin: 4px 0 0; font-size: 14px; }
+  .tk-proxy strong { color: #FFFFFF; }
+  .tk-status { font-size: 13px; font-weight: 700; border-radius: 999px; padding: 4px 12px; background: #FFFFFF; color: #000000; white-space: nowrap; }
+  .tk-status.s-called { background: #D73F09; color: #FFFFFF; }
+  .tk-status.s-here { background: #C4D6A4; color: #000000; }
+  .tk-status.s-skipped { background: #FDD26E; color: #000000; }
+  .tk-now { margin: 0; font-size: 15px; }
+  .tk-now strong { color: #FFFFFF; }
   .tk-place { display: flex; align-items: baseline; gap: 10px; }
-  .tk-big { font-family: var(--font-serif), serif; font-size: 64px; font-weight: 700; line-height: 1; color: #E2CC6A; }
-  .tk-wait { margin: 0; font-size: 17px; line-height: 1.5; }
-  .tk-groups { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #A89870; }
-  .tk-groups strong { color: #F0E8D0; }
-  .tk-fine { margin: 0; font-size: 13px; line-height: 1.5; color: #A89870; }
-  .tk-error { margin: 0; font-size: 14px; color: #F08A7A; }
+  .tk-big { font-size: 64px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; color: #D73F09; font-variant-numeric: tabular-nums; }
+  .tk-wait { margin: 0; font-size: 17px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  .tk-groups { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+  .tk-groups strong { color: #FFFFFF; }
+  .tk-fine { margin: 0; font-size: 13px; line-height: 1.5; }
+  .tk-error { margin: 0; font-size: 14px; font-weight: 700; color: #FDD26E; }
   .tk-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-  .tk-btn { min-height: 48px; padding: 0 20px; border-radius: 10px; border: 1px solid #2A2A2A; background: none; color: #F0E8D0; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
-  .tk-btn.primary { background: #CFB53B; border-color: #CFB53B; color: #0A0A0A; }
+  .tk-btn { flex: 1; min-height: 52px; padding: 0 20px; border-radius: 999px; border: 1px solid #FFFFFF; background: #000000; color: #FFFFFF; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .tk-btn.primary { flex: 2; background: #D73F09; border-color: #D73F09; color: #FFFFFF; }
   .tk-btn:disabled { opacity: 0.6; cursor: wait; }
-  .tk-btn:focus-visible, .tk-home:focus-visible { outline: 2px solid #E2CC6A; outline-offset: 2px; }
+  .tk-btn:focus-visible, .tk-home:focus-visible { outline: 3px solid #D73F09; outline-offset: 2px; }
 `;

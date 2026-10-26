@@ -16,9 +16,9 @@ export default function AuditTab({ auditLogs }: { auditLogs: AuditLog[] }) {
 
   return (
     <>
-      <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ color: "#F87171", fontSize: 13, fontWeight: 600 }}>⚠ Annual Reset:</span>
-        <span style={{ color: "#F87171", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
+      <div style={{ marginBottom: 12, padding: "10px 14px", background: "#FFFFFF", border: "1px solid #D73F09", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ color: "#D73F09", fontSize: 13, fontWeight: 600 }}>⚠ Annual Reset:</span>
+        <span style={{ color: "#D73F09", fontSize: 13, fontFamily: "var(--font-sans), sans-serif" }}>
           {days}d {hours}h {mins}m until all fines are deleted (Jan 4)
         </span>
       </div>
