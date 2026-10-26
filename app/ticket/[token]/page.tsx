@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Figtree } from "next/font/google";
 import { clockAfter, waitLabel, waitRange, type TicketView } from "@/lib/jp-info";
+import ThemeToggle from "@/app/ThemeToggle";
 
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-sans" });
 
@@ -127,11 +128,14 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
       )}
 
       <div className="tk-wrap">
-        <Link href="/" className="tk-home">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/crest.webp" alt="" width={32} height={32} style={{ objectFit: "contain" }} />
-          Acacia JP
-        </Link>
+        <div className="tk-top">
+          <Link href="/" className="tk-home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/crest.webp" alt="" width={32} height={32} style={{ objectFit: "contain" }} />
+            Acacia JP
+          </Link>
+          <ThemeToggle className="tk-theme" />
+        </div>
 
         {missing ? (
           <section className="tk-card">
@@ -247,6 +251,14 @@ const STATUS_LABEL: Record<TicketView["status"], string> = {
 };
 
 const CSS = `
+  .tk-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .tk-theme { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid #C6DAE7; background: #FFFFFF; color: #000000; cursor: pointer; }
+  .tk-theme:focus-visible { outline: 3px solid #D73F09; outline-offset: 2px; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="dark"] body, :root[data-theme="dark"] .tk { background: #000000; color: #FFFFFF; }
+  :root[data-theme="dark"] .tk-home { color: #FFFFFF; }
+  :root[data-theme="dark"] .tk-theme { background: #000000; color: #FFFFFF; }
+  :root[data-theme="dark"] .tk-card { border: 1px solid #FFFFFF; }
   body { margin: 0; background: #FFFFFF; }
   .tk { min-height: 100vh; background: #FFFFFF; color: #000000; font-family: var(--font-sans), system-ui, sans-serif; border-top: 6px solid #D73F09; }
   .tk-wrap { max-width: 520px; margin: 0 auto; padding: 16px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
