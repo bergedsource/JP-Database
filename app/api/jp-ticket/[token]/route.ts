@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
-import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
+import { isRateLimited, getIP, publicLimiter, ticketIpLimiter, ticketLimiter } from "@/lib/rate-limit";
 import { waitFor, type TicketStatus, type TicketView } from "@/lib/jp-info";
 import { hashTicketToken, loadDocket, nowHearing } from "@/lib/jp-docket";
 
@@ -19,10 +19,15 @@ async function findTicket(token: string) {
 // GET /api/jp-ticket/[token] — the ticket screen's data. Never returns the phone
 // number or anyone else's name.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  if (await isRateLimited(publicLimiter, getIP(req))) {
+  const { token } = await params;
+  // Per ticket (polled every 15 s) plus a roomy per-IP cap: brothers on the same
+  // house wifi share one IP, so the regular public limit would lock them out.
+  if (
+    (await isRateLimited(ticketLimiter, `t:${token.slice(0, 64)}`)) ||
+    (await isRateLimited(ticketIpLimiter, getIP(req)))
+  ) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
-  const { token } = await params;
   const { service, ticket } = await findTicket(token);
   if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404, headers: NO_STORE });
 

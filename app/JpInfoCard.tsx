@@ -18,6 +18,13 @@ function ordinal(n: number): string {
   return `${n}${s}`;
 }
 
+// Officers he can pick: anyone who fined in the last 30 days, plus every officer he
+// has a pending fine from (an older fine, or "No officer listed"), so he is never
+// left with nothing valid to choose.
+function ticketOfficers(recent: string[], own: string[]): string[] {
+  return [...new Set([...recent, ...own])].sort((a, b) => a.localeCompare(b));
+}
+
 function possessive(name: string): string {
   return name.endsWith("s") ? `${name}’` : `${name}’s`;
 }
@@ -165,7 +172,7 @@ export function WaitCard({
       ) : (
         <>
           <WaitDetail wait={wait} roll={member.roll ?? null} startTime={info?.sessionLive ? "" : next?.time || ""} live={!!info?.sessionLive} />
-          <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={info?.recentOfficers ?? []} />
+          <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={ticketOfficers(info?.recentOfficers ?? [], wait.groups.map((g) => g.officer))} />
         </>
       )}
     </article>
