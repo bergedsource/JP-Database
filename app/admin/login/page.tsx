@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import PasswordInput from "../PasswordInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -200,13 +201,7 @@ export default function LoginPage() {
               className="login-input"
             />
             <label className="login-label">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="login-input"
-            />
+            <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
             {error && <p className="login-error">{error}</p>}
             <button type="submit" disabled={loading} className="login-btn">
               {loading ? "Signing in…" : "Sign In"}

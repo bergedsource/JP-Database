@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import PasswordInput from "../PasswordInput";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -60,21 +61,9 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleReset}>
               <label className="login-label">New Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="login-input"
-              />
+              <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
               <label className="login-label">Confirm Password</label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                className="login-input"
-              />
+              <PasswordInput value={confirm} onChange={setConfirm} autoComplete="new-password" />
               {error && <p className="login-error">{error}</p>}
               <button type="submit" disabled={loading} className="login-btn">
                 {loading ? "Updating…" : "Set New Password"}
