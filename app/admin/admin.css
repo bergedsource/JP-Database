@@ -19,6 +19,37 @@
   --sidebar-w: 256px;
 }
 
+/* Dark mode (switch next to Sign out): black and white swap; Moondust and the
+   status colors stay, so anything filled with them keeps black text. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #000000;
+  --text: #FFFFFF;
+  --text-soft: #FFFFFF;
+  --text-muted: #FFFFFF;
+  --text-dim: #FFFFFF;
+}
+:root[data-theme="dark"] .adm-nav-item:hover,
+:root[data-theme="dark"] .adm-icon-btn:hover,
+:root[data-theme="dark"] .ses-state.closed,
+:root[data-theme="dark"] .ses-queue-status,
+:root[data-theme="dark"] .ses-queue-row.now,
+:root[data-theme="dark"] .ses-choice:not(.selected):hover:not(:disabled),
+:root[data-theme="dark"] .adm-suggestion-btn:hover,
+:root[data-theme="dark"] .ses-close-btn:hover,
+:root[data-theme="dark"] .adm-member-tag,
+:root[data-theme="dark"] .adm-view-only-banner { color: #000000; }
+:root[data-theme="dark"] .ses-queue-row.now .ses-queue-roll,
+:root[data-theme="dark"] .ses-queue-row.now .ses-queue-who * { color: #000000; }
+:root[data-theme="dark"] .adm-nav-item.active,
+:root[data-theme="dark"] .ses-officer-tab.on { background: #FFFFFF; border-color: #FFFFFF; color: #000000; }
+:root[data-theme="dark"] .ses-officer-tab { background: #000000; color: #FFFFFF; }
+:root[data-theme="dark"] .ses-officer-tab:hover { border-color: #FFFFFF; }
+.adm-foot-row { display: flex; align-items: center; gap: 8px; }
+.adm-foot-row .adm-signout { flex: 1; }
+
 .adm-page {
   min-height: 100vh;
   background: var(--bg);

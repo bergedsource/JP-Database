@@ -686,14 +686,14 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
           </div>
 
           {rosterSyncError && (
-            <div style={{ marginTop: 16, padding: 12, background: "#FFFFFF", border: "1px solid #D73F09", borderRadius: 6, color: "#D73F09", fontSize: 13 }}>
+            <div style={{ marginTop: 16, padding: 12, background: "var(--surface)", border: "1px solid #D73F09", borderRadius: 6, color: "#D73F09", fontSize: 13 }}>
               <strong>Sync failed:</strong> {rosterSyncError}
             </div>
           )}
 
           {rosterSyncResult && (
             <div style={{ marginTop: 16, padding: 12, background: "#C4D6A4", border: "1px solid #C4D6A4", borderRadius: 6, fontSize: 13, lineHeight: 1.7 }}>
-              <div style={{ fontWeight: 600, color: "#000000", marginBottom: 8 }}>
+              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>
                 {rosterSyncResult.dryRun ? "Dry-run preview" : "Sync complete"}
               </div>
               <div>Rows on sheet: {rosterSyncResult.rowsOnSheet}</div>
@@ -711,7 +711,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               </div>
               {rosterSyncResult.issues.length > 0 && (
                 <div style={{ marginTop: 10 }}>
-                  <strong style={{ color: "#000000" }}>Issues ({rosterSyncResult.issues.length}):</strong>
+                  <strong style={{ color: "var(--text)" }}>Issues ({rosterSyncResult.issues.length}):</strong>
                   <ul style={{ margin: "4px 0 0 18px", padding: 0, color: "var(--text-muted)" }}>
                     {rosterSyncResult.issues.slice(0, 20).map((iss, i) => (
                       <li key={i}>{iss.roll ? `#${iss.roll}: ` : ""}{iss.reason}</li>
@@ -812,7 +812,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                       const m = Math.floor(e.time_seconds / 60);
                       const s = e.time_seconds % 60;
                       return (
-                        <tr key={e.id} style={e.flagged_suspect ? { background: "#FFFFFF" } : undefined}>
+                        <tr key={e.id} style={e.flagged_suspect ? { background: "var(--surface)" } : undefined}>
                           <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
                           <td>
                             {e.username}

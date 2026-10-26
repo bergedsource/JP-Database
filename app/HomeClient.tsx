@@ -7,6 +7,7 @@ import type { Fine, Member } from "@/lib/types";
 import type { JpInfo } from "@/lib/jp-info";
 import type { PublicMember, PublicSettings } from "@/lib/public-data";
 import { CommonFinesCard, NextJpCard, WaitCard } from "./JpInfoCard";
+import ThemeToggle from "./ThemeToggle";
 
 // Self-hosted by next/font so the CSP's font-src 'self' allows it.
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
@@ -165,6 +166,11 @@ export default function HomeClient({
           --moondust: #C6DAE7;
           --ease: cubic-bezier(0.2, 0, 0, 1);
         }
+        /* Dark mode: black and white swap; orange and the secondaries stay. */
+        :root[data-theme="dark"] { --black: #FFFFFF; --white: #000000; color-scheme: dark; }
+        .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--moondust); background: var(--white); color: var(--black); cursor: pointer; flex-shrink: 0; }
+        .theme-toggle:hover { border-color: var(--orange); color: var(--orange); }
+        .theme-toggle:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         body { background: var(--white); color: var(--black); font-family: var(--font-sans), system-ui, sans-serif; min-height: 100vh; }
@@ -412,6 +418,7 @@ export default function HomeClient({
           </a>
           <a href="#how" className="nav-link nav-link-wide">How JP works</a>
           {gameEnabled && <a href="/game" className="nav-link">Game</a>}
+          <ThemeToggle className="theme-toggle" />
           <a href="/admin/login" className="nav-login">Officer login</a>
         </nav>
 

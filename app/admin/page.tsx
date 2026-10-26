@@ -18,6 +18,7 @@ import TransitionTab from "./components/TransitionTab";
 import UnbecomingsTab from "./components/UnbecomingsTab";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 import NavIcon, { type NavIconName } from "./components/NavIcon";
+import ThemeToggle from "@/app/ThemeToggle";
 
 // Every fines column the dashboard reads directly — everything except `notes`.
 // Must match the column grant in migration_hide_fine_notes.sql.
@@ -248,7 +249,10 @@ export default function AdminPage() {
             >
               Report a bug
             </a>
-            <button type="button" onClick={signOut} className="adm-signout">Sign out</button>
+            <div className="adm-foot-row">
+              <button type="button" onClick={signOut} className="adm-signout">Sign out</button>
+              <ThemeToggle className="adm-icon-btn adm-theme-btn" />
+            </div>
           </div>
         </div>
       </aside>
