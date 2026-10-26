@@ -19,19 +19,24 @@ export async function GET(req: Request) {
   let nextSession: JpInfo["nextSession"] = null;
   let tickets: JpInfo["tickets"] = { state: "none" };
   let sessionLive = false;
-  let line: JpInfo["line"] = { upNext: [], brothers: 0, groups: 0 };
+  let line: JpInfo["line"] = { groups: [], brothers: 0 };
   try {
     const docket = await loadDocket(service);
     nextSession = docket.nextSession;
     tickets = docket.tickets;
     sessionLive = !!docket.liveSession;
     // Names and roll #s are already public (public_members); only the order is new.
-    const waiting = docket.slots.filter((s) => !docket.skipped.has(s.memberId));
-    line = {
-      upNext: waiting.slice(0, 5).map((s) => ({ roll: s.roll, name: docket.members.get(s.memberId)?.name ?? "Unknown", officer: s.officer })),
-      brothers: new Set(docket.slots.map((s) => s.memberId)).size,
-      groups: new Set(docket.slots.map((s) => s.officer)).size,
-    };
+    // Slots are already in hearing order, grouped by officer.
+    const groups: JpInfo["line"]["groups"] = [];
+    for (const s of docket.slots) {
+      let g = groups.find((x) => x.officer === s.officer);
+      if (!g) groups.push((g = { officer: s.officer, brothers: 0, upNext: [] }));
+      g.brothers++;
+      if (!docket.skipped.has(s.memberId) && g.upNext.length < 5) {
+        g.upNext.push({ roll: s.roll, name: docket.members.get(s.memberId)?.name ?? "Unknown" });
+      }
+    }
+    line = { groups, brothers: new Set(docket.slots.map((s) => s.memberId)).size };
   } catch {}
 
   // The fines table only holds the current year (it's wiped every Jan 4), so this
