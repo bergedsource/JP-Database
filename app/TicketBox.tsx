@@ -72,7 +72,8 @@ export function TicketWindowLine({ window: w }: { window: TicketWindow }) {
 export default function TicketBox({ window: w, memberId, officers }: { window: TicketWindow; memberId: string; officers: string[] }) {
   const now = useNow(1000);
   const [saved, setSaved] = useState<Saved[]>([]);
-  const [officer, setOfficer] = useState("");
+  // Officers he's taking tickets for: one ticket each, all with the same contact.
+  const [picked, setPicked] = useState<string[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   // Nothing chosen until he taps Phone # or Snapchat; then that box appears.
   const [contact, setContact] = useState<"phone" | "snapchat" | null>(null);
@@ -114,22 +115,40 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
   );
   if (remaining.length === 0) return <div className="jp-ticket">{links}</div>;
 
+  // With only one officer left there's nothing to choose.
+  const chosen = remaining.length === 1 ? remaining : picked.filter((o) => remaining.includes(o));
+
   async function take(e: React.FormEvent) {
     e.preventDefault();
+    if (chosen.length === 0) { setError("Choose at least one fining officer."); return; }
     setBusy(true);
     setError("");
-    const res = await fetch("/api/jp-ticket", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member_id: memberId, fining_officer: officer, contact, phone, snapchat, proxy, proxy_name: proxy ? proxyName : "" }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.token) {
-      saveTicket(memberId, officer, data.token, data.ticketNo);
-      window.location.href = `/ticket/${data.token}`;
+    // One ticket per officer (the server allows one per brother per officer).
+    const made: { token: string }[] = [];
+    const failed: string[] = [];
+    for (const officer of chosen) {
+      const res = await fetch("/api/jp-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ member_id: memberId, fining_officer: officer, contact, phone, snapchat, proxy, proxy_name: proxy ? proxyName : "" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.token) {
+        saveTicket(memberId, officer, data.token, data.ticketNo);
+        made.push({ token: data.token });
+      } else {
+        failed.push(data.error ?? `Couldn't take a ticket for ${officer}.`);
+      }
+    }
+    if (made.length === 1 && failed.length === 0) {
+      window.location.assign(`/ticket/${made[0].token}`);
       return;
     }
-    setError(data.error ?? "Couldn't take a ticket. Try again.");
+    // Several tickets: stay here and list them, so he can open each one.
+    setSaved(savedTickets(memberId));
+    setPicked([]);
+    if (failed.length === 0) setFormOpen(false);
+    setError(failed.join(" "));
     setBusy(false);
   }
 
@@ -142,17 +161,23 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
         </button>
       ) : (
         <form onSubmit={take} className="jp-ticket-form">
-          <label htmlFor="jp-officer" className="jp-ticket-label">Fining officer</label>
-          <select
-            id="jp-officer"
-            className="search-input jp-ticket-input jp-ticket-select"
-            value={officer}
-            onChange={(e) => { setOfficer(e.target.value); setError(""); }}
-            required
-          >
-            <option value="" disabled>Choose who fined you</option>
-            {remaining.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
+          {remaining.length === 1 ? (
+            <p className="jp-ticket-line">For <strong>{remaining[0]}</strong>&rsquo;s fines</p>
+          ) : (
+            <fieldset className="jp-officers">
+              <legend className="jp-ticket-label">Fining officers (pick one or more)</legend>
+              {remaining.map((o) => (
+                <label key={o} className="jp-ticket-check">
+                  <input
+                    type="checkbox"
+                    checked={picked.includes(o)}
+                    onChange={(e) => { setPicked((p) => (e.target.checked ? [...p, o] : p.filter((x) => x !== o))); setError(""); }}
+                  />
+                  {o}
+                </label>
+              ))}
+            </fieldset>
+          )}
           <label className="jp-ticket-check">
             <input type="checkbox" checked={proxy} onChange={(e) => { setProxy(e.target.checked); setError(""); }} />
             I&rsquo;m sending a proxy
@@ -221,7 +246,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
                   autoFocus
                 />
               ) : null}
-              <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : "Take ticket"}</button>
+              <button type="submit" className="jp-ticket-btn" disabled={busy}>{busy ? "Taking…" : chosen.length > 1 ? `Take ${chosen.length} tickets` : "Take ticket"}</button>
             </div>
           )}
           {error && <p className="jp-ticket-error" role="alert">{error}</p>}

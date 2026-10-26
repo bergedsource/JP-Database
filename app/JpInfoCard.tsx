@@ -43,32 +43,7 @@ export function NextJpCard({ info }: { info: JpInfo | null }) {
               {next.place && <p className="jp-place">At {next.place}</p>}
             </>
           )}
-          {line && line.upNext.length > 0 && (
-            <div className="jp-line">
-              <div className="jp-line-head">
-                <p className="jp-line-title">Who&rsquo;s in line</p>
-                <p className="jp-line-count">{line.brothers} brother{line.brothers !== 1 ? "s" : ""}</p>
-              </div>
-              {/* A brother fined by several officers is heard once per group, so label each group. */}
-              <ol className="jp-line-list">
-                {line.upNext.map((b, i) => (
-                  <li key={`${b.officer}-${b.name}-${i}`} className="jp-line-item">
-                    {(i === 0 || line.upNext[i - 1].officer !== b.officer) && (
-                      <span className="jp-line-group">{possessive(b.officer)} fines{i === 0 ? " · first up" : ""}</span>
-                    )}
-                    <span className={`jp-line-row${i === 0 ? " first" : ""}`}>
-                      <span className="jp-line-roll">{b.roll != null ? `#${b.roll}` : "—"}</span>
-                      <span className="jp-line-name">{b.name}</span>
-                      {i === 0 && <span className="jp-line-tag">{info?.sessionLive ? "Now" : "Next up"}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-              {line.brothers > line.upNext.length && (
-                <p className="jp-line-more">+ {line.brothers - line.upNext.length} more · lowest roll # goes first in each group</p>
-              )}
-            </div>
-          )}
+          {line && line.groups.length > 0 && <LineByOfficer line={line} live={!!info?.sessionLive} />}
           {info?.tickets && info.tickets.state !== "none" && (
             <div className="jp-window"><TicketWindowLine window={info.tickets} /></div>
           )}
@@ -77,6 +52,73 @@ export function NextJpCard({ info }: { info: JpInfo | null }) {
         <p className="jp-place">Not scheduled yet. The JP Chair posts the date here once it&rsquo;s set.</p>
       )}
     </article>
+  );
+}
+
+const ROTATE_MS = 10000;
+
+// "Who's in line", one officer group at a time in hearing order. Moves to the next
+// group every 10 s, except while hovered/focused or with reduced motion.
+function LineByOfficer({ line, live }: { line: JpInfo["line"]; live: boolean }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const count = line.groups.length;
+  const i = idx % count;
+
+  useEffect(() => {
+    if (paused || count < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setTimeout(() => setIdx((n) => (n + 1) % count), ROTATE_MS);
+    return () => clearTimeout(t);
+  }, [idx, paused, count]);
+
+  const g = line.groups[i];
+  return (
+    <div
+      className="jp-line"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setPaused(false); }}
+    >
+      <div className="jp-line-head">
+        <p className="jp-line-title">Who&rsquo;s in line</p>
+        <p className="jp-line-count">{line.brothers} brother{line.brothers !== 1 ? "s" : ""}</p>
+      </div>
+      <div key={g.officer} className="jp-line-panel" aria-live={paused ? "polite" : "off"}>
+        <p className="jp-line-group">
+          {possessive(g.officer)} fines{i === 0 ? " · first up" : ` · group ${i + 1} of ${count}`}
+        </p>
+        <ol className="jp-line-list">
+          {g.upNext.map((b, j) => (
+            <li key={`${b.name}-${j}`} className={`jp-line-row${i === 0 && j === 0 ? " first" : ""}`}>
+              <span className="jp-line-roll">{b.roll != null ? `#${b.roll}` : "—"}</span>
+              <span className="jp-line-name">{b.name}</span>
+              {i === 0 && j === 0 && <span className="jp-line-tag">{live ? "Now" : "Next up"}</span>}
+            </li>
+          ))}
+        </ol>
+        <p className="jp-line-more">
+          {g.brothers > g.upNext.length ? `+ ${g.brothers - g.upNext.length} more in this group · ` : ""}lowest roll # goes first
+        </p>
+      </div>
+      {count > 1 && (
+        <div className="jp-line-tabs" role="tablist" aria-label="Fining officer">
+          {line.groups.map((x, k) => (
+            <button
+              key={x.officer}
+              type="button"
+              role="tab"
+              aria-selected={k === i}
+              className={`jp-line-tab${k === i ? " on" : ""}`}
+              onClick={() => setIdx(k)}
+            >
+              {x.officer}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -272,11 +272,11 @@ export type JpInfo = {
   totalFines: number;
   tickets: TicketWindow;
   sessionLive: boolean; // a JP session is running right now
-  // Front of the hearing line (skipped brothers left out), for "Who's in line".
+  // The hearing line by officer group, in hearing order (skipped brothers left
+  // out), for "Who's in line". Each group lists its first few brothers.
   line: {
-    upNext: { roll: number | null; name: string; officer: string }[];
+    groups: { officer: string; brothers: number; upNext: { roll: number | null; name: string }[] }[];
     brothers: number; // distinct brothers on the docket
-    groups: number; // officer groups
   };
 };
 

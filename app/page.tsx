@@ -228,9 +228,14 @@ export default function Home() {
         .jp-line-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
         .jp-line-title { font-weight: 700; }
         .jp-line-count, .jp-line-more { font-size: 14px; font-variant-numeric: tabular-nums; }
-        .jp-line-group { display: block; margin: 6px 0 4px; font-size: 13px; font-weight: 700; color: var(--orange); }
+        .jp-line-group { margin-bottom: 4px; font-size: 13px; font-weight: 700; color: var(--orange); }
         .jp-line-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
-        .jp-line-item:first-child .jp-line-group { margin-top: 0; }
+        .jp-line-panel { animation: lineIn 0.35s ease both; }
+        @keyframes lineIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+        .jp-line-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .jp-line-tab { min-height: 32px; padding: 0 12px; border: 1px solid var(--white); border-radius: 999px; background: var(--black); color: var(--white); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .jp-line-tab.on { background: var(--white); color: var(--black); }
+        .jp-line-tab:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
         .jp-line-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; margin: 0 -10px; border-radius: 10px; }
         .jp-line-row.first { background: var(--orange); }
         .jp-line-roll { width: 38px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -268,6 +273,8 @@ export default function Home() {
         .jp-contact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: var(--moondust); }
         .jp-contact-opt { min-height: 42px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--black); font: inherit; font-weight: 600; cursor: pointer; }
         .jp-contact-opt.on { background: var(--white); border-color: var(--black); }
+        .jp-officers { border: none; display: flex; flex-direction: column; gap: 2px; }
+        .jp-officers legend { margin-bottom: 6px; }
         .jp-ticket-check { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 15px; cursor: pointer; }
         .jp-ticket-check input { width: 18px; height: 18px; accent-color: var(--orange); }
         .jp-ticket-label { font-size: 14px; font-weight: 600; }
