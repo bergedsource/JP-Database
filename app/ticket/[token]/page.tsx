@@ -217,4 +217,12 @@ const CSS = `
   .tk-btn.primary { flex: 2; background: #D73F09; border-color: #D73F09; color: #FFFFFF; }
   .tk-btn:disabled { opacity: 0.6; cursor: wait; }
   .tk-btn:focus-visible, .tk-home:focus-visible { outline: 3px solid #D73F09; outline-offset: 2px; }
+  .tk-btn, .tk-home { -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform 0.12s ease, background-color 0.12s ease; }
+  .tk-btn:active { transform: scale(0.96); }
+  .tk-btn.primary:active { background: #FFFFFF; color: #000000; }
+  /* Phones: the buttons stay pinned at the bottom, in thumb reach. */
+  @media (max-width: 640px) {
+    .tk-wrap { padding-bottom: 110px; }
+    .tk-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #000000; border-top: 1px solid #FFFFFF; }
+  }
 `;

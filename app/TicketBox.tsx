@@ -141,6 +141,8 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
         failed.push(data.error ?? `Couldn't take a ticket for ${officer}.`);
       }
     }
+    // A short buzz confirms it (Android; iPhones ignore it).
+    if (made.length) navigator.vibrate?.(60);
     if (made.length === 1 && failed.length === 0) {
       window.location.assign(`/ticket/${made[0].token}`);
       return;
