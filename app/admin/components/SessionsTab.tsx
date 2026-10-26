@@ -110,9 +110,11 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   }
 
   async function closeSession(id: string) {
-    const undecided = new Set((sessionDetail?.fines ?? []).filter((f) => f.status === "pending").map((f) => f.member_id)).size;
-    const warning = undecided > 0
-      ? `\n\n${undecided} brother${undecided !== 1 ? "s" : ""} still ha${undecided !== 1 ? "ve" : "s"} an undecided fine and will be recorded as absent this week. Their fines stay pending for next session.`
+    // Missed fines are upheld at close, so name who's affected before it happens.
+    const pendingFines = (sessionDetail?.fines ?? []).filter((f) => f.status === "pending");
+    const names = [...new Set(pendingFines.map((f) => f.member_name))];
+    const warning = pendingFines.length > 0
+      ? `\n\nMissed: ${pendingFines.length} undecided fine${pendingFines.length !== 1 ? "s" : ""} will be UPHELD and ${names.length} brother${names.length !== 1 ? "s" : ""} marked absent this week:\n${names.join(", ")}\n\nDecide anyone you still need to before closing.`
       : "";
     if (!confirm(`Close this session?${warning}`)) return;
     setSessionError("");
@@ -121,7 +123,9 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
       await loadSessionDetail(id);
       await loadSessions();
     } else {
-      setSessionError("Failed to close session.");
+      const d = await res.json().catch(() => ({}));
+      setSessionError(d.error ?? "Failed to close session.");
+      await loadSessionDetail(id);
     }
   }
 
