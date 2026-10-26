@@ -106,7 +106,9 @@ function moveToGroupEnd(slots: DocketSlot[], requeued: Set<string>): DocketSlot[
 
 // Un-skip a brother (he's here now). If JP has already moved past his spot, he's
 // heard at the end of his officer group instead of jumping in front of whoever's up.
-export async function markHere(service: SupabaseClient, memberId: string): Promise<string | null> {
+// From a ticket link (ticketId set) it only touches that ticket plus skipped rows, so
+// one ticket can't pull his other officers' tickets out of the waiting line.
+export async function markHere(service: SupabaseClient, memberId: string, ticketId?: string): Promise<string | null> {
   const docket = await loadDocket(service);
   if (!docket.ticketDate) return "No JP session is open.";
   const now = docket.slots.findIndex((s) => !docket.skipped.has(s.memberId));
@@ -120,7 +122,9 @@ export async function markHere(service: SupabaseClient, memberId: string): Promi
     .select("id, requeued, status")
     .eq("session_date", docket.ticketDate)
     .eq("member_id", memberId);
-  const open = (rows ?? []).filter((r) => r.status !== "cancelled" && r.status !== "done");
+  const open = (rows ?? []).filter(
+    (r) => r.status !== "cancelled" && r.status !== "done" && (!ticketId || r.id === ticketId || r.status === "skipped"),
+  );
   const requeued = open.some((r) => r.requeued) || passed;
   const { error } = open.length
     ? await service.from("jp_tickets").update({ status: "here", requeued }).in("id", open.map((r) => r.id))

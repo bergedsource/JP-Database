@@ -93,6 +93,8 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
 function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?: string, o?: string) => void }) {
   const status = r.ticket?.status ?? null;
   const skipped = status === "skipped";
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const canCancel = !!r.ticket && (r.ticket.phone != null || r.ticket.snapchat != null) && status !== "done";
   return (
     <li className={`ses-queue-row${r.isNow ? " now" : ""}${skipped ? " skipped" : ""}`}>
       <span className="ses-queue-roll">{r.roll != null ? `#${r.roll}` : "–"}</span>
@@ -138,6 +140,17 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
             {status !== "here" && <button type="button" className="ses-choice" disabled={busy} onClick={() => act("here", r.memberId)}>Here</button>}
             <button type="button" className="ses-choice" disabled={busy} onClick={() => act("skip", r.memberId)}>Skip</button>
           </>
+        )}
+        {canCancel && (
+          <button
+            type="button"
+            className="ses-choice"
+            disabled={busy}
+            onClick={() => (confirmCancel ? act("cancel", r.memberId, r.officer) : setConfirmCancel(true))}
+            onBlur={() => setConfirmCancel(false)}
+          >
+            {confirmCancel ? "Tap again to cancel" : "Cancel ticket"}
+          </button>
         )}
       </span>
     </li>

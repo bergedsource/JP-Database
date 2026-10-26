@@ -103,6 +103,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 // POST /api/admin/sessions/[id]/queue — { action, member_id? }
 //   call-next: mark the next waiting ticket holder (from whoever's up now) as called
 //   call | skip | here | waiting: set one brother's state
+//   cancel: void one officer's ticket (e.g. someone took it in his name) so he can take a new one
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (await isRateLimited(adminLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -137,6 +138,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     error = await markHere(service, memberId);
   } else if (action === "skip") {
     error = await markSkipped(service, date, memberId);
+  } else if (action === "cancel") {
+    if (!officer) return NextResponse.json({ error: "Missing officer" }, { status: 400 });
+    const res = await service
+      .from("jp_tickets")
+      .update({ status: "cancelled", phone: null, snapchat: null, proxy_name: null, token_hash: null })
+      .eq("session_date", date)
+      .eq("member_id", memberId)
+      .eq("fining_officer", officer);
+    if (res.error) error = "Couldn't update. Try again.";
   } else if (action === "call" || action === "waiting") {
     // Calling is per ticket: one officer group's ticket for this brother.
     if (!officer) return NextResponse.json({ error: "Missing officer" }, { status: 400 });
