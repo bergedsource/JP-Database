@@ -1,16 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { clockAfter, formatTime, waitLabel, waitRange, type JpInfo, type JpWait } from "@/lib/jp-info";
 import TicketBox, { TicketWindowLine } from "./TicketBox";
 
-type Slide = "wait" | "session" | "common";
-const SLIDES: { id: Slide; label: string }[] = [
-  { id: "wait", label: "Your wait at JP" },
-  { id: "session", label: "Next JP session" },
-  { id: "common", label: "Most common fines" },
-];
-const ROTATE_MS = 8000;
+// The homepage's JP cards: next session + who's in line, your wait, and the most
+// common fines. All three show at once (no carousel) so nobody waits for a slide.
 
 // "House Clean (§11-140)" → { name: "House Clean", bylaw: "§11-140" }
 function splitFineType(t: string): { name: string; bylaw: string } {
@@ -23,54 +18,78 @@ function ordinal(n: number): string {
   return `${n}${s}`;
 }
 
-function daysUntil(date: string): string {
-  const today = new Date();
-  const start = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const [y, m, d] = date.split("-").map(Number);
-  const days = Math.round((Date.UTC(y, m - 1, d) - start) / 86400000);
-  if (days < 0) return "";
-  if (days === 0) return "Today.";
-  if (days === 1) return "Tomorrow.";
-  return `In ${days} days.`;
+function possessive(name: string): string {
+  return name.endsWith("s") ? `${name}’` : `${name}’s`;
 }
 
-export default function JpInfoCard({
+export function NextJpCard({ info }: { info: JpInfo | null }) {
+  const next = info?.nextSession ?? null;
+  const line = info?.line;
+  return (
+    <article className="card card-dark" aria-label="Next JP session">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/crest.webp" alt="" className="card-watermark" aria-hidden="true" />
+      <p className="card-kicker">{info?.sessionLive ? "JP is in session" : "Next JP"}</p>
+      {next || info?.sessionLive ? (
+        <>
+          {next && (
+            <>
+              <p className="jp-date">
+                {new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}
+                <br />
+                {new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                {next.time ? `, ${formatTime(next.time)}` : ""}
+              </p>
+              {next.place && <p className="jp-place">At {next.place}</p>}
+            </>
+          )}
+          {line && line.upNext.length > 0 && (
+            <div className="jp-line">
+              <div className="jp-line-head">
+                <p className="jp-line-title">Who&rsquo;s in line</p>
+                <p className="jp-line-count">{line.brothers} brother{line.brothers !== 1 ? "s" : ""}</p>
+              </div>
+              {/* A brother fined by several officers is heard once per group, so label each group. */}
+              <ol className="jp-line-list">
+                {line.upNext.map((b, i) => (
+                  <li key={`${b.officer}-${b.name}-${i}`} className="jp-line-item">
+                    {(i === 0 || line.upNext[i - 1].officer !== b.officer) && (
+                      <span className="jp-line-group">{possessive(b.officer)} fines{i === 0 ? " · first up" : ""}</span>
+                    )}
+                    <span className={`jp-line-row${i === 0 ? " first" : ""}`}>
+                      <span className="jp-line-roll">{b.roll != null ? `#${b.roll}` : "—"}</span>
+                      <span className="jp-line-name">{b.name}</span>
+                      {i === 0 && <span className="jp-line-tag">{info?.sessionLive ? "Now" : "Next up"}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              {line.brothers > line.upNext.length && (
+                <p className="jp-line-more">+ {line.brothers - line.upNext.length} more · lowest roll # goes first in each group</p>
+              )}
+            </div>
+          )}
+          {info?.tickets && info.tickets.state !== "none" && (
+            <div className="jp-window"><TicketWindowLine window={info.tickets} /></div>
+          )}
+        </>
+      ) : (
+        <p className="jp-place">Not scheduled yet. The JP Chair posts the date here once it&rsquo;s set.</p>
+      )}
+    </article>
+  );
+}
+
+export function WaitCard({
   info,
   member,
 }: {
   info: JpInfo | null;
   member: { id: string; name: string; roll?: number | null } | null;
 }) {
-  const [slide, setSlide] = useState(0);
-  // The panel sliding out, and which way the carousel is moving (next = leftward).
-  const [leaving, setLeaving] = useState<{ index: number; dir: "next" | "prev" } | null>(null);
-  const [hovering, setHovering] = useState(false);
   const [wait, setWait] = useState<JpWait | null>(null);
   const [waitFor, setWaitFor] = useState<string | null>(null);
 
-  // Latest slide for changeTo, so it stays stable for the effects below.
-  const slideRef = useRef(slide);
-  useEffect(() => { slideRef.current = slide; }, [slide]);
-
-  const changeTo = useCallback((i: number, dir: "next" | "prev") => {
-    const from = slideRef.current;
-    const target = (i + SLIDES.length) % SLIDES.length;
-    if (target === from) return;
-    setLeaving({ index: from, dir });
-    setSlide(target);
-  }, []);
-
-  // Always rotating (wait → next session → common fines) except while the cursor is
-  // over the card or something in it has keyboard focus. Keyed on `slide` so every
-  // change, automatic or clicked, gets a full 8 s before the next one.
-  useEffect(() => {
-    if (hovering) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setTimeout(() => changeTo(slide + 1, "next"), ROTATE_MS);
-    return () => clearTimeout(t);
-  }, [slide, hovering, changeTo]);
-
-  // Searching a name jumps to the wait card (it then rotates on as usual).
   useEffect(() => {
     if (!member) return;
     let cancelled = false;
@@ -80,173 +99,75 @@ export default function JpInfoCard({
         if (cancelled) return;
         setWait(d);
         setWaitFor(member.id);
-        changeTo(0, "prev");
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [member, changeTo]);
+  }, [member]);
 
-  // Arrows pass slide ± 1 (possibly -1 or 3), so comparing before wrapping gives the direction.
-  const go = (i: number) => changeTo(i, i > slide ? "next" : "prev");
-
-  const current = SLIDES[slide].id;
   const firstName = member?.name.split(" ")[0] ?? "";
   const waitReady = member && waitFor === member.id;
   const next = info?.nextSession ?? null;
 
-  // One panel's content; rendered for both the incoming and the outgoing panel during a slide.
-  const renderPanel = (id: Slide) => (
-    <>
-        {id === "wait" && (
-          <>
-            <h2 className="card-title">Your wait at JP</h2>
-            {!member ? (
-              <>
-                <p className="card-text">Search your name and we&rsquo;ll estimate when you&rsquo;ll be called. Brothers go in roll # order, lowest first, and the estimate counts the fines ahead of you.</p>
-                <p className="jp-big muted" aria-hidden="true">&mdash; min</p>
-              </>
-            ) : !waitReady ? (
-              <p className="card-text">Checking the docket&hellip;</p>
-            ) : !wait || !wait.onDocket ? (
-              <>
-                <p className="card-text">{firstName}, you have nothing on the docket for the next session. No need to wait around.</p>
-                <p className="jp-big plain">You&rsquo;re clear</p>
-              </>
-            ) : (
-              <>
-                <WaitDetail wait={wait} firstName={firstName} roll={member.roll ?? null} startTime={info?.sessionLive ? "" : next?.time || ""} live={!!info?.sessionLive} />
-                <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={wait.groups.map((g) => g.officer)} />
-              </>
-            )}
-          </>
-        )}
-
-        {id === "session" && (
-          <>
-            <h2 className="card-title">Next JP session</h2>
-            {next ? (
-              <>
-                <p className="card-text">Pending fines are heard here. Come if you want to speak to yours.</p>
-                <div className="jp-bottom">
-                  <span className="jp-weekday">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}</span>
-                  <p className="jp-big plain">{new Date(next.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                  <p className="jp-sub">
-                    {[next.time && formatTime(next.time), next.place && `at ${next.place}`].filter(Boolean).join(" ")}
-                    {next.time || next.place ? ". " : ""}
-                    {daysUntil(next.date)}
-                  </p>
-                  {info?.tickets && <TicketWindowLine window={info.tickets} />}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="card-text">Not scheduled yet. The JP Chair posts the date here once it&rsquo;s set.</p>
-                <p className="jp-big muted" aria-hidden="true">TBD</p>
-              </>
-            )}
-          </>
-        )}
-
-        {id === "common" && (
-          <>
-            <div>
-              <h2 className="card-title">Most common fines</h2>
-              {info && info.totalFines > 0 && (
-                <p className="card-sub">{new Date().getFullYear()} so far, out of {info.totalFines} fines</p>
-              )}
-            </div>
-            {!info ? (
-              <p className="card-text">Loading&hellip;</p>
-            ) : info.commonFines.length === 0 ? (
-              <p className="card-text">No fines on record yet this year.</p>
-            ) : (
-              <ol className="jp-common">
-                {info.commonFines.map((c, i) => {
-                  const { name, bylaw } = splitFineType(c.fineType);
-                  return (
-                    <li key={c.fineType}>
-                      <span className="jp-rank">{i + 1}</span>
-                      <span className="jp-common-text">
-                        <span className="jp-common-name">{name}</span>
-                        <span className="jp-common-meta">{bylaw ? `${bylaw}, ` : ""}{c.count} fine{c.count !== 1 ? "s" : ""}</span>
-                      </span>
-                      <span className="jp-common-amount">{c.amount}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-          </>
-        )}
-    </>
-  );
-
   return (
-    <article
-      className="card card-jp"
-      aria-roledescription="carousel"
-      aria-label="JP info"
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      onFocus={() => setHovering(true)}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setHovering(false); }}
-    >
-      <div className="jp-controls">
-        <div className="jp-dots" role="tablist" aria-label="Choose a card">
-          {SLIDES.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={i === slide}
-              aria-controls="jp-panel"
-              aria-label={s.label}
-              className={`jp-dot${i === slide ? " active" : ""}`}
-              onClick={() => go(i)}
-            />
-          ))}
-        </div>
-        <div className="jp-arrows">
-          <button type="button" className="jp-arrow" aria-label="Previous card" onClick={() => go(slide - 1)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-          </button>
-          <button type="button" className="jp-arrow" aria-label="Next card" onClick={() => go(slide + 1)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-          </button>
-        </div>
-      </div>
+    <article className="card" aria-label="Your wait at JP">
+      <p className="card-kicker-muted">Your wait at JP</p>
+      {!member ? (
+        <p className="card-text">Search your name and we&rsquo;ll show when you&rsquo;re likely to be heard.</p>
+      ) : !waitReady ? (
+        <p className="card-text">Checking the docket&hellip;</p>
+      ) : !wait || !wait.onDocket ? (
+        <>
+          <p className="big-figure">You&rsquo;re clear</p>
+          <p className="card-text">{firstName}, nothing of yours is on the docket. No need to come.</p>
+        </>
+      ) : (
+        <>
+          <WaitDetail wait={wait} roll={member.roll ?? null} startTime={info?.sessionLive ? "" : next?.time || ""} live={!!info?.sessionLive} />
+          <TicketBox window={info?.tickets ?? { state: "none" }} memberId={member.id} officers={wait.groups.map((g) => g.officer)} />
+        </>
+      )}
+    </article>
+  );
+}
 
-      <div className="jp-viewport">
-        {leaving && (
-          <div className={`jp-panel jp-out jp-${leaving.dir}`} aria-hidden="true" inert>
-            {renderPanel(SLIDES[leaving.index].id)}
-          </div>
-        )}
-        <div
-          key={slide}
-          id="jp-panel"
-          role="tabpanel"
-          aria-label={SLIDES[slide].label}
-          aria-live={hovering ? "polite" : "off"}
-          className={`jp-panel${leaving ? ` jp-in jp-${leaving.dir}` : ""}`}
-          onAnimationEnd={(e) => { if (e.target === e.currentTarget) setLeaving(null); }}
-        >
-          {renderPanel(current)}
-        </div>
+export function CommonFinesCard({ info }: { info: JpInfo | null }) {
+  return (
+    <article className="card" aria-label="Most common fines">
+      <div>
+        <p className="card-kicker-muted">Most common fines</p>
+        {info && info.totalFines > 0 && <p className="card-sub">{new Date().getFullYear()} so far, out of {info.totalFines} fines</p>}
       </div>
+      {!info ? (
+        <p className="card-text">Loading&hellip;</p>
+      ) : info.commonFines.length === 0 ? (
+        <p className="card-text">No fines on record yet this year.</p>
+      ) : (
+        <ol className="jp-common">
+          {info.commonFines.map((c) => {
+            const { name, bylaw } = splitFineType(c.fineType);
+            return (
+              <li key={c.fineType}>
+                <span className="jp-common-text">
+                  <span className="jp-common-name">{name}</span>
+                  <span className="jp-common-meta">{bylaw ? `${bylaw} · ` : ""}{c.amount}</span>
+                </span>
+                <span className="jp-common-count">{c.count}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </article>
   );
 }
 
 function WaitDetail({
   wait,
-  firstName,
   roll,
   startTime,
   live,
 }: {
   wait: Extract<JpWait, { onDocket: true }>;
-  firstName: string;
   roll: number | null;
   startTime: string;
   live: boolean;
@@ -259,37 +180,35 @@ function WaitDetail({
       return f.count > 1 ? `${f.count} ${name.toLowerCase()} fines` : `a ${name.toLowerCase()} fine`;
     })
     .join(" and ");
+  // A clock window ("7:35–7:45 pm") beats a duration: known waits feel shorter.
+  const window = !first && !live && startTime ? `${clockAfter(startTime, lo)}–${clockAfter(startTime, hi)}` : "";
 
   return (
     <>
-      <p className="card-text">
-        {firstName}, you&rsquo;re <strong>{ordinal(wait.place)}</strong> in line{roll != null ? ` (roll #${roll})` : ""}.{" "}
-        {wait.groups.map((g, i) => (
-          <span key={g.officer}>
-            {i === 0 ? "You’re in the " : " and the "}
-            <strong>{g.officer}</strong> group ({ordinal(g.place)} of {g.size}){i === wait.groups.length - 1 ? "." : ""}
-          </span>
-        ))}
-      </p>
-      <div className="jp-bottom">
-        <p className="jp-big">{first ? (live ? "You’re next" : "You’re first") : waitLabel(wait.minutesAhead)}</p>
-        <p className="jp-sub">
-          {first
-            ? startTime ? `Be there when JP starts at ${formatTime(startTime)}.` : "Be there when JP starts."
-            : `${wait.brothersAhead} brother${wait.brothersAhead !== 1 ? "s" : ""} with ${wait.finesAhead} fine${wait.finesAhead !== 1 ? "s" : ""} go before you.` +
-              (live ? " That’s from right now." : startTime ? ` Expect to be called between ${clockAfter(startTime, lo)} and ${clockAfter(startTime, hi)}.` : " That’s after JP starts.")}
-        </p>
-        <p className="jp-sub">Your own hearing: about {Math.max(1, Math.round(wait.ownMinutes))} min for {own}.</p>
+      <div>
+        <p className="card-sub">{first ? "You’re up" : window ? "You’ll likely be heard" : "Your wait"}</p>
+        <p className="big-figure">{first ? (live ? "You’re next" : "You’re first") : window || waitLabel(wait.minutesAhead)}</p>
       </div>
       <div className="jp-queue" aria-hidden="true">
         {wait.queue.map((m, i) => (
-          <span
-            key={i}
-            style={{ flexGrow: m }}
-            className={i === wait.queueIndex ? "you" : i < wait.queueIndex ? "ahead" : ""}
-          />
+          <span key={i} style={{ flexGrow: m }} className={i === wait.queueIndex ? "you" : i < wait.queueIndex ? "ahead" : ""} />
         ))}
       </div>
+      <p className="card-text">
+        You&rsquo;re <strong>{ordinal(wait.place)}</strong> in line{roll != null ? ` (roll #${roll})` : ""}
+        {first
+          ? startTime ? `. Be there when JP starts at ${formatTime(startTime)}.` : ". Be there when JP starts."
+          : `, after ${wait.brothersAhead} brother${wait.brothersAhead !== 1 ? "s" : ""} with ${wait.finesAhead} fine${wait.finesAhead !== 1 ? "s" : ""}.`}{" "}
+        Your hearing takes about {Math.max(1, Math.round(wait.ownMinutes))} min for {own}.
+      </p>
+      <p className="card-text">
+        <strong>Why this spot:</strong>{" "}
+        {wait.groups.map((g, i) => (
+          <span key={g.officer}>{i > 0 ? " and " : "you’re in "}{possessive(g.officer)} group ({ordinal(g.place)} of {g.size})</span>
+        ))}
+        . Officers who fined the most brothers go first, and inside each group the lowest roll # goes first.
+      </p>
+      <p className="card-note">No need to wait in the hall. Take a ticket and we&rsquo;ll call you when you&rsquo;re next.</p>
     </>
   );
 }

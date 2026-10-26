@@ -32,22 +32,20 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-        :root { --bg:#0D1117; --surface:#161B22; --border:#30363D; --gold:#CFB53B; --gold-dim:#8A7520; --text:#E6EDF3; --text-muted:#8B949E; --text-dim:#484F58; --red:#F87171; }
-        .login-page { min-height:100vh; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; font-family:'IBM Plex Sans',sans-serif; }
-        .login-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:40px; width:100%; max-width:360px; }
+      <style>{`        :root { --bg:#FFFFFF; --surface:#FFFFFF; --border:#000000; --gold:#D73F09; --gold-dim:#D73F09; --text:#000000; --text-muted:#000000; --text-dim:#000000; --red:#D73F09; }
+        .login-page { min-height:100vh; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; font-family:var(--font-sans), system-ui, sans-serif; }
+        .login-card { background:var(--surface); border: 1px solid #C6DAE7; border-top: 6px solid #D73F09; border-radius:12px; padding:40px; width:100%; max-width:360px; }
         .login-gold-bar { width:3px; height:30px; background:var(--gold); border-radius:2px; margin-bottom:20px; }
-        .login-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--text); line-height:1.1; margin-bottom:4px; }
-        .login-subtitle { font-size:10px; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; font-family:'IBM Plex Mono',monospace; margin-bottom:32px; }
-        .login-label { display:block; font-size:10px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
-        .login-input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:10px 12px; font-size:13px; font-family:'IBM Plex Sans',sans-serif; color:var(--text); outline:none; transition:border-color 0.15s,box-shadow 0.15s; margin-bottom:16px; }
-        .login-input:focus { border-color:var(--gold-dim); box-shadow:0 0 0 3px rgba(207,181,59,0.08); }
-        .login-error { font-size:12px; color:var(--red); margin-bottom:12px; font-family:'IBM Plex Mono',monospace; }
-        .login-btn { width:100%; background:var(--gold); color:#0D1117; border:none; padding:10px; border-radius:7px; font-size:13px; font-weight:600; font-family:'IBM Plex Sans',sans-serif; cursor:pointer; transition:opacity 0.15s; margin-top:4px; }
+        .login-title { font-family:var(--font-sans), system-ui, sans-serif; font-size:22px; font-weight:700; color:var(--text); line-height:1.1; margin-bottom:4px; }
+        .login-subtitle { font-size:10px; color:var(--text-dim); font-family:var(--font-sans), system-ui, sans-serif; margin-bottom:32px; }
+        .login-label { display:block; font-size:10px; font-weight:500; color:var(--text-muted); margin-bottom:6px; font-family:var(--font-sans), system-ui, sans-serif; }
+        .login-input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:10px 12px; font-size:13px; font-family:var(--font-sans), system-ui, sans-serif; color:var(--text); outline:none; transition:border-color 0.15s,box-shadow 0.15s; margin-bottom:16px; }
+        .login-input:focus { border-color:var(--gold-dim); box-shadow:0 0 0 3px #C6DAE7; }
+        .login-error { font-size:12px; color:var(--red); margin-bottom:12px; font-family:var(--font-sans), system-ui, sans-serif; }
+        .login-btn { width:100%; background:var(--gold); color: #FFFFFF; border:none; padding:10px; border-radius:7px; font-size:13px; font-weight:600; font-family:var(--font-sans), system-ui, sans-serif; cursor:pointer; transition:opacity 0.15s; margin-top:4px; }
         .login-btn:hover { opacity:0.85; }
         .login-btn:disabled { opacity:0.35; cursor:not-allowed; }
-        .reset-success { font-size:13px; color:#34D399; font-family:'IBM Plex Mono',monospace; text-align:center; line-height:1.6; }
+        .reset-success { font-size:13px; color: #000000; font-family:var(--font-sans), system-ui, sans-serif; text-align:center; line-height:1.6; }
       `}</style>
 
       <div className="login-page">

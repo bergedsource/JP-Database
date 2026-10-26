@@ -329,9 +329,9 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-      <div style={{ padding: "12px 16px", background: "rgba(207,181,59,0.07)", border: "1px solid rgba(207,181,59,0.2)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "12px 16px", background: "#C6DAE7", border: "1px solid #C6DAE7", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 13, color: "var(--text-muted)" }}>New to this site? Read the handoff guide before getting started.</span>
-        <a href="https://docs.google.com/document/d/1dn5JJvAwGOMYLNr0q-QoH2RwRXcIZPsRHoVo6Cx7azY/edit?tab=t.0" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#CFB53B", whiteSpace: "nowrap", marginLeft: 16, textDecoration: "none" }}>
+        <a href="https://docs.google.com/document/d/1dn5JJvAwGOMYLNr0q-QoH2RwRXcIZPsRHoVo6Cx7azY/edit?tab=t.0" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: "#D73F09", whiteSpace: "nowrap", marginLeft: 16, textDecoration: "none" }}>
           Transition Guide →
         </a>
       </div>
@@ -370,7 +370,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                     {u.role === "admin" && userRole !== "root" && (
                       <button
                         onClick={() => transferOwnership(u.user_id, u.email)}
-                        style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif" }}
+                        style={{ background: "#C6DAE7", border: "1px solid #C6DAE7", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif" }}
                       >
                         Transfer Ownership
                       </button>
@@ -558,7 +558,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                       <button
                         type="button"
                         onClick={() => { setExportSheetId(h.spreadsheetId); setExportResult(null); }}
-                        style={{ fontSize: 11, background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
+                        style={{ fontSize: 11, background: "#C6DAE7", border: "1px solid #C6DAE7", color: "var(--gold)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
                       >
                         Use
                       </button>
@@ -590,7 +590,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
           )}
           {exportResult && (
             <div style={{ marginTop: 10 }}>
-              <p style={{ fontSize: 12, fontFamily: "var(--font-sans), sans-serif", color: exportResult.ok ? "#34D399" : "var(--red)" }}>
+              <p style={{ fontSize: 12, fontFamily: "var(--font-sans), sans-serif", color: exportResult.ok ? "#000000" : "var(--red)" }}>
                 {exportResult.msg}
               </p>
               {exportResult.url && (
@@ -668,7 +668,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               onClick={() => runRosterSync(true)}
               disabled={rosterSyncRunning}
               className="adm-btn"
-              style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)" }}
+              style={{ background: "#C6DAE7", border: "1px solid #C6DAE7", color: "var(--gold)" }}
             >
               {rosterSyncRunning ? "Working…" : "Dry-run preview"}
             </button>
@@ -686,14 +686,14 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
           </div>
 
           {rosterSyncError && (
-            <div style={{ marginTop: 16, padding: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, color: "#F87171", fontSize: 13 }}>
+            <div style={{ marginTop: 16, padding: 12, background: "#FFFFFF", border: "1px solid #D73F09", borderRadius: 6, color: "#D73F09", fontSize: 13 }}>
               <strong>Sync failed:</strong> {rosterSyncError}
             </div>
           )}
 
           {rosterSyncResult && (
-            <div style={{ marginTop: 16, padding: 12, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 6, fontSize: 13, lineHeight: 1.7 }}>
-              <div style={{ fontWeight: 600, color: "#34D399", marginBottom: 8 }}>
+            <div style={{ marginTop: 16, padding: 12, background: "#C4D6A4", border: "1px solid #C4D6A4", borderRadius: 6, fontSize: 13, lineHeight: 1.7 }}>
+              <div style={{ fontWeight: 600, color: "#000000", marginBottom: 8 }}>
                 {rosterSyncResult.dryRun ? "Dry-run preview" : "Sync complete"}
               </div>
               <div>Rows on sheet: {rosterSyncResult.rowsOnSheet}</div>
@@ -711,7 +711,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               </div>
               {rosterSyncResult.issues.length > 0 && (
                 <div style={{ marginTop: 10 }}>
-                  <strong style={{ color: "#FCD34D" }}>Issues ({rosterSyncResult.issues.length}):</strong>
+                  <strong style={{ color: "#000000" }}>Issues ({rosterSyncResult.issues.length}):</strong>
                   <ul style={{ margin: "4px 0 0 18px", padding: 0, color: "var(--text-muted)" }}>
                     {rosterSyncResult.issues.slice(0, 20).map((iss, i) => (
                       <li key={i}>{iss.roll ? `#${iss.roll}: ` : ""}{iss.reason}</li>
@@ -769,7 +769,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                     fontSize: 11,
                     padding: "4px 10px",
                     background: leaderboardView === "all" ? "var(--gold)" : "transparent",
-                    color: leaderboardView === "all" ? "#1a1a1a" : "var(--text-dim)",
+                    color: leaderboardView === "all" ? "#FFFFFF" : "var(--text-dim)",
                     border: "none",
                     borderRadius: 0,
                   }}
@@ -784,7 +784,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                     fontSize: 11,
                     padding: "4px 10px",
                     background: leaderboardView === "best" ? "var(--gold)" : "transparent",
-                    color: leaderboardView === "best" ? "#1a1a1a" : "var(--text-dim)",
+                    color: leaderboardView === "best" ? "#FFFFFF" : "var(--text-dim)",
                     border: "none",
                     borderRadius: 0,
                   }}
@@ -812,7 +812,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                       const m = Math.floor(e.time_seconds / 60);
                       const s = e.time_seconds % 60;
                       return (
-                        <tr key={e.id} style={e.flagged_suspect ? { background: "rgba(239, 68, 68, 0.08)" } : undefined}>
+                        <tr key={e.id} style={e.flagged_suspect ? { background: "#FFFFFF" } : undefined}>
                           <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
                           <td>
                             {e.username}
@@ -820,7 +820,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                               <span
                                 title="Failed a trap-trivia question — suspected cheater. This run is hidden from the public leaderboard."
                                 aria-label="suspected cheater"
-                                style={{ marginLeft: 6, color: "#EF4444", fontSize: 13 }}
+                                style={{ marginLeft: 6, color: "#D73F09", fontSize: 13 }}
                               >
                                 {"\u{1F6A9}"}
                               </span>
@@ -834,7 +834,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                                 <button
                                   onClick={() => approveLeaderboardEntry(e.id, e.username)}
                                   disabled={approvingId === e.id}
-                                  style={{ fontSize: 11, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", color: "#34D399", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
+                                  style={{ fontSize: 11, background: "#C4D6A4", border: "1px solid #C4D6A4", color: "#000000", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
                                 >
                                   {approvingId === e.id ? "Approving…" : "Approve"}
                                 </button>
@@ -858,7 +858,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               onClick={clearLeaderboard}
               disabled={leaderboardClearing || leaderboardEntries.length === 0}
               className="adm-btn"
-              style={{ background: "#7F1D1D", color: "#FEE2E2" }}
+              style={{ background: "#D73F09", color: "#FFFFFF" }}
             >
               {leaderboardClearing ? "Clearing…" : "Clear All Entries"}
             </button>
@@ -874,7 +874,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
             onClick={toggleTrapVisible}
             aria-expanded={trapVisible}
             aria-controls="trap-questions-body"
-            style={{ background: "rgba(207,181,59,0.1)", border: "1px solid rgba(207,181,59,0.3)", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap" }}
+            style={{ background: "#C6DAE7", border: "1px solid #C6DAE7", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap" }}
           >
             {trapVisible ? "Hide ▲" : "Show ▼"}
           </button>
@@ -931,7 +931,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
               ))}
             </div>
             {triviaError && (
-              <p role="alert" style={{ color: "#EF4444", fontSize: 12, margin: 0 }}>{triviaError}</p>
+              <p role="alert" style={{ color: "#D73F09", fontSize: 12, margin: 0 }}>{triviaError}</p>
             )}
             <div>
               <button type="submit" className="adm-btn" disabled={triviaSubmitting}>

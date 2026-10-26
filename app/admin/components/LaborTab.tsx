@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Fine, Member } from "@/lib/types";
 
-const LABOR_COLOR = "#A78BFA";
+const LABOR_COLOR = "#000000";
 
 function getTermOptions(): string[] {
   const year = new Date().getFullYear();

@@ -5,8 +5,8 @@ import { type CommonFine, type JpInfo } from "@/lib/jp-info";
 import { loadDocket } from "@/lib/jp-docket";
 
 // GET /api/jp-info — public data for the homepage JP card: the next session the
-// chair has posted and the five most common fine types on record. Aggregates only;
-// no member is identified.
+// chair has posted, the five most common fine types on record, and the front of
+// the hearing line (name + roll # in order, like the public member search shows).
 export async function GET(req: Request) {
   if (await isRateLimited(publicLimiter, getIP(req))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -19,11 +19,19 @@ export async function GET(req: Request) {
   let nextSession: JpInfo["nextSession"] = null;
   let tickets: JpInfo["tickets"] = { state: "none" };
   let sessionLive = false;
+  let line: JpInfo["line"] = { upNext: [], brothers: 0, groups: 0 };
   try {
     const docket = await loadDocket(service);
     nextSession = docket.nextSession;
     tickets = docket.tickets;
     sessionLive = !!docket.liveSession;
+    // Names and roll #s are already public (public_members); only the order is new.
+    const waiting = docket.slots.filter((s) => !docket.skipped.has(s.memberId));
+    line = {
+      upNext: waiting.slice(0, 5).map((s) => ({ roll: s.roll, name: docket.members.get(s.memberId)?.name ?? "Unknown", officer: s.officer })),
+      brothers: new Set(docket.slots.map((s) => s.memberId)).size,
+      groups: new Set(docket.slots.map((s) => s.officer)).size,
+    };
   } catch {}
 
   // The fines table only holds the current year (it's wiped every Jan 4), so this
@@ -53,7 +61,7 @@ export async function GET(req: Request) {
     .slice(0, 5)
     .map(([fineType, amounts]) => ({ fineType, count: amounts.length, amount: typicalAmount(amounts) }));
 
-  const body: JpInfo = { nextSession, commonFines, totalFines: rows.length, tickets, sessionLive };
+  const body: JpInfo = { nextSession, commonFines, totalFines: rows.length, tickets, sessionLive, line };
   return NextResponse.json(body, {
     headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
   });

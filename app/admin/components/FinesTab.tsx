@@ -10,13 +10,13 @@ import type { Fine, FineStatus, FineType, Member } from "@/lib/types";
 import { FINE_TYPES, FINE_DEFAULT_AMOUNTS, FINE_DESCRIPTIONS } from "@/lib/fine-types";
 
 const STATUS_COLORS: Record<FineStatus, { bg: string; color: string; border: string }> = {
-  pending:    { bg: "rgba(251,191,36,0.1)",   color: "#FCD34D", border: "rgba(251,191,36,0.3)" },
-  upheld:     { bg: "rgba(239,68,68,0.1)",    color: "#F87171", border: "rgba(239,68,68,0.3)" },
-  overturned: { bg: "rgba(251,146,60,0.1)",   color: "#FB923C", border: "rgba(251,146,60,0.3)" },
-  dismissed:  { bg: "rgba(52,211,153,0.1)",   color: "#34D399", border: "rgba(52,211,153,0.3)" },
-  paid:       { bg: "rgba(96,165,250,0.1)",   color: "#60A5FA", border: "rgba(96,165,250,0.3)" },
-  labor:      { bg: "rgba(167,139,250,0.1)",  color: "#A78BFA", border: "rgba(167,139,250,0.3)" },
-  added_to_dues: { bg: "rgba(45,212,191,0.1)", color: "#5EEAD4", border: "rgba(45,212,191,0.3)" },
+  pending:    { bg: "#FDD26E",   color: "#000000", border: "#FDD26E" },
+  upheld:     { bg: "#FFFFFF",    color: "#D73F09", border: "#D73F09" },
+  overturned: { bg: "#C4D6A4",   color: "#000000", border: "#C4D6A4" },
+  dismissed:  { bg: "#C4D6A4",   color: "#000000", border: "#C4D6A4" },
+  paid:       { bg: "#C6DAE7",   color: "#000000", border: "#C6DAE7" },
+  labor:      { bg: "#B8DDE1",  color: "#000000", border: "#B8DDE1" },
+  added_to_dues: { bg: "#FFFFFF", color: "#000000", border: "#000000" },
 };
 
 function getTermOptions(): string[] {
@@ -181,7 +181,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
   const olderFines = filteredFines.filter((f) => new Date(f.created_at) < cutoff);
 
   const renderFineCard = (fine: Fine) => {
-    const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#A39C8B", border: "#332E24" };
+    const sc = STATUS_COLORS[fine.status] ?? { bg: "transparent", color: "#000000", border: "#C6DAE7" };
     const repeatCount = fines.filter((f) => f.member_id === fine.member_id && f.fine_type === fine.fine_type).length;
     const overdue = isOverdue(fine, now);
     return (
@@ -193,7 +193,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
             <span style={{ color: "var(--text-dim)" }}>·</span>
             <span className="adm-fine-type">{fine.fine_type}</span>
             {repeatCount > 1 && (
-              <span style={{ fontSize: 10, fontFamily: "var(--font-sans), sans-serif", color: "var(--gold-dim)", background: "rgba(207,181,59,0.08)", border: "1px solid rgba(207,181,59,0.2)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: 10, fontFamily: "var(--font-sans), sans-serif", color: "var(--gold-dim)", background: "#C6DAE7", border: "1px solid #C6DAE7", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.5px" }}>
                 ×{repeatCount} offenses
               </span>
             )}
@@ -221,7 +221,7 @@ export default function FinesTab({ members, fines, isPrivileged, currentUserId, 
                 {(isPrivileged || fine.created_by_user_id === currentUserId) && (
                   <button
                     onClick={() => { setEditingAmountId(fine.id); setEditingAmountValue(fine.amount?.toString() ?? ""); }}
-                    style={{ background: "rgba(207,181,59,0.12)", border: "1px solid rgba(207,181,59,0.35)", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "var(--font-sans), sans-serif" }}
+                    style={{ background: "#C6DAE7", border: "1px solid #C6DAE7", color: "var(--gold)", cursor: "pointer", fontSize: 11, padding: "1px 7px", marginLeft: 6, borderRadius: 4, fontFamily: "var(--font-sans), sans-serif" }}
                     title="Edit amount"
                   >✎ edit</button>
                 )}
