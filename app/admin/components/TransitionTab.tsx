@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Fine, LeaderboardEntry } from "@/lib/types";
+import { EyeIcon } from "../PasswordInput";
 
 type Props = {
   fines: Fine[];
@@ -406,15 +407,17 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
                   onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
                   placeholder="Set a password"
                   className="adm-input"
-                  style={{ paddingRight: 36 }}
+                  style={{ paddingRight: 40 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewUserPassword((v) => !v)}
-                  style={{ position: "absolute", right: 8, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 13, padding: 0, lineHeight: 1 }}
-                  tabIndex={-1}
+                  aria-label={showNewUserPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showNewUserPassword}
+                  title={showNewUserPassword ? "Hide password" : "Show password"}
+                  style={{ position: "absolute", right: 0, top: 0, height: "100%", width: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
                 >
-                  {showNewUserPassword ? "Hide" : "Show"}
+                  <EyeIcon shown={showNewUserPassword} />
                 </button>
               </div>
             </div>
