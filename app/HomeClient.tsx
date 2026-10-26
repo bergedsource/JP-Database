@@ -275,7 +275,7 @@ export default function HomeClient({
         .jp-line-tab:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
         .jp-line-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; margin: 0 -10px; border-radius: 10px; }
         .jp-line-row.first { background: var(--orange); }
-        .jp-line-roll { width: 38px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .jp-line-roll { flex: none; min-width: 3.4em; font-weight: 800; font-variant-numeric: tabular-nums; }
         .jp-line-name { flex: 1; min-width: 0; }
         .jp-line-tag { font-size: 14px; font-weight: 600; }
         .jp-line-more { margin-top: 6px; }
