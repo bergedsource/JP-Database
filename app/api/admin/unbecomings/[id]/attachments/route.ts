@@ -1,6 +1,7 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { UUID_RE, sanitizeFilename } from "@/lib/unbecomings-validation";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 
@@ -10,6 +11,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   const denied = await requireOwner();
   if (denied) return denied;
   const current = await getCurrentRole();
@@ -17,6 +21,11 @@ export async function POST(
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: "Invalid unbecoming id" }, { status: 400 });
+
+  // Refuse oversized uploads before reading the whole body (+1 MB for form overhead).
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_FILE_BYTES + 1_048_576) {
+    return NextResponse.json({ error: "File exceeds 50 MB limit" }, { status: 400 });
+  }
 
   const formData = await req.formData();
   const file = formData.get("file");

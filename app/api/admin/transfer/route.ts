@@ -1,9 +1,13 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/transfer — atomically promote targetUserId to owner, demote self to admin
 export async function POST(req: NextRequest) {
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   const denied = await requireOwner();
   if (denied) return denied;
 
@@ -25,13 +29,28 @@ export async function POST(req: NextRequest) {
 
   const service = createServiceClient();
 
+  // Only an existing admin can receive ownership; otherwise the demote below
+  // could leave the chapter with no owner.
+  const { data: target } = await service
+    .from("admin_roles")
+    .select("role, email")
+    .eq("user_id", targetUserId)
+    .maybeSingle();
+  if (!target || target.role !== "admin") {
+    return NextResponse.json({ error: "Pick an existing admin to transfer to" }, { status: 400 });
+  }
+
   // Promote target to owner
-  const { error: promoteError } = await service
+  const { data: promoted, error: promoteError } = await service
     .from("admin_roles")
     .update({ role: "owner" })
-    .eq("user_id", targetUserId);
+    .eq("user_id", targetUserId)
+    .eq("role", "admin")
+    .select("user_id");
 
-  if (promoteError) return NextResponse.json({ error: promoteError.message }, { status: 500 });
+  if (promoteError || !promoted?.length) {
+    return NextResponse.json({ error: "Couldn't transfer ownership. Try again." }, { status: 500 });
+  }
 
   // Demote current user to admin
   const { error: demoteError } = await service
@@ -42,13 +61,13 @@ export async function POST(req: NextRequest) {
   if (demoteError) {
     // Rollback: demote target back to admin
     await service.from("admin_roles").update({ role: "admin" }).eq("user_id", targetUserId);
-    return NextResponse.json({ error: demoteError.message }, { status: 500 });
+    return NextResponse.json({ error: "Couldn't transfer ownership. Try again." }, { status: 500 });
   }
 
   await service.from("audit_logs").insert({
     admin_email: current.email,
     action: "Ownership Transfer",
-    details: `Ownership transferred from ${current.email} to user ID ${targetUserId}`,
+    details: `Ownership transferred from ${current.email} to ${target.email ?? `user ID ${targetUserId}`}`,
   });
 
   return NextResponse.json({ success: true });

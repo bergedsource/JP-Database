@@ -54,6 +54,16 @@ export async function PUT(req: NextRequest) {
       if (!parsed) return NextResponse.json({ error: "Next session needs a valid date" }, { status: 400 });
       stored = JSON.stringify(parsed);
     }
+  } else if (key === "venmo_url" && value !== "") {
+    // Shown as the homepage Pay button, so only allow a Venmo https link.
+    let host = "";
+    try {
+      const u = new URL(String(value));
+      if (u.protocol === "https:") host = u.hostname;
+    } catch {}
+    if (host !== "venmo.com" && host !== "account.venmo.com") {
+      return NextResponse.json({ error: "Venmo link must start with https://venmo.com/" }, { status: 400 });
+    }
   } else if (key === HEARING_MINUTES_KEY) {
     // Keep what past sessions taught us; the admin form only edits the tier minutes.
     const { data: current } = await createServiceClient().from("settings").select("value").eq("key", HEARING_MINUTES_KEY).maybeSingle();
@@ -69,12 +79,12 @@ export async function PUT(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  if (key === NEXT_SESSION_KEY || key === HEARING_MINUTES_KEY) {
+  if (key === NEXT_SESSION_KEY || key === HEARING_MINUTES_KEY || key === "venmo_url" || key === "venmo_handle") {
     const current = await getCurrentRole();
     if (current) {
       await service.from(current.role === "root" ? "system_events" : "audit_logs").insert({
         admin_email: current.email,
-        action: key === NEXT_SESSION_KEY ? "Updated Next JP Session" : "Updated Hearing Time Estimates",
+        action: key === NEXT_SESSION_KEY ? "Updated Next JP Session" : key === HEARING_MINUTES_KEY ? "Updated Hearing Time Estimates" : "Updated Payment Link",
         details: stored || "cleared",
       });
     }
