@@ -1,7 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter } from "@/lib/rate-limit";
-import { type CommonFine, type JpInfo } from "@/lib/jp-info";
+import { todayPacific, type CommonFine, type JpInfo } from "@/lib/jp-info";
 import { loadDocket } from "@/lib/jp-docket";
 
 // GET /api/jp-info — public data for the homepage JP card: the next session the
@@ -41,11 +41,11 @@ export async function GET(req: Request) {
 
   // The fines table only holds the current year (it's wiped every Jan 4), so this
   // counts everything on record. Paged because PostgREST caps a response at 1000 rows.
-  const rows: { fine_type: string; amount: number | null }[] = [];
+  const rows: { fine_type: string; amount: number | null; fining_officer: string | null; date_issued: string }[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await service
       .from("public_member_fines")
-      .select("fine_type, amount")
+      .select("fine_type, amount, fining_officer, date_issued")
       .range(from, from + 999);
     if (error) return NextResponse.json({ error: "Failed to load fines" }, { status: 500 });
     rows.push(...(data ?? []));
@@ -66,7 +66,14 @@ export async function GET(req: Request) {
     .slice(0, 5)
     .map(([fineType, amounts]) => ({ fineType, count: amounts.length, amount: typicalAmount(amounts) }));
 
-  const body: JpInfo = { nextSession, commonFines, totalFines: rows.length, tickets, sessionLive, line };
+  // Officers who fined anyone in the last 30 days (Pacific dates).
+  const [y, m, d] = todayPacific().split("-").map(Number);
+  const cutoff = new Date(Date.UTC(y, m - 1, d - 30)).toISOString().slice(0, 10);
+  const recentOfficers = [...new Set(
+    rows.filter((r) => r.date_issued >= cutoff && r.fining_officer?.trim()).map((r) => r.fining_officer!.trim())
+  )].sort((a, b) => a.localeCompare(b));
+
+  const body: JpInfo = { nextSession, commonFines, totalFines: rows.length, tickets, sessionLive, line, recentOfficers };
   return NextResponse.json(body, {
     headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
   });
