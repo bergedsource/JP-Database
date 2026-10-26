@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const service = createServiceClient();
   const { data: ticket } = await service
     .from("jp_tickets")
-    .select("member_id, status")
+    .select("id, member_id, status")
     .eq("token_hash", hashTicketToken(token))
     .maybeSingle();
   if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: "This ticket is closed." }, { status: 409 });
   }
 
-  const err = await markHere(service, ticket.member_id);
+  const err = await markHere(service, ticket.member_id, ticket.id);
   if (err) return NextResponse.json({ error: err }, { status: 500 });
   return NextResponse.json({ success: true });
 }
