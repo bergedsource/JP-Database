@@ -37,6 +37,8 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
   const { token } = use(params);
   const [t, setT] = useState<TicketView | null>(null);
   const [missing, setMissing] = useState(false);
+  // Set when a load fails (network, 429, 500): shown instead of an endless skeleton.
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [loadedAt, setLoadedAt] = useState(0);
@@ -45,12 +47,26 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
   // Shown once right after taking the ticket (?new=1): the "you're in" moment.
   const [celebrate, setCelebrate] = useState(false);
   const alerted = useRef(false);
+  const loadedRef = useRef(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/jp-ticket/${token}`, { cache: "no-store" });
-    if (res.status === 404) { setMissing(true); return; }
-    if (!res.ok) return;
-    const data: TicketView = await res.json();
+    let res: Response;
+    let data: TicketView;
+    try {
+      res = await fetch(`/api/jp-ticket/${token}`, { cache: "no-store" });
+      if (res.status === 404) { setMissing(true); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setLoadError(`${d.error ?? "Couldn't load your ticket"} (${res.status}). Retrying…`);
+        return;
+      }
+      data = await res.json();
+    } catch {
+      setLoadError("Couldn't reach the server. Retrying…");
+      return;
+    }
+    setLoadError("");
+    loadedRef.current = true;
     setT(data);
     setLoadedAt(Date.now());
     const upNext = data.status === "called" || (data.sessionLive && data.wait.onDocket && data.wait.place <= 2);
@@ -64,10 +80,12 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
   useEffect(() => {
     const first = setTimeout(load, 0);
     const poll = setInterval(load, POLL_MS);
+    // Until the first load lands, retry every 3 s instead of waiting a full poll.
+    const retry = setInterval(() => { if (!loadedRef.current) load(); }, 3000);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     const onVisible = () => { if (document.visibilityState === "visible") load(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => { clearTimeout(first); clearInterval(poll); clearInterval(tick); document.removeEventListener("visibilitychange", onVisible); };
+    return () => { clearTimeout(first); clearInterval(poll); clearInterval(retry); clearInterval(tick); document.removeEventListener("visibilitychange", onVisible); };
   }, [load]);
 
   useEffect(() => {
@@ -147,6 +165,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
             <span className="tk-sk" style={{ width: "40%" }} />
             <span className="tk-sk tk-sk-big" />
             <span className="tk-sk" style={{ width: "70%" }} />
+            {loadError && <p className="tk-error" role="alert">{loadError}</p>}
           </section>
         ) : t.status === "done" ? (
           <section className="tk-card tk-done">
