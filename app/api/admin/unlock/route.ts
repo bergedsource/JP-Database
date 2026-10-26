@@ -1,5 +1,6 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 // Verifies the caller knows their own Supabase login password.
@@ -12,6 +13,9 @@ import { NextRequest, NextResponse } from "next/server";
 // returned tokens — the caller's real session is untouched.
 
 export async function POST(req: NextRequest) {
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   const denied = await requireOwner();
   if (denied) return denied;
 

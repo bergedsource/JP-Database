@@ -1,5 +1,6 @@
 import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/admin/users — list all admin users with roles
@@ -29,8 +30,13 @@ export async function GET() {
 
 // POST /api/admin/users — create a new admin user with email + password + role
 export async function POST(req: NextRequest) {
+  if (await isRateLimited(adminLimiter, getIP(req))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   const denied = await requireOwner();
   if (denied) return denied;
+  const current = await getCurrentRole();
+  if (!current) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { email, password, role } = await req.json();
 
@@ -75,6 +81,12 @@ export async function POST(req: NextRequest) {
     await service.auth.admin.deleteUser(created.user.id);
     return NextResponse.json({ error: roleError.message }, { status: 500 });
   }
+
+  await service.from(current.role === "root" ? "system_events" : "audit_logs").insert({
+    admin_email: current.email,
+    action: "Added Admin User",
+    details: `${trimmedEmail} (${role})`,
+  });
 
   return NextResponse.json({ success: true, userId: created.user.id });
 }

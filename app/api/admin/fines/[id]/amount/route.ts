@@ -32,12 +32,16 @@ export async function PUT(
   if (current.role !== "owner" && current.role !== "root") {
     const { data: fine } = await service
       .from("fines")
-      .select("created_by_user_id")
+      .select("created_by_user_id, status")
       .eq("id", id)
       .single();
 
     if (!fine || fine.created_by_user_id !== current.userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    // Admins may only adjust their own fines while they're still pending.
+    if (fine.status !== "pending") {
+      return NextResponse.json({ error: "Only pending fines can be changed" }, { status: 403 });
     }
   }
 

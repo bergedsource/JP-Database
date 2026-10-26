@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
       reason: "Outstanding Fines (§10-270)",
       start_date: today,
       source: "manual",
-      notes: notes || null,
+      // Fine notes are owner-only; soc pro notes are visible to every admin, so don't copy them.
+      notes: null,
     });
     await service.from("audit_logs").insert({
       admin_email: current.email,
