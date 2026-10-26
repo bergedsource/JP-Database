@@ -99,7 +99,10 @@ export async function GET(
   }
 
   // Flatten the joined data
-  const fineRows = (sessionFines ?? []) as unknown as SessionFineRow[];
+  // Fines paid or added to dues since the session started are settled, so they drop off the session list.
+  const fineRows = ((sessionFines ?? []) as unknown as SessionFineRow[]).filter(
+    (row) => row.fines?.status !== "paid" && row.fines?.status !== "added_to_dues"
+  );
   const fines: JpSessionFine[] = fineRows.map((row) => ({
     session_id: row.session_id,
     fine_id: row.fine_id,
