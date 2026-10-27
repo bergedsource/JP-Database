@@ -41,7 +41,7 @@ type SessionDetail = {
   changes: JpSessionChange[];
   absences?: { member_id: string; member_name: string }[];
   officer_order?: string[]; // fixed hearing order of officers for this session
-  tickets?: { member_id: string; officer: string; no: number | null; status: string }[];
+  tickets?: { member_id: string; officer: string; no: number | null; status: string; phone: string | null }[];
 };
 
 const TICKET_LABEL: Record<string, string> = { waiting: "Waiting", here: "Here", called: "Called", skipped: "Skipped", done: "Done" };
@@ -411,6 +411,7 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
                                 return t ? (
                                   <span className="ses-ticket-chip" title={`Ticket #${t.no ?? "?"} for ${t.officer}: ${TICKET_LABEL[t.status] ?? t.status}`}>
                                     Ticket{t.no ? ` #${t.no}` : ""} · {TICKET_LABEL[t.status] ?? t.status}
+                                    {t.phone && <a className="ses-ticket-call" href={`tel:${t.phone}`} onClick={(e) => e.stopPropagation()}>Call</a>}
                                   </span>
                                 ) : (
                                   <span className="ses-ticket-chip none" title="No ticket for this officer tonight">No ticket</span>
