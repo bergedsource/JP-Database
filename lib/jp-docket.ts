@@ -5,6 +5,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { notifyCalled, notifyNear } from "./push";
 import {
   HEARING_MINUTES_KEY,
   NEXT_SESSION_KEY,
@@ -171,11 +172,13 @@ export async function callNext(service: SupabaseClient, date: string): Promise<{
   if (!next) return null;
   const { error } = await service
     .from("jp_tickets")
-    .update({ status: "called", called_at: new Date().toISOString() })
+    .update({ status: "called", called_at: new Date().toISOString(), reply: null, replied_at: null })
     .eq("session_date", date)
     .eq("member_id", next.memberId)
     .eq("fining_officer", next.officer);
-  return error ? null : { memberId: next.memberId, officer: next.officer };
+  if (error) return null;
+  await notifyCalled(service, date, next.memberId, next.officer);
+  return { memberId: next.memberId, officer: next.officer };
 }
 
 // Gaps longer than this between decisions are breaks, not hearing time.
@@ -272,4 +275,6 @@ export async function afterDecision(
     .eq("fining_officer", officer)
     .neq("status", "cancelled");
   await callNext(service, date);
+  // The line moved: buzz whoever is now 2 or fewer away.
+  await notifyNear(service, await loadDocket(service));
 }

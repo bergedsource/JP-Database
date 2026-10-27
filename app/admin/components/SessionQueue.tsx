@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { QueueResponse, QueueRow } from "@/app/api/admin/sessions/[id]/queue/route";
+import { REPLY_LABEL } from "@/lib/jp-info";
 
 const POLL_MS = 5000;
 const TEXT_BODY = "JP: you're up in about 5 minutes. Head to JP now. – JP Chair";
@@ -113,6 +114,11 @@ function Row({ r, busy, act }: { r: QueueRow; busy: boolean; act: (a: string, m?
         </span>
       </span>
       {status && status !== "done" && <span className={`ses-queue-status s-${status}`}>{STATUS_LABEL[status] ?? status}</span>}
+      {status === "called" && r.ticket?.reply && (
+        <span className="ses-queue-status s-here" title={r.ticket.repliedAt ? `Replied ${new Date(r.ticket.repliedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : undefined}>
+          {REPLY_LABEL[r.ticket.reply]}
+        </span>
+      )}
       <span className="ses-queue-actions">
         {r.ticket?.snapchat && (
           <a

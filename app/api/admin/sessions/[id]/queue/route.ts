@@ -2,8 +2,9 @@ import { getCurrentRole, requireOwner } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
-import { formatPhone, type TicketStatus } from "@/lib/jp-info";
+import { formatPhone, type TicketReply, type TicketStatus } from "@/lib/jp-info";
 import { callNext, loadDocket, markHere, markSkipped, nowHearing } from "@/lib/jp-docket";
+import { notifyCalled, notifyNear } from "@/lib/push";
 
 export type QueueRow = {
   memberId: string;
@@ -13,7 +14,7 @@ export type QueueRow = {
   fines: number;
   isNow: boolean;
   requeued: boolean;
-  ticket: { no: number | null; status: TicketStatus; phone: string | null; phoneDisplay: string | null; snapchat: string | null; proxyName: string | null } | null;
+  ticket: { no: number | null; status: TicketStatus; phone: string | null; phoneDisplay: string | null; snapchat: string | null; proxyName: string | null; reply: TicketReply | null; repliedAt: string | null } | null;
 };
 export type QueueGroup = { officer: string; brothers: number; fines: number; rows: QueueRow[] };
 export type QueueResponse = {
@@ -45,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const docket = await loadDocket(service);
   const { data: ticketRows } = await service
     .from("jp_tickets")
-    .select("member_id, fining_officer, ticket_no, status, phone, snapchat, requeued, proxy_name")
+    .select("member_id, fining_officer, ticket_no, status, phone, snapchat, requeued, proxy_name, reply, replied_at")
     .eq("session_date", session.date_held);
   // A brother's ticket for each officer group, plus his chair row (skip/here, no officer).
   const tickets = new Map(
@@ -77,9 +78,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       isNow: slot === now,
       requeued: requeuedMembers.has(slot.memberId),
       ticket: t
-        ? { no: t.ticket_no, status: (skipped ? "skipped" : t.status) as TicketStatus, phone: t.phone, phoneDisplay: t.phone ? formatPhone(t.phone) : null, snapchat: t.snapchat ?? null, proxyName: t.proxy_name ?? null }
+        ? { no: t.ticket_no, status: (skipped ? "skipped" : t.status) as TicketStatus, phone: t.phone, phoneDisplay: t.phone ? formatPhone(t.phone) : null, snapchat: t.snapchat ?? null, proxyName: t.proxy_name ?? null, reply: (t.reply as TicketReply | null) ?? null, repliedAt: (t.replied_at as string | null) ?? null }
         : chair
-          ? { no: null, status: chair.status as TicketStatus, phone: null, phoneDisplay: null, snapchat: null, proxyName: null }
+          ? { no: null, status: chair.status as TicketStatus, phone: null, phoneDisplay: null, snapchat: null, proxyName: null, reply: null, repliedAt: null }
           : null,
     });
   }
@@ -151,13 +152,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Calling is per ticket: one officer group's ticket for this brother.
     if (!officer) return NextResponse.json({ error: "Missing officer" }, { status: 400 });
     const patch: Record<string, unknown> = { status: action === "waiting" ? "waiting" : "called" };
-    if (patch.status === "called") patch.called_at = new Date().toISOString();
+    if (patch.status === "called") Object.assign(patch, { called_at: new Date().toISOString(), reply: null, replied_at: null });
     const res = await service.from("jp_tickets").update(patch).eq("session_date", date).eq("member_id", memberId).eq("fining_officer", officer);
     if (res.error) error = "Couldn't update. Try again.";
   } else {
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
   if (error) return NextResponse.json({ error }, { status: 500 });
+
+  // Alerts: a manual call buzzes him; any change can bring others within 2.
+  if (action === "call" && officer) await notifyCalled(service, date, memberId, officer);
+  await notifyNear(service, await loadDocket(service));
 
   const { data: member } = await service.from("members").select("name").eq("id", memberId).maybeSingle();
   await service.from(current.role === "root" ? "system_events" : "audit_logs").insert({

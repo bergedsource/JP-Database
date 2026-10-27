@@ -166,7 +166,9 @@ export async function GET(req: NextRequest) {
   // --- Daily: Auto-detect social probation ---
   const [{ data: upheldFines }, { data: autoSP }] = await Promise.all([
     service.from("fines").select("member_id, amount, created_at").eq("status", "upheld"),
-    service.from("social_probation").select("id, member_id").eq("source", "auto").eq("reason", "Outstanding Fines (§10-270)").is("end_date", null),
+    // Every open §10-270 row, auto or manual: a manual one (e.g. from "Labor not
+    // completed") must stop the cron adding a duplicate auto row.
+    service.from("social_probation").select("id, member_id, source, notes").eq("reason", "Outstanding Fines (§10-270)").is("end_date", null),
   ]);
 
   if (upheldFines) {
@@ -186,9 +188,17 @@ export async function GET(req: NextRequest) {
       if (data.totalOwed > 20 || data.oldestCreated < twoWeeksAgo) qualifying.add(memberId);
     }
 
-    const alreadyOn = new Set((autoSP ?? []).map((sp: { id: string; member_id: string }) => sp.member_id));
+    type OpenSP = { id: string; member_id: string; source: string | null; notes: string | null };
+    const openSP = (autoSP ?? []) as OpenSP[];
+    const alreadyOn = new Set(openSP.map((sp) => sp.member_id));
     const toAdd = [...qualifying].filter((id) => !alreadyOn.has(id));
-    const toRemove = (autoSP ?? []).filter((sp: { id: string; member_id: string }) => !qualifying.has(sp.member_id)) as { id: string; member_id: string }[];
+    // Lift auto rows once he no longer qualifies, and "Labor not completed" rows once
+    // he has no upheld fines left (the labor fine was paid or resolved). Other manual
+    // soc pro stays until an owner lifts it.
+    const fromLabor = (sp: OpenSP) => sp.source === "manual" && (sp.notes ?? "").startsWith("Labor not completed");
+    const toRemove = openSP.filter((sp) =>
+      sp.source === "auto" ? !qualifying.has(sp.member_id) : fromLabor(sp) && !memberData.has(sp.member_id)
+    );
 
     if (toAdd.length > 0 || toRemove.length > 0) {
       const allIds = [...toAdd, ...toRemove.map((sp) => sp.member_id)];
