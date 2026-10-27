@@ -171,7 +171,7 @@ export async function callNext(service: SupabaseClient, date: string): Promise<{
   if (!next) return null;
   const { error } = await service
     .from("jp_tickets")
-    .update({ status: "called", called_at: new Date().toISOString() })
+    .update({ status: "called", called_at: new Date().toISOString(), reply: null, replied_at: null })
     .eq("session_date", date)
     .eq("member_id", next.memberId)
     .eq("fining_officer", next.officer);
