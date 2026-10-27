@@ -2,6 +2,7 @@ import { getCurrentRole, requireAuth } from "@/lib/admin-auth";
 import type { JpSessionFine, JpSessionChange } from "@/lib/types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { officerRank } from "@/lib/jp-info";
 
 // Shapes of the joined rows the selects below return.
 //
@@ -160,5 +161,25 @@ export async function GET(
     .map((a) => ({ member_id: a.member_id, member_name: a.members?.name ?? "Unknown" }))
     .sort((a, b) => a.member_name.localeCompare(b.member_name));
 
-  return NextResponse.json({ session, fines, changes: changeLog, absences });
+  // Fixed officer order for this session (from every fine it started with, so it
+  // doesn't shift as fines are decided or drop off the list).
+  const officer_order = officerRank(
+    ((sessionFines ?? []) as unknown as SessionFineRow[]).flatMap((r) => (r.fines?.member_id ? [{ member_id: r.fines.member_id, fining_officer: r.fines.fining_officer }] : []))
+  );
+
+  // Who has a ticket for which officer tonight (no contact details here).
+  const { data: ticketRows } = await service
+    .from("jp_tickets")
+    .select("member_id, fining_officer, ticket_no, status")
+    .eq("session_date", session.date_held)
+    .not("fining_officer", "is", null)
+    .neq("status", "cancelled");
+  const tickets = (ticketRows ?? []).map((t) => ({
+    member_id: t.member_id as string,
+    officer: (t.fining_officer as string).trim(),
+    no: (t.ticket_no as number | null) ?? null,
+    status: t.status as string,
+  }));
+
+  return NextResponse.json({ session, fines, changes: changeLog, absences, officer_order, tickets });
 }

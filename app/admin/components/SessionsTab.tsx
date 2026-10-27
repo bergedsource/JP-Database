@@ -40,7 +40,11 @@ type SessionDetail = {
   fines: JpSessionFine[];
   changes: JpSessionChange[];
   absences?: { member_id: string; member_name: string }[];
+  officer_order?: string[]; // fixed hearing order of officers for this session
+  tickets?: { member_id: string; officer: string; no: number | null; status: string }[];
 };
+
+const TICKET_LABEL: Record<string, string> = { waiting: "Waiting", here: "Here", called: "Called", skipped: "Skipped", done: "Done" };
 
 export default function SessionsTab({ members, isPrivileged, refresh }: { members: Member[]; isPrivileged: boolean; refresh: () => Promise<void> }) {
   const [sessions, setSessions] = useState<JpSession[]>([]);
@@ -206,7 +210,13 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
       const mine = sorted.filter((f) => officerOf(f) === name);
       return { name, brothers: new Set(mine.map((f) => f.member_id)).size, left: mine.filter((f) => f.status === "pending").length };
     })
-    .sort((a, b) => b.brothers - a.brothers || a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      // The session's fixed order, so tabs (and the default tab) don't reshuffle as fines are decided.
+      const order = sessionDetail?.officer_order ?? [];
+      const pa = order.indexOf(a.name), pb = order.indexOf(b.name);
+      return (pa === -1 ? Infinity : pa) - (pb === -1 ? Infinity : pb) || b.brothers - a.brothers || a.name.localeCompare(b.name);
+    });
+  const ticketFor = (f: JpSessionFine) => sessionDetail?.tickets?.find((t) => t.member_id === f.member_id && t.officer === officerOf(f));
   const activeOfficer =
     officerTab === "all" || officers.some((o) => o.name === officerTab)
       ? officerTab
@@ -396,6 +406,16 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
                             <span className="ses-fine-name">
                               {fine.member_name}
                               {rolls.get(fine.member_id) != null && <span className="adm-roll">#{rolls.get(fine.member_id)}</span>}
+                              {!sessionDetail.session.closed_at && (() => {
+                                const t = ticketFor(fine);
+                                return t ? (
+                                  <span className="ses-ticket-chip" title={`Ticket #${t.no ?? "?"} for ${t.officer}: ${TICKET_LABEL[t.status] ?? t.status}`}>
+                                    Ticket{t.no ? ` #${t.no}` : ""} · {TICKET_LABEL[t.status] ?? t.status}
+                                  </span>
+                                ) : (
+                                  <span className="ses-ticket-chip none" title="No ticket for this officer tonight">No ticket</span>
+                                );
+                              })()}
                             </span>
                             <span className="ses-fine-type">
                               {fine.fine_type}

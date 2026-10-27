@@ -145,7 +145,22 @@ export type DocketSlot = { memberId: string; officer: string; roll: number | nul
 
 export const NO_OFFICER = "No officer listed";
 
-export function docketOrder(pending: PendingFine[], rollOf: Map<string, number | null>): DocketSlot[] {
+// Officer hearing order for a session, fixed when it starts: whoever fined the most
+// distinct brothers in the session's fines goes first, ties A–Z. Ranking from the
+// session snapshot (not what's still pending) keeps JP on one officer until his group
+// is done instead of jumping when another officer's group becomes the bigger one.
+export function officerRank(rows: { member_id: string; fining_officer: string | null }[]): string[] {
+  const brothers = new Map<string, Set<string>>();
+  for (const r of rows) {
+    const officer = r.fining_officer?.trim() || NO_OFFICER;
+    brothers.set(officer, (brothers.get(officer) ?? new Set()).add(r.member_id));
+  }
+  return [...brothers.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0])).map(([o]) => o);
+}
+
+// rank: a session's fixed officer order (officerRank); officers not in it (fines
+// added after the session started) come after, by the usual rule.
+export function docketOrder(pending: PendingFine[], rollOf: Map<string, number | null>, rank?: string[]): DocketSlot[] {
   const groups = new Map<string, Map<string, string[]>>();
   for (const f of pending) {
     const officer = f.fining_officer?.trim() || NO_OFFICER;
@@ -153,7 +168,8 @@ export function docketOrder(pending: PendingFine[], rollOf: Map<string, number |
     byMember.set(f.member_id, [...(byMember.get(f.member_id) ?? []), f.fine_type]);
     groups.set(officer, byMember);
   }
-  const officers = [...groups.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0]));
+  const pos = (o: string) => { const i = rank?.indexOf(o) ?? -1; return i === -1 ? Infinity : i; };
+  const officers = [...groups.entries()].sort((a, b) => pos(a[0]) - pos(b[0]) || b[1].size - a[1].size || a[0].localeCompare(b[0]));
   const slots: DocketSlot[] = [];
   for (const [officer, byMember] of officers) {
     const members = [...byMember.entries()]
