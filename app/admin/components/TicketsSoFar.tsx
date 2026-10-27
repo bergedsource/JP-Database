@@ -67,12 +67,18 @@ export default function TicketsSoFar() {
                   <span className="ses-queue-meta">
                     {t.no ? `Ticket #${t.no}, ` : ""}for {t.officer}
                     {t.proxyName ? `, proxy: ${t.proxyName}` : ""}
-                    {t.contact ? `, ${t.contact}` : ""}
+                    {t.phone ? <>, <a href={`tel:${t.phone}`}>{t.contact}</a></> : t.contact ? `, ${t.contact}` : ""}
                   </span>
                 </span>
                 <span className={`ses-queue-status s-${t.status}`}>{STATUS_LABEL[t.status] ?? t.status}</span>
                 {t.status !== "done" && (
                   <span className="ses-queue-actions">
+                    {t.phone && (
+                      <>
+                        <a className="ses-choice" href={`tel:${t.phone}`}>Call</a>
+                        <a className="ses-choice" href={`sms:${t.phone}`}>Text</a>
+                      </>
+                    )}
                     <button
                       type="button"
                       className="ses-choice"

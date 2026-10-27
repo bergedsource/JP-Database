@@ -170,7 +170,7 @@ export async function GET(
   // Who has a ticket for which officer tonight (no contact details here).
   const { data: ticketRows } = await service
     .from("jp_tickets")
-    .select("member_id, fining_officer, ticket_no, status")
+    .select("member_id, fining_officer, ticket_no, status, phone")
     .eq("session_date", session.date_held)
     .not("fining_officer", "is", null)
     .neq("status", "cancelled");
@@ -179,6 +179,8 @@ export async function GET(
     officer: (t.fining_officer as string).trim(),
     no: (t.ticket_no as number | null) ?? null,
     status: t.status as string,
+    // Phone numbers are owner/root only (same as the Queue).
+    phone: canSeeNotes ? ((t.phone as string | null) ?? null) : null,
   }));
 
   return NextResponse.json({ session, fines, changes: changeLog, absences, officer_order, tickets });

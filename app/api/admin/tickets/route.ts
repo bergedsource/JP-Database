@@ -13,6 +13,7 @@ export type TicketSoFar = {
   officer: string;
   status: TicketStatus;
   contact: string; // formatted phone or "via Snapchat"
+  phone: string | null; // +1XXXXXXXXXX for tap-to-call / text
   proxyName: string | null;
   takenAt: string;
 };
@@ -46,6 +47,7 @@ export async function GET() {
       officer: t.fining_officer as string,
       status: t.status as TicketStatus,
       contact: t.phone ? formatPhone(t.phone as string) : t.snapchat != null ? "via Snapchat" : "",
+      phone: (t.phone as string | null) ?? null,
       proxyName: (t.proxy_name as string | null) ?? null,
       takenAt: t.created_at as string,
     };
