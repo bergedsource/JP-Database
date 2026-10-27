@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { TicketWindow } from "@/lib/jp-info";
+import { haptic } from "@/lib/haptics";
 
 // Ticket links are kept on the brother's phone so reopening the homepage takes him
 // back to his ticket. They expire well before the next JP night.
@@ -137,6 +138,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
 
   async function take(e: React.FormEvent) {
     e.preventDefault();
+    haptic(15);
     if (chosen.length === 0) { setError("Choose at least one fining officer."); return; }
     setBusy(true);
     setError("");
@@ -209,7 +211,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
             </select>
           )}
           <label className="jp-ticket-check">
-            <input type="checkbox" checked={proxy} onChange={(e) => { setProxy(e.target.checked); setError(""); }} />
+            <input type="checkbox" checked={proxy} onChange={(e) => { haptic(); setProxy(e.target.checked); setError(""); }} />
             I&rsquo;m sending a proxy
           </label>
           {proxy && (
@@ -263,7 +265,7 @@ export default function TicketBox({ window: w, memberId, officers }: { window: T
                 role="radio"
                 aria-checked={contact === c}
                 className={`jp-contact-opt${contact === c ? " on" : ""}`}
-                onClick={() => { setContact(c); setError(""); }}
+                onClick={() => { haptic(); setContact(c); setError(""); }}
               >
                 {c === "phone" ? "Phone #" : "Snapchat"}
               </button>

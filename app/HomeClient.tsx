@@ -8,6 +8,7 @@ import type { JpInfo } from "@/lib/jp-info";
 import type { PublicMember, PublicSettings } from "@/lib/public-data";
 import { CommonFinesCard, NextJpCard, WaitCard } from "./JpInfoCard";
 import ThemeToggle from "./ThemeToggle";
+import { haptic } from "@/lib/haptics";
 
 // Self-hosted by next/font so the CSP's font-src 'self' allows it.
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
@@ -111,6 +112,7 @@ export default function HomeClient({
   }
 
   async function selectMember(member: Member) {
+    haptic();
     withTransition(() => {
       setQuery(member.name);
       setShowSuggestions(false);

@@ -1,5 +1,5 @@
 import { getCurrentRole, requireAuth, requireOwner } from "@/lib/admin-auth";
-import { HEARING_MINUTES_KEY, NEXT_SESSION_KEY, parseHearingMinutes, parseLearned, parseNextSession } from "@/lib/jp-info";
+import { HEARING_MINUTES_KEY, NEXT_SESSION_KEY, STATUS_NOTE_KEY, parseHearingMinutes, parseLearned, parseNextSession } from "@/lib/jp-info";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -38,6 +38,7 @@ export async function PUT(req: NextRequest) {
     "last_roster_sync_at",
     NEXT_SESSION_KEY,
     HEARING_MINUTES_KEY,
+    STATUS_NOTE_KEY,
   ];
   if (!ALLOWED_KEYS.includes(key)) {
     return NextResponse.json({ error: "Unknown setting key" }, { status: 400 });
@@ -54,6 +55,9 @@ export async function PUT(req: NextRequest) {
       if (!parsed) return NextResponse.json({ error: "Next session needs a valid date" }, { status: 400 });
       stored = JSON.stringify(parsed);
     }
+  } else if (key === STATUS_NOTE_KEY) {
+    // Shown on every brother's ticket: plain text, one short line.
+    stored = String(value).replace(/\s+/g, " ").trim().slice(0, 120);
   } else if (key === "venmo_url" && value !== "") {
     // Shown as the homepage Pay button, so only allow a Venmo https link.
     let host = "";
@@ -79,12 +83,12 @@ export async function PUT(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  if (key === NEXT_SESSION_KEY || key === HEARING_MINUTES_KEY || key === "venmo_url" || key === "venmo_handle") {
+  if (key === NEXT_SESSION_KEY || key === HEARING_MINUTES_KEY || key === STATUS_NOTE_KEY || key === "venmo_url" || key === "venmo_handle") {
     const current = await getCurrentRole();
     if (current) {
       await service.from(current.role === "root" ? "system_events" : "audit_logs").insert({
         admin_email: current.email,
-        action: key === NEXT_SESSION_KEY ? "Updated Next JP Session" : key === HEARING_MINUTES_KEY ? "Updated Hearing Time Estimates" : "Updated Payment Link",
+        action: key === NEXT_SESSION_KEY ? "Updated Next JP Session" : key === HEARING_MINUTES_KEY ? "Updated Hearing Time Estimates" : key === STATUS_NOTE_KEY ? "Posted JP Status" : "Updated Payment Link",
         details: stored || "cleared",
       });
     }

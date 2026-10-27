@@ -17,6 +17,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 // Tonight's docket in hearing order (officer groups, then roll #) with each brother's
 // ticket, plus Call / Text links and the controls that drive everyone's wait estimate.
+import StatusNote from "./StatusNote";
+
 export default function SessionQueue({ sessionId, refreshKey }: { sessionId: string; refreshKey: number }) {
   const [q, setQ] = useState<QueueResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
         </span>
       </summary>
       <div className="adm-card-body ses-queue-body">
+        <StatusNote />
         <div className="ses-queue-top">
           <p className="ses-queue-now">
             {q.nowHearing ? (
