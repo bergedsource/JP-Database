@@ -6,6 +6,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  officerRank,
   HEARING_MINUTES_KEY,
   NEXT_SESSION_KEY,
   NO_OFFICER,
@@ -58,7 +59,16 @@ export async function loadDocket(service: SupabaseClient): Promise<Docket> {
     (membersRes.data ?? []).map((m) => [m.id as string, { name: m.name as string, roll: (m.roll as number | null) ?? null }])
   );
   const rollOf = new Map([...members].map(([id, m]) => [id, m.roll]));
-  const slots = docketOrder((pendingRes.data ?? []) as PendingFine[], rollOf);
+  // While a session runs, its officer order is fixed from its own fines.
+  let rank: string[] | undefined;
+  if (live) {
+    const { data: sf } = await service.from("jp_session_fines").select("fines(member_id, fining_officer)").eq("session_id", live.id);
+    rank = officerRank(
+      ((sf ?? []) as unknown as { fines: { member_id: string; fining_officer: string | null } | null }[])
+        .flatMap((r) => (r.fines ? [r.fines] : []))
+    );
+  }
+  const slots = docketOrder((pendingRes.data ?? []) as PendingFine[], rollOf, rank);
 
   // Tickets: open while a session is running; otherwise from 12 hours before the
   // posted start time.
