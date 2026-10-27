@@ -309,6 +309,10 @@ export type JpWait =
 // ── Tickets ──
 
 export type TicketStatus = "waiting" | "here" | "called" | "done" | "skipped" | "cancelled";
+// A called brother's answer to the chair.
+export const TICKET_REPLIES = ["on_my_way", "need_5"] as const;
+export type TicketReply = (typeof TICKET_REPLIES)[number];
+export const REPLY_LABEL: Record<TicketReply, string> = { on_my_way: "On my way", need_5: "Needs 5 min" };
 
 export type TicketView = {
   ticketNo: number;
@@ -322,6 +326,7 @@ export type TicketView = {
   wait: JpWait;
   startTime: string; // "HH:MM" of the session, "" if unknown
   note: string; // the chair's status line, "" if none
+  reply: TicketReply | null; // his answer since the chair last called him
   upholdOn: string; // YYYY-MM-DD a missed fine for this ticket's group is upheld
 };
 

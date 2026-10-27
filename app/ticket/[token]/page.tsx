@@ -123,6 +123,22 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
     setBusy(false);
   }
 
+  // Answer the chair's call so he knows you're coming before he skips anyone.
+  async function reply(kind: "on_my_way" | "need_5") {
+    haptic(20);
+    setBusy(true);
+    setError("");
+    setT((x) => x && { ...x, reply: kind });
+    const res = await fetch(`/api/jp-ticket/${token}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply: kind }) });
+    if (!res.ok) {
+      setT((x) => x && { ...x, reply: null });
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "Couldn't send. Try again.");
+    }
+    await load();
+    setBusy(false);
+  }
+
   const wait = t?.wait;
   const queued = wait && wait.onDocket ? wait : null;
   const range = queued ? waitRange(queued.minutesAhead) : null;
@@ -183,6 +199,16 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
               <div className="tk-banner" role="status">
                 {called ? "You’re being called. Head to JP now." : "You’re up next. Start heading to JP."}
               </div>
+            )}
+            {called && (
+              t.reply ? (
+                <p className="tk-replied" role="status">Sent to the JP Chair: <strong>{t.reply === "on_my_way" ? "On my way" : "Need 5 min"}</strong></p>
+              ) : (
+                <div className="tk-reply">
+                  <button type="button" className="tk-btn primary" disabled={busy} onClick={() => reply("on_my_way")}>On my way</button>
+                  <button type="button" className="tk-btn" disabled={busy} onClick={() => reply("need_5")}>Need 5 min</button>
+                </div>
+              )
             )}
 
             {t.note && !closed && <div className="tk-note" role="status">JP Chair: {t.note}</div>}
@@ -274,6 +300,8 @@ const STATUS_LABEL: Record<TicketView["status"], string> = {
 };
 
 const CSS = `
+  .tk-reply { display: flex; gap: 10px; }
+  .tk-replied { margin: 0; font-size: 16px; padding: 14px 18px; border-radius: 18px; background: #C4D6A4; color: #000000; }
   .tk-note { background: #FDD26E; color: #000000; font-weight: 700; font-size: 16px; padding: 14px 18px; border-radius: 18px; }
   .tk-stakes { margin: 0; font-size: 14px; font-weight: 700; color: #FDD26E; }
   .tk-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

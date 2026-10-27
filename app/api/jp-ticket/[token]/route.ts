@@ -12,7 +12,7 @@ async function findTicket(token: string) {
   const service = createServiceClient();
   const { data } = await service
     .from("jp_tickets")
-    .select("id, member_id, ticket_no, status, session_date, proxy_name, fining_officer")
+    .select("id, member_id, ticket_no, status, session_date, proxy_name, fining_officer, reply")
     .eq("token_hash", hashTicketToken(token))
     .maybeSingle();
   return { service, ticket: data };
@@ -64,6 +64,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     wait,
     startTime: docket.liveSession ? "" : docket.nextSession?.time ?? "",
     note: (noteRow?.value as string | undefined) ?? "",
+    reply: (ticket.reply as TicketView["reply"]) ?? null,
     upholdOn: missedUpholdDate(ticket.session_date as string),
   };
   return NextResponse.json(body, { headers: NO_STORE });
