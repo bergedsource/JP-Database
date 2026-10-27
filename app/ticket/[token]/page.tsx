@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Figtree } from "next/font/google";
 import { clockAfter, waitLabel, waitRange, type TicketView } from "@/lib/jp-info";
 import ThemeToggle from "@/app/ThemeToggle";
+import { haptic } from "@/lib/haptics";
 
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-sans" });
 
@@ -111,7 +112,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
     setConfirmCancel(false);
     const before = t;
     setT((x) => x && { ...x, status: kind === "here" ? "here" : "cancelled" });
-    navigator.vibrate?.(30);
+    haptic(30);
     const res = await fetch(`/api/jp-ticket/${token}${kind === "here" ? "/here" : ""}`, { method: kind === "here" ? "POST" : "DELETE" });
     if (!res.ok) {
       setT(before);
@@ -184,6 +185,8 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
               </div>
             )}
 
+            {t.note && !closed && <div className="tk-note" role="status">JP Chair: {t.note}</div>}
+
             <section className="tk-card">
               <div className="tk-head">
                 <div>
@@ -202,7 +205,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
                 <>
                   <div>
                     <p className="tk-big">
-                      {queued.brothersAhead === 0 ? "You’re next" : `${queued.brothersAhead} ahead of you`}
+                      {queued.brothersAhead === 0 ? "You’re next" : `${queued.brothersAhead} brother${queued.brothersAhead === 1 ? "" : "s"} ahead`}
                     </p>
                     <p className="tk-wait">
                       {queued.minutesAhead === 0
@@ -231,6 +234,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
                       <li key={g.officer}><strong>{g.officer}</strong>&rsquo;s group: {ordinal(g.place)} of {g.size}</li>
                     ))}
                   </ul>
+                  <p className="tk-stakes">Miss your turn and your {t.officer ? `${t.officer} ` : ""}fine is upheld on {new Date(`${t.upholdOn}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}.</p>
                   <p className="tk-fine">This page updates on its own. Keep it open and your volume up; it chimes when you&rsquo;re almost up.</p>
                 </>
               ) : null}
@@ -270,6 +274,8 @@ const STATUS_LABEL: Record<TicketView["status"], string> = {
 };
 
 const CSS = `
+  .tk-note { background: #FDD26E; color: #000000; font-weight: 700; font-size: 16px; padding: 14px 18px; border-radius: 18px; }
+  .tk-stakes { margin: 0; font-size: 14px; font-weight: 700; color: #FDD26E; }
   .tk-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .tk-theme { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid #C6DAE7; background: #FFFFFF; color: #000000; cursor: pointer; }
   .tk-theme:focus-visible { outline: 3px solid #D73F09; outline-offset: 2px; }

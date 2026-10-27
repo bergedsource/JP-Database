@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+import { haptic } from "@/lib/haptics";
 
-// Light/dark switch. The starting theme is set on <html data-theme> by the
-// inline script in app/layout.tsx (saved choice, else the phone's setting).
+// The theme lives on <html data-theme>, set before paint by the inline script in
+// app/layout.tsx (saved choice, else the phone's setting). Read it as an external
+// store so the button follows it without a setState-in-effect.
+function subscribe(onChange: () => void) {
+  const obs = new MutationObserver(onChange);
+  obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => obs.disconnect();
+}
+const isDark = () => document.documentElement.dataset.theme === "dark";
+
 export default function ThemeToggle({ className }: { className?: string }) {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    setDark(document.documentElement.dataset.theme === "dark");
-  }, []);
+  const dark = useSyncExternalStore(subscribe, isDark, () => false);
 
   function toggle() {
+    haptic();
     const next = dark ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem("jp-theme", next); } catch {}
-    setDark(!dark);
   }
 
   return (

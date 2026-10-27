@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter, ticketIpLimiter, ticketLimiter } from "@/lib/rate-limit";
 import { waitFor, type TicketStatus, type TicketView } from "@/lib/jp-info";
 import { hashTicketToken, loadDocket, nowHearing } from "@/lib/jp-docket";
+import { STATUS_NOTE_KEY } from "@/lib/jp-info";
+import { missedUpholdDate } from "@/lib/missed-fines";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -49,6 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   if (!wait.onDocket && status !== "cancelled") status = "done";
 
   const hearing = docket.liveSession ? nowHearing(docket) : null;
+  const { data: noteRow } = await service.from("settings").select("value").eq("key", STATUS_NOTE_KEY).maybeSingle();
   const body: TicketView = {
     ticketNo: ticket.ticket_no ?? 0,
     name: member?.name ?? "Brother",
@@ -60,6 +63,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     nowHearing: hearing ? { roll: docket.members.get(hearing.memberId)?.roll ?? null, officer: hearing.officer } : null,
     wait,
     startTime: docket.liveSession ? "" : docket.nextSession?.time ?? "",
+    note: (noteRow?.value as string | undefined) ?? "",
+    upholdOn: missedUpholdDate(ticket.session_date as string),
   };
   return NextResponse.json(body, { headers: NO_STORE });
 }

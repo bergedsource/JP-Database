@@ -62,10 +62,13 @@ export function brotherMinutes(fineTypes: string[], m: HearingMinutes): number {
 }
 
 // Shown as a range so nobody reads it as a promise; rounded out to 5 minutes.
+// Deliberately a little cautious (skewed later): research on virtual queues found a
+// later-than-promised update drives people off far more than an earlier one, so the
+// window should usually move earlier as JP goes, not later.
 export function waitRange(minutes: number): { lo: number; hi: number } {
   return {
-    lo: Math.max(0, Math.floor((minutes * 0.85) / 5) * 5),
-    hi: Math.ceil((minutes * 1.15) / 5) * 5,
+    lo: Math.max(0, Math.floor((minutes * 0.9) / 5) * 5),
+    hi: Math.ceil((minutes * 1.25) / 5) * 5,
   };
 }
 
@@ -78,6 +81,8 @@ export function waitLabel(minutes: number): string {
 // ── Settings parsing (values are stored as JSON strings in `settings`) ──
 
 export const NEXT_SESSION_KEY = "next_jp_session";
+// One line the chair posts to every ticket ("On a 10 min break").
+export const STATUS_NOTE_KEY = "jp_status_note";
 export const HEARING_MINUTES_KEY = "jp_hearing_minutes";
 
 export type NextSession = { date: string; time: string; place: string };
@@ -316,6 +321,8 @@ export type TicketView = {
   nowHearing: { roll: number | null; officer: string } | null;
   wait: JpWait;
   startTime: string; // "HH:MM" of the session, "" if unknown
+  note: string; // the chair's status line, "" if none
+  upholdOn: string; // YYYY-MM-DD a missed fine for this ticket's group is upheld
 };
 
 // "(541) 555-1234", "541.555.1234", "+1 541 555 1234" → "+15415551234"; null if not a US number.
