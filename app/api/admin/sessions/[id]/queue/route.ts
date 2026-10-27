@@ -4,6 +4,7 @@ import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { formatPhone, type TicketReply, type TicketStatus } from "@/lib/jp-info";
 import { callNext, loadDocket, markHere, markSkipped, nowHearing } from "@/lib/jp-docket";
+import { notifyCalled, notifyNear } from "@/lib/push";
 
 export type QueueRow = {
   memberId: string;
@@ -158,6 +159,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
   if (error) return NextResponse.json({ error }, { status: 500 });
+
+  // Alerts: a manual call buzzes him; any change can bring others within 2.
+  if (action === "call" && officer) await notifyCalled(service, date, memberId, officer);
+  await notifyNear(service, await loadDocket(service));
 
   const { data: member } = await service.from("members").select("name").eq("id", memberId).maybeSingle();
   await service.from(current.role === "root" ? "system_events" : "audit_logs").insert({

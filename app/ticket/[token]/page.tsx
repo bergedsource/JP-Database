@@ -6,6 +6,7 @@ import { Figtree } from "next/font/google";
 import { clockAfter, waitLabel, waitRange, type TicketView } from "@/lib/jp-info";
 import ThemeToggle from "@/app/ThemeToggle";
 import { haptic } from "@/lib/haptics";
+import NotifyButton from "./NotifyButton";
 
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-sans" });
 
@@ -261,6 +262,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
                     ))}
                   </ul>
                   <p className="tk-stakes">Miss your turn and your {t.officer ? `${t.officer} ` : ""}fine is upheld on {new Date(`${t.upholdOn}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}.</p>
+                  <NotifyButton token={token} />
                   <p className="tk-fine">This page updates on its own. Keep it open and your volume up; it chimes when you&rsquo;re almost up.</p>
                 </>
               ) : null}
