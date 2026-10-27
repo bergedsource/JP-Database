@@ -49,7 +49,7 @@ export default function TicketsSoFar() {
 
   return (
     <div className="adm-card">
-      <div className="adm-card-header">
+      <div className="adm-card-header" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "4px 16px" }}>
         <span className="adm-card-title">Tickets so far</span>
         <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{night} · {data.tickets.length} ticket{data.tickets.length !== 1 ? "s" : ""}</span>
       </div>
