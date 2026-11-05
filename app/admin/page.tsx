@@ -26,6 +26,8 @@ const FINE_COLUMNS =
   "id, member_id, fine_type, description, amount, status, term, date_issued, date_resolved, " +
   "labor_completed_at, review_deadline, fining_officer, created_by_user_id, created_at";
 
+const LOAD_TIMEOUT_MS = 15000;
+
 type Tab = "fines" | "outstanding" | "labor" | "members" | "soc pro" | "soc pro history" | "audit" | "sessions" | "transition" | "events" | "unbecomings";
 
 type NavItem = {
@@ -48,6 +50,8 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [eventLog, setEventLog] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  // Set when the first load fails or times out: shown under the skeleton while we retry.
+  const [loadError, setLoadError] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [userRole, setUserRole] = useState<"owner" | "admin" | "root" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -57,6 +61,24 @@ export default function AdminPage() {
   const supabase = createClient();
 
   async function loadData() {
+    try {
+      // A hung request (dead network, stuck auth refresh) must not leave the
+      // skeleton up forever: give up after 15 s and show the retry banner.
+      await Promise.race([
+        fetchData(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), LOAD_TIMEOUT_MS)),
+      ]);
+      setLoadError("");
+    } catch (e) {
+      setLoadError(
+        e instanceof Error && e.message === "timeout"
+          ? "The dashboard is taking too long to load. Retrying…"
+          : "Couldn't load the dashboard. Retrying…"
+      );
+    }
+  }
+
+  async function fetchData() {
     const [{ data: m }, { data: f }, { data: a }, spRes, notesRes] = await Promise.all([
       supabase.from("members").select("*").order("roll", { ascending: true, nullsFirst: false }).order("name"),
       // No `notes` here: view-only admins can't read that column. Owners get
@@ -119,6 +141,13 @@ export default function AdminPage() {
       .then((d) => { setUserRole(d.role ?? null); setCurrentUserId(d.userId ?? null); })
       .catch(() => {});
   }, []);
+
+  // Until the first load lands, retry every 5 s instead of sitting on the skeleton.
+  useEffect(() => {
+    if (!loading || !loadError) return;
+    const retry = setTimeout(loadData, 5000);
+    return () => clearTimeout(retry);
+  }, [loading, loadError]);
 
   // Escape closes the phone menu.
   useEffect(() => {
@@ -266,7 +295,10 @@ export default function AdminPage() {
           )}
 
           {loading ? (
-            <div className="adm-card"><LoadingSkeleton /></div>
+            <div className="adm-card">
+              <LoadingSkeleton />
+              {loadError && <p className="adm-error" role="alert">{loadError}</p>}
+            </div>
           ) : (
             <>
               {tab === "fines" && (
