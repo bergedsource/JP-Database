@@ -285,7 +285,7 @@ export type CommonFine = { fineType: string; count: number; amount: string };
 export type TicketWindow =
   | { state: "none" }                  // no session posted or running: tickets unavailable
   | { state: "soon"; opensAt: string } // posted; tickets open at this ISO instant
-  | { state: "open" };                 // take a ticket now
+  | { state: "open"; date: string };   // take a ticket now, for the session on this date
 
 export type JpInfo = {
   nextSession: NextSession | null;

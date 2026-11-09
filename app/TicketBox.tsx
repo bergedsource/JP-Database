@@ -7,9 +7,11 @@ import { haptic } from "@/lib/haptics";
 // Ticket links are kept on the brother's phone so reopening the homepage takes him
 // back to his ticket. They expire well before the next JP night.
 const TICKET_STORE = "jp-tickets";
-const TICKET_TTL_MS = 18 * 60 * 60 * 1000;
+// Tickets open as soon as a session is posted, so one can be taken days ahead.
+// Each is saved with its session date; a ticket for an older session is ignored.
+const TICKET_TTL_MS = 10 * 24 * 60 * 60 * 1000;
 
-type Saved = { officer: string; token: string; ticketNo: number; at: number };
+type Saved = { officer: string; token: string; ticketNo: number; at: number; date?: string };
 
 // A brother can hold one ticket per fining officer, so they're kept per member+officer.
 // Every unexpired ticket on this phone, any brother (the homepage shows them on top).
@@ -39,10 +41,10 @@ function savedTickets(memberId: string): Saved[] {
   }
 }
 
-function saveTicket(memberId: string, officer: string, token: string, ticketNo: number) {
+function saveTicket(memberId: string, officer: string, token: string, ticketNo: number, date: string) {
   try {
     const all = JSON.parse(localStorage.getItem(TICKET_STORE) ?? "{}");
-    all[`${memberId}|${officer}`] = { token, ticketNo, at: Date.now() };
+    all[`${memberId}|${officer}`] = { token, ticketNo, at: Date.now(), date };
     localStorage.setItem(TICKET_STORE, JSON.stringify(all));
   } catch {}
 }
@@ -149,7 +151,7 @@ export default function TicketBox({
     );
   }
 
-  const mine = saved.filter((t) => officers.includes(t.officer));
+  const mine = saved.filter((t) => officers.includes(t.officer) && (!t.date || t.date === w.date));
   const remaining = officers.filter((o) => !mine.some((t) => t.officer === o));
   const links = mine.length > 0 && (
     <div className="jp-ticket-links">
@@ -184,7 +186,7 @@ export default function TicketBox({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.token) {
-        saveTicket(memberId, officer, data.token, data.ticketNo);
+        saveTicket(memberId, officer, data.token, data.ticketNo, w.state === "open" ? w.date : "");
         made.push({ token: data.token });
       } else {
         failed.push(data.error ?? `Couldn't take a ticket for ${officer}.`);
