@@ -46,7 +46,49 @@ function todayPacific(): string {
 
 function dayWord(date: string): string {
   if (date === todayPacific()) return "tonight";
-  return new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" });
+  return new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+}
+
+// "6d 11h", "3h 20m", "4m"
+function countdown(toIso: string, now: number): string {
+  const m = Math.max(0, Math.round((new Date(toIso).getTime() - now) / 60000));
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m % 60}m`;
+  return `${m}m`;
+}
+
+function useNow(ms: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+  return now;
+}
+
+// Before tickets open the button is still there (so nobody hunts for it), just
+// greyed out with when it opens.
+function TakeButton({ opensAt, label, onClick }: { opensAt: string | null; label: string; onClick: () => void }) {
+  const now = useNow(30000);
+  if (opensAt) {
+    return (
+      <>
+        <button type="button" className="tn-btn" disabled aria-describedby="tn-opens">
+          <TicketIcon />
+          {label}
+        </button>
+        <p className="tn-opens" id="tn-opens">Opens {opensAtLabel(opensAt)} · in <strong>{countdown(opensAt, now)}</strong></p>
+      </>
+    );
+  }
+  return (
+    <button type="button" className="tn-btn press" onClick={onClick}>
+      <TicketIcon />
+      {label}
+    </button>
+  );
 }
 
 function opensAtLabel(iso: string): string {
@@ -197,7 +239,8 @@ export function TonightHero({
     return () => { stop = true; clearInterval(t); };
   }, [tokens]);
 
-  if (info.tickets.state !== "open") return null;
+  if (info.tickets.state === "none") return null;
+  const opensAt = info.tickets.state === "soon" ? info.tickets.opensAt : null;
 
   const next = info.nextSession;
   const live = info.sessionLive;
@@ -210,7 +253,7 @@ export function TonightHero({
     return v !== "gone" && !(v && v.status === "cancelled");
   });
 
-  if (active.length > 0) {
+  if (!opensAt && active.length > 0) {
     const note = active.map((t) => views[t.token]).find((v): v is TicketView => !!v && v !== "gone" && !!v.note)?.note;
     return (
       <section className="tn tn-dark" aria-label="Your JP ticket">
@@ -258,21 +301,20 @@ export function TonightHero({
   }
 
   return (
-    <section className="tn" aria-label="Tonight's JP">
+    <section className="tn" id="tonight" aria-label="Next JP and tickets">
       <div className="container tn-inner">
-        <span className="tn-pill"><span className="tn-dot" aria-hidden="true" />Tickets open now</span>
-        {me ? <RememberedMe me={me} info={info} when={when} where={where} onOpenSheet={onOpenSheet} onForgetMe={onForgetMe} onSeeFines={onSeeFines} />
+        <span className="tn-pill">
+          {opensAt ? <>Tickets open {opensAtLabel(opensAt)}</> : <><span className="tn-dot" aria-hidden="true" />Tickets open now</>}
+        </span>
+        {me ? <RememberedMe me={me} info={info} when={when} where={where} opensAt={opensAt} onOpenSheet={onOpenSheet} onForgetMe={onForgetMe} onSeeFines={onSeeFines} />
           : (
             <>
               <h1 className="tn-title">{when}</h1>
               {where && <p className="tn-where">{where}</p>}
               <div className="tn-card">
                 <label htmlFor="tn-name" className="tn-label">Your name</label>
-                <NamePicker id="tn-name" members={members} onPick={(m) => { onPickMe(m); onOpenSheet(m); }} />
-                <button type="button" className="tn-btn press" onClick={() => onOpenSheet(null)}>
-                  <TicketIcon />
-                  Take a ticket
-                </button>
+                <NamePicker id="tn-name" members={members} onPick={(m) => { onPickMe(m); if (!opensAt) onOpenSheet(m); }} />
+                <TakeButton opensAt={opensAt} label="Take a ticket" onClick={() => onOpenSheet(null)} />
                 <p className="tn-hint">Takes 20 seconds. The JP Chair calls or texts you when you&rsquo;re up, so you don&rsquo;t have to sit in the room.</p>
               </div>
               <button type="button" className="tn-link" onClick={() => onSeeFines(null)}>Just checking my fines</button>
@@ -288,6 +330,7 @@ function RememberedMe({
   info,
   when,
   where,
+  opensAt,
   onOpenSheet,
   onForgetMe,
   onSeeFines,
@@ -296,6 +339,7 @@ function RememberedMe({
   info: JpInfo;
   when: string;
   where: string;
+  opensAt: string | null;
   onOpenSheet: (m: MemberLite | null) => void;
   onForgetMe: () => void;
   onSeeFines: (m: MemberLite | null) => void;
@@ -323,15 +367,12 @@ function RememberedMe({
         {!w
           ? [when, where].filter(Boolean).join(" · ")
           : w.onDocket
-            ? `${count} fine${count !== 1 ? "s" : ""} to hear · ${likelyWhen(w, startTime, info.sessionLive)}`
+            ? `${count} fine${count !== 1 ? "s" : ""} to hear · ${when.replace("JP is ", "")} · ${likelyWhen(w, startTime, info.sessionLive)}`
             : "Nothing of yours is on the docket, so there’s no need to come."}
       </p>
       {(!w || w.onDocket) && (
         <div className="tn-card">
-          <button type="button" className="tn-btn press" onClick={() => onOpenSheet(me)}>
-            <TicketIcon />
-            Take my ticket
-          </button>
+          <TakeButton opensAt={opensAt} label="Take my ticket" onClick={() => onOpenSheet(me)} />
           <p className="tn-hint">The JP Chair calls or texts you when you&rsquo;re up.</p>
         </div>
       )}
