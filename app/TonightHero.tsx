@@ -58,7 +58,7 @@ function opensAtLabel(iso: string): string {
 
 // "8:20–8:35 pm" before JP starts, "15–25 min" once it's running, "" if he's first.
 function likelyWhen(wait: Extract<JpWait, { onDocket: true }>, startTime: string, live: boolean): string {
-  if (wait.minutesAhead === 0) return live ? "you're next" : "you're first";
+  if (wait.minutesAhead === 0) return live ? "you’re next" : "you’re first";
   if (!live && startTime) {
     const { lo, hi } = waitRange(wait.minutesAhead);
     return `likely heard ${clockAfter(startTime, lo)}–${clockAfter(startTime, hi)}`;
@@ -224,9 +224,9 @@ export function TonightHero({
             const line = !view
               ? `${t.officer} group`
               : status === "done"
-                ? `${t.officer} group · you're done`
+                ? `${t.officer} group · you’re done`
                 : status === "called"
-                  ? `${t.officer} group · you're called, go now`
+                  ? `${t.officer} group · you’re called, go now`
                   : w
                     ? `${t.officer} group · ${likelyWhen(w, view.startTime, view.sessionLive)}`
                     : `${t.officer} group`;
@@ -317,14 +317,14 @@ function RememberedMe({
   return (
     <>
       <h1 className="tn-title">
-        {!w ? `Hey ${first}` : w.onDocket ? `Hey ${first}, you're on the docket` : `Hey ${first}, you're clear`}
+        {!w ? `Hey ${first}` : w.onDocket ? `Hey ${first}, you’re on the docket` : `Hey ${first}, you’re clear`}
       </h1>
       <p className="tn-where">
         {!w
           ? [when, where].filter(Boolean).join(" · ")
           : w.onDocket
             ? `${count} fine${count !== 1 ? "s" : ""} to hear · ${likelyWhen(w, startTime, info.sessionLive)}`
-            : "Nothing of yours is on the docket, so there's no need to come."}
+            : "Nothing of yours is on the docket, so there’s no need to come."}
       </p>
       {(!w || w.onDocket) && (
         <div className="tn-card">
