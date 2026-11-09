@@ -9,6 +9,8 @@ import type { PublicMember, PublicSettings } from "@/lib/public-data";
 import { CommonFinesCard, NextJpCard, WaitCard } from "./JpInfoCard";
 import ThemeToggle from "./ThemeToggle";
 import { haptic } from "@/lib/haptics";
+import { allSavedTickets } from "./TicketBox";
+import { TicketSheet, TonightHero, TonightStrip, forgetMe, readMe, rememberMe, type MemberLite, type SavedTicket } from "./TonightHero";
 
 // Self-hosted by next/font so the CSP's font-src 'self' allows it.
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
@@ -52,6 +54,12 @@ export default function HomeClient({
   });
   const [gameEnabled, setGameEnabled] = useState(initialSettings?.game_enabled === "true");
   const [jpInfo, setJpInfo] = useState<JpInfo | null>(initialInfo);
+  // Who this phone belongs to (last name picked) and the tickets it holds; both
+  // live in localStorage, so they are read after mount.
+  const [me, setMe] = useState<MemberLite | null>(null);
+  const [saved, setSaved] = useState<SavedTicket[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMember, setSheetMember] = useState<MemberLite | null>(null);
   // Fines requested on the first touch of a name, before the tap even finishes.
   const prefetch = useRef<{ id: string; req: Promise<Fine[]> } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -64,6 +72,7 @@ export default function HomeClient({
       }
     }
     document.addEventListener("mousedown", handleClick);
+    const local = setTimeout(() => { setMe(readMe()); setSaved(allSavedTickets()); }, 0);
     // Only fetched here if the server couldn't include them.
     if (!initialMembers) {
       fetch("/api/members")
@@ -85,7 +94,7 @@ export default function HomeClient({
       .then((r) => (r.ok ? r.json() : null))
       .then((d: JpInfo | null) => setJpInfo(d))
       .catch(() => {});
-    return () => document.removeEventListener("mousedown", handleClick);
+    return () => { clearTimeout(local); document.removeEventListener("mousedown", handleClick); };
   }, [initialMembers, initialSettings]);
 
   function finesFor(id: string): Promise<Fine[]> {
@@ -113,6 +122,9 @@ export default function HomeClient({
 
   async function selectMember(member: Member) {
     haptic();
+    const lite = { id: member.id, name: member.name, roll: member.roll ?? null };
+    rememberMe(lite);
+    setMe(lite);
     withTransition(() => {
       setQuery(member.name);
       setShowSuggestions(false);
@@ -128,6 +140,31 @@ export default function HomeClient({
       setFines(data);
       setLoading(false);
     });
+  }
+
+  function openSheet(m: MemberLite | null) {
+    haptic();
+    setSheetMember(m ?? (selected ? { id: selected.id, name: selected.name, roll: selected.roll ?? null } : me));
+    setSheetOpen(true);
+  }
+
+  function closeSheet() {
+    setSheetOpen(false);
+    setSaved(allSavedTickets());
+  }
+
+  function pickMe(m: MemberLite) {
+    rememberMe(m);
+    setMe(m);
+  }
+
+  // "See my fines": load his record if we know him, else go to the name search.
+  function seeFines(m: MemberLite | null) {
+    const full = m ? allMembers.find((x) => x.id === m.id) : undefined;
+    if (full) { selectMember(full); return; }
+    const input = document.getElementById("member-search") as HTMLInputElement | null;
+    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    input?.focus({ preventScroll: true });
   }
 
   function clearSelection() {
@@ -384,6 +421,57 @@ export default function HomeClient({
         .paid-check { width: 40px; height: 40px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; animation: popIn 0.4s var(--ease) both; }
         @keyframes popIn { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
         .jp-ticket-done { font-weight: 700; color: var(--black); padding: 12px 14px; border-radius: 14px; background: var(--moondust); }
+        /* JP-day hero (app/TonightHero.tsx): the ticket is the first thing on the page.
+           Text on orange stays white in both themes. */
+        .tn { background: var(--orange); color: #FFFFFF; }
+        .tn-dark { background: #000000; }
+        :root[data-theme="dark"] .tn-dark { border-bottom: 1px solid var(--moondust); }
+        .tn-inner { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; padding-bottom: 28px; }
+        .tn-pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; background: #FFFFFF; color: #000000; font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 999px; }
+        .tn-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--orange); animation: tnPulse 1.6s ease-in-out infinite; }
+        @keyframes tnPulse { 50% { opacity: 0.25; } }
+        .tn-kicker { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--orange); }
+        .tn-title { font-size: clamp(36px, 10vw, 52px); line-height: 1.04; font-weight: 800; letter-spacing: -0.02em; }
+        .tn-where { font-size: 18px; font-weight: 600; line-height: 1.4; }
+        .tn-card { background: var(--white); color: var(--black); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
+        .tn-label { font-size: 15px; font-weight: 700; }
+        .tn-picker { position: relative; z-index: 6; }
+        .tn-input { width: 100%; height: 52px; border: 1px solid var(--black); border-radius: 14px; padding: 0 14px; background: var(--white); color: var(--black); font: inherit; font-size: 17px; outline: none; }
+        .tn-input:focus { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+        .tn-btn { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; border: 0; border-radius: 999px; background: var(--black); color: var(--white); font: inherit; font-weight: 800; font-size: 18px; cursor: pointer; }
+        .tn-btn:focus-visible, .tn-btn-ghost:focus-visible, .tn-link:focus-visible, .tn-ticket:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 2px; }
+        .tn-card .tn-btn:focus-visible { outline-color: var(--black); }
+        .tn-hint { font-size: 14px; line-height: 1.45; }
+        .tn-link { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+        .tn-row { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+        .tn-ticket { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 24px; background: var(--orange); color: #FFFFFF; text-decoration: none; max-width: 560px; }
+        .tn-ticket:hover { color: #FFFFFF; }
+        .tn-ticket.called { outline: 4px solid #FDD26E; }
+        .tn-ticket-top { display: flex; justify-content: space-between; gap: 12px; }
+        .tn-ticket-label { display: block; font-size: 15px; font-weight: 700; }
+        .tn-ticket-big { display: block; font-size: 56px; line-height: 1; font-weight: 800; }
+        .tn-ticket-line { font-size: 17px; font-weight: 600; margin-top: 6px; }
+        .tn-ticket-open { align-self: flex-start; margin-top: 8px; padding: 10px 16px; border-radius: 999px; background: #FFFFFF; color: #000000; font-weight: 800; font-size: 15px; }
+        .tn-note { background: #FDD26E; color: #000000; border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.45; max-width: 560px; }
+        .tn-btn-ghost { min-height: 48px; padding: 0 18px; border: 1px solid #FFFFFF; border-radius: 999px; background: transparent; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
+        .tn-strip { display: flex; align-items: flex-start; gap: 12px; margin-top: 4px; padding: 12px 14px; border-radius: 16px; background: var(--moondust); color: #000000; font-size: 15px; line-height: 1.4; }
+        .tn-strip svg { flex-shrink: 0; margin-top: 1px; }
+        /* Take a ticket sheet (a <dialog>; solid black behind it, no overlays) */
+        .tn-sheet { width: 100%; max-width: 560px; max-height: 92dvh; margin: auto auto 0; padding: 0; border: 0; border-radius: 28px 28px 0 0; background: var(--white); color: var(--black); overflow-y: auto; overscroll-behavior: contain; }
+        .tn-sheet::backdrop { background: #000000; }
+        .tn-sheet[open] { animation: tnUp 0.28s var(--ease); }
+        @keyframes tnUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .tn-sheet-body { display: flex; flex-direction: column; gap: 14px; padding: 10px 16px calc(24px + env(safe-area-inset-bottom)); font-family: var(--font-sans), system-ui, sans-serif; }
+        .tn-grab { align-self: center; width: 44px; height: 5px; border-radius: 999px; background: var(--moondust); }
+        .tn-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+        .tn-sheet-title { font-size: 26px; font-weight: 800; }
+        .tn-close { width: 44px; height: 44px; border: 0; border-radius: 999px; background: var(--moondust); color: #000000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .tn-step { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+        .tn-me { display: flex; align-items: center; gap: 12px; border: 2px solid var(--black); border-radius: 16px; padding: 10px 14px; }
+        .tn-me-name { flex: 1; font-weight: 700; font-size: 17px; }
+        .tn-change { min-height: 44px; border: 0; background: none; color: var(--orange); font: inherit; font-weight: 700; cursor: pointer; }
+        .tn-sheet-text { font-size: 15px; line-height: 1.5; }
+        .tn-sheet-small { font-size: 13px; line-height: 1.45; }
         @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
         /* Phone action bar */
@@ -397,7 +485,9 @@ export default function HomeClient({
           .action-bar a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 999px; font-weight: 700; font-size: 17px; text-decoration: none; }
           .action-pay { background: var(--orange); color: var(--white); }
           .action-pay:hover { color: var(--white); }
+          .action-bar button { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; }
           .action-ticket, .action-ticket:hover { background: var(--black); color: var(--white); }
+          .action-ticket.solo, .action-ticket.solo:hover { background: var(--orange); color: #FFFFFF; }
           .page-wrap:has(.action-bar) .footer { padding-bottom: 76px; }
         }
 
@@ -430,6 +520,22 @@ export default function HomeClient({
           <ThemeToggle className="theme-toggle" />
           <a href="/admin/login" className="nav-login">Officer login</a>
         </nav>
+
+        {jpInfo && (
+          <>
+            <TonightStrip info={jpInfo} />
+            <TonightHero
+              info={jpInfo}
+              members={allMembers}
+              me={me}
+              saved={saved}
+              onPickMe={pickMe}
+              onForgetMe={() => { forgetMe(); setMe(null); }}
+              onOpenSheet={openSheet}
+              onSeeFines={seeFines}
+            />
+          </>
+        )}
 
         <main className="container">
           <header className="hero">
@@ -571,18 +677,31 @@ export default function HomeClient({
         </main>
 
         {/* Phone: the two main actions within thumb reach once a brother has found himself. */}
-        {selected && !loading && (totalOwed > 0 || jpInfo?.tickets.state === "open") && (
+        {((selected && !loading && totalOwed > 0) || jpInfo?.tickets.state === "open") && (
           <div className="action-bar">
-            {totalOwed > 0 && (
+            {selected && !loading && totalOwed > 0 && (
               <a href={venmo.url} target="_blank" rel="noopener noreferrer" className="action-pay press">
                 Pay ${money(totalOwed)}
               </a>
             )}
             {jpInfo?.tickets.state === "open" && (
-              <a href="#wait-card" className="action-ticket press">Take a ticket</a>
+              saved.length > 0 ? (
+                <a href={`/ticket/${saved[0].token}`} className="action-ticket press">My ticket #{saved[0].ticketNo}</a>
+              ) : (
+                <button type="button" className={`action-ticket press${selected && !loading && totalOwed > 0 ? "" : " solo"}`} onClick={() => openSheet(null)}>Take a ticket</button>
+              )
             )}
           </div>
         )}
+
+        <TicketSheet
+          open={sheetOpen}
+          onClose={closeSheet}
+          info={jpInfo}
+          members={allMembers}
+          member={sheetMember}
+          onPickMe={(m) => { setSheetMember(m); if (m) pickMe(m); }}
+        />
 
         <footer className="footer">
           <div className="container footer-inner">

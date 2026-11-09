@@ -12,6 +12,21 @@ const TICKET_TTL_MS = 18 * 60 * 60 * 1000;
 type Saved = { officer: string; token: string; ticketNo: number; at: number };
 
 // A brother can hold one ticket per fining officer, so they're kept per member+officer.
+// Every unexpired ticket on this phone, any brother (the homepage shows them on top).
+export function allSavedTickets(): (Saved & { memberId: string })[] {
+  try {
+    const all = JSON.parse(localStorage.getItem(TICKET_STORE) ?? "{}");
+    return Object.entries(all)
+      .map(([k, v]) => {
+        const cut = k.indexOf("|");
+        return { ...(v as Omit<Saved, "officer">), memberId: k.slice(0, cut), officer: k.slice(cut + 1) };
+      })
+      .filter((t) => typeof t.token === "string" && Date.now() - t.at < TICKET_TTL_MS);
+  } catch {
+    return [];
+  }
+}
+
 function savedTickets(memberId: string): Saved[] {
   try {
     const all = JSON.parse(localStorage.getItem(TICKET_STORE) ?? "{}");
@@ -63,7 +78,7 @@ export function TicketWindowLine({ window: w }: { window: TicketWindow }) {
   if (w.state === "soon") {
     return <p className="jp-ticket-line">Tickets open {opensAtLabel(w.opensAt)}, in <strong>{countdown(w.opensAt, now)}</strong>.</p>;
   }
-  if (w.state === "open") return <p className="jp-ticket-line">Tickets are open. Search your name to take one.</p>;
+  if (w.state === "open") return <p className="jp-ticket-line">Tickets are open. Tap Take a ticket at the top of the page.</p>;
   return null;
 }
 
@@ -71,12 +86,26 @@ export function TicketWindowLine({ window: w }: { window: TicketWindow }) {
 // calls or texts when you're close.
 // officers: members who fined anyone in the last 30 days, the only ones he can pick
 // (one ticket each; the server still checks he has a pending fine from that officer).
-export default function TicketBox({ window: w, memberId, officers }: { window: TicketWindow; memberId: string; officers: string[] }) {
+// defaultPicked: officers to preselect (the ones he has pending fines from);
+// startOpen: show the form straight away (the homepage's Take a ticket sheet).
+export default function TicketBox({
+  window: w,
+  memberId,
+  officers,
+  defaultPicked = [],
+  startOpen = false,
+}: {
+  window: TicketWindow;
+  memberId: string;
+  officers: string[];
+  defaultPicked?: string[];
+  startOpen?: boolean;
+}) {
   const now = useNow(1000);
   const [saved, setSaved] = useState<Saved[]>([]);
   // Officers he's taking tickets for: one ticket each, all with the same contact.
-  const [picked, setPicked] = useState<string[]>([]);
-  const [formOpen, setFormOpen] = useState(false);
+  const [picked, setPicked] = useState<string[]>(defaultPicked);
+  const [formOpen, setFormOpen] = useState(startOpen);
   // Nothing chosen until he taps Phone # or Snapchat; then that box appears.
   const [contact, setContact] = useState<"phone" | "snapchat" | null>(null);
   const [phone, setPhone] = useState("");
