@@ -10,7 +10,7 @@ import { CommonFinesCard, NextJpCard, WaitCard } from "./JpInfoCard";
 import ThemeToggle from "./ThemeToggle";
 import { haptic } from "@/lib/haptics";
 import { allSavedTickets } from "./TicketBox";
-import { TicketSheet, TonightHero, TonightStrip, forgetMe, readMe, rememberMe, type MemberLite, type SavedTicket } from "./TonightHero";
+import { TicketSheet, TonightHero, forgetMe, readMe, rememberMe, type MemberLite, type SavedTicket } from "./TonightHero";
 
 // Self-hosted by next/font so the CSP's font-src 'self' allows it.
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
@@ -442,6 +442,8 @@ export default function HomeClient({
         .tn-btn:focus-visible, .tn-btn-ghost:focus-visible, .tn-link:focus-visible, .tn-ticket:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 2px; }
         .tn-card .tn-btn:focus-visible { outline-color: var(--black); }
         .tn-hint { font-size: 14px; line-height: 1.45; }
+        .tn-btn:disabled { background: var(--moondust); color: #000000; cursor: default; }
+        .tn-opens { font-size: 15px; font-weight: 600; text-align: center; }
         .tn-link { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
         .tn-row { display: flex; flex-wrap: wrap; gap: 8px 20px; }
         .tn-ticket { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 24px; background: var(--orange); color: #FFFFFF; text-decoration: none; max-width: 560px; }
@@ -474,21 +476,22 @@ export default function HomeClient({
         .tn-sheet-small { font-size: 13px; line-height: 1.45; }
         @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-        /* Phone action bar */
-        .action-bar { display: none; }
+        /* Bottom action bar: Take a ticket on every screen size; Pay only on phones
+           (on computers the record card's Pay buttons are already in view). */
+        .action-bar {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+          display: flex; justify-content: center; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+          background: var(--white); border-top: 1px solid var(--moondust);
+        }
+        .action-bar > * { max-width: 420px; }
+        .page-wrap:has(.action-bar) .footer { padding-bottom: 76px; }
+        .action-bar a, .action-bar button { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: 17px; text-decoration: none; cursor: pointer; text-align: center; }
+        .action-ticket, .action-ticket:hover { background: var(--black); color: var(--white); }
+        .action-ticket.solo, .action-ticket.solo:hover { background: var(--orange); color: #FFFFFF; }
+        @media (min-width: 641px) { .action-bar .action-pay { display: none; } .action-bar .action-ticket { background: var(--orange); color: #FFFFFF; } }
         @media (max-width: 640px) {
-          .action-bar {
-            position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-            display: flex; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-            background: var(--white); border-top: 1px solid var(--moondust);
-          }
-          .action-bar a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 999px; font-weight: 700; font-size: 17px; text-decoration: none; }
           .action-pay { background: var(--orange); color: var(--white); }
           .action-pay:hover { color: var(--white); }
-          .action-bar button { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; }
-          .action-ticket, .action-ticket:hover { background: var(--black); color: var(--white); }
-          .action-ticket.solo, .action-ticket.solo:hover { background: var(--orange); color: #FFFFFF; }
-          .page-wrap:has(.action-bar) .footer { padding-bottom: 76px; }
         }
 
         @media (max-width: 640px) {
@@ -523,7 +526,6 @@ export default function HomeClient({
 
         {jpInfo && (
           <>
-            <TonightStrip info={jpInfo} />
             <TonightHero
               info={jpInfo}
               members={allMembers}
@@ -677,11 +679,16 @@ export default function HomeClient({
         </main>
 
         {/* Phone: the two main actions within thumb reach once a brother has found himself. */}
-        {((selected && !loading && totalOwed > 0) || jpInfo?.tickets.state === "open") && (
+        {((selected && !loading && totalOwed > 0) || (jpInfo && jpInfo.tickets.state !== "none")) && (
           <div className="action-bar">
             {selected && !loading && totalOwed > 0 && (
               <a href={venmo.url} target="_blank" rel="noopener noreferrer" className="action-pay press">
                 Pay ${money(totalOwed)}
+              </a>
+            )}
+            {jpInfo?.tickets.state === "soon" && (
+              <a href="#tonight" className={`action-ticket press${selected && !loading && totalOwed > 0 ? "" : " solo"}`}>
+                Take a ticket · opens {new Date(jpInfo.tickets.opensAt).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm")}
               </a>
             )}
             {jpInfo?.tickets.state === "open" && (
