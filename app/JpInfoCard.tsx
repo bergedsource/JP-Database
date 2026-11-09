@@ -21,7 +21,7 @@ function ordinal(n: number): string {
 // Officers he can pick: anyone who fined in the last 30 days, plus every officer he
 // has a pending fine from (an older fine, or "No officer listed"), so he is never
 // left with nothing valid to choose.
-function ticketOfficers(recent: string[], own: string[]): string[] {
+export function ticketOfficers(recent: string[], own: string[]): string[] {
   return [...new Set([...recent, ...own])].sort((a, b) => a.localeCompare(b));
 }
 
