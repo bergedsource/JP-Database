@@ -176,6 +176,10 @@ export default function HomeClient({
     });
   }
 
+  // Tickets on this phone for the session tickets are open for (older ones dropped).
+  const openDate = jpInfo?.tickets.state === "open" ? jpInfo.tickets.date : null;
+  const myTickets = openDate ? saved.filter((t) => !t.date || t.date === openDate) : [];
+
   const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
   const pastFines = fines.filter((f) => ["dismissed", "overturned", "paid", "labor", "added_to_dues"].includes(f.status));
   const totalOwed = currentFines
@@ -530,7 +534,7 @@ export default function HomeClient({
               info={jpInfo}
               members={allMembers}
               me={me}
-              saved={saved}
+              saved={myTickets}
               onPickMe={pickMe}
               onForgetMe={() => { forgetMe(); setMe(null); }}
               onOpenSheet={openSheet}
@@ -692,8 +696,8 @@ export default function HomeClient({
               </a>
             )}
             {jpInfo?.tickets.state === "open" && (
-              saved.length > 0 ? (
-                <a href={`/ticket/${saved[0].token}`} className="action-ticket press">My ticket #{saved[0].ticketNo}</a>
+              myTickets.length > 0 ? (
+                <a href={`/ticket/${myTickets[0].token}`} className="action-ticket press">My ticket #{myTickets[0].ticketNo}</a>
               ) : (
                 <button type="button" className={`action-ticket press${selected && !loading && totalOwed > 0 ? "" : " solo"}`} onClick={() => openSheet(null)}>Take a ticket</button>
               )

@@ -7,7 +7,6 @@ import {
   NEXT_SESSION_KEY,
   TIER_EXAMPLES,
   TIER_LABELS,
-  DEFAULT_START,
   formatTime,
   parseHearingMinutes,
   parseLearned,
@@ -20,12 +19,6 @@ import {
 } from "@/lib/jp-info";
 
 const TIERS: HearingTier[] = ["quick", "standard", "long", "longest"];
-
-// "19:00" → "07:00" (tickets open 12 hours before the start time).
-function clockMinus12(hhmm: string): string {
-  const [h, m] = hhmm.split(":").map(Number);
-  return `${String((h + 12) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
 
 async function saveSetting(key: string, value: string): Promise<string | null> {
   const res = await fetch("/api/admin/settings", {
@@ -151,7 +144,7 @@ export default function SessionSettings() {
             )}
           </div>
           <p className="ses-next-preview">
-            {date ? <>Members see: <strong>{preview(date, time, place.trim())}</strong> Tickets open <strong>12 hours before</strong>, at {formatTime(clockMinus12(time || DEFAULT_START))}{(time || DEFAULT_START) < "12:00" ? " the night before" : ""}, with a countdown until then. </> : "Nothing posted, so the homepage says the next session isn't scheduled yet. "}
+            {date ? <>Members see: <strong>{preview(date, time, place.trim())}</strong> Tickets open <strong>as soon as you save this</strong>. </> : "Nothing posted, so the homepage says the next session isn't scheduled yet. "}
             Starting a session on or after this date takes it down automatically.
           </p>
           {sessionErr && <p className="adm-error" role="alert">{sessionErr}</p>}

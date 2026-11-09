@@ -17,7 +17,6 @@ import {
   parseLearned,
   parseNextSession,
   scaleMinutes,
-  ticketsOpenAt,
   todayPacific,
   type DocketSlot,
   type HearingMinutes,
@@ -70,17 +69,16 @@ export async function loadDocket(service: SupabaseClient): Promise<Docket> {
   }
   const slots = docketOrder((pendingRes.data ?? []) as PendingFine[], rollOf, rank);
 
-  // Tickets: open while a session is running; otherwise from 12 hours before the
-  // posted start time.
+  // Tickets: open while a session is running, and from the moment the chair posts
+  // the next session (rule since 2026-11-08; it used to be 12 hours before).
   let tickets: TicketWindow = { state: "none" };
   let ticketDate: string | null = null;
   if (live) {
-    tickets = { state: "open" };
+    tickets = { state: "open", date: live.date };
     ticketDate = live.date;
   } else if (nextSession) {
-    const opensAt = ticketsOpenAt(nextSession);
     ticketDate = nextSession.date;
-    tickets = Date.now() >= opensAt.getTime() ? { state: "open" } : { state: "soon", opensAt: opensAt.toISOString() };
+    tickets = { state: "open", date: nextSession.date };
   }
 
   let skipped = new Set<string>();
