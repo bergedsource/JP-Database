@@ -2,8 +2,9 @@ import { google } from "googleapis";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sheetSafe } from "@/lib/sheet-safe";
 
+// Checked at export time, not import time: a top-level throw fails `next build`
+// (page-data collection) anywhere the var isn't set, e.g. Vercel previews.
 const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
-if (!FALLBACK_SPREADSHEET_ID) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
 const SHEET_NAME = "Fine Processing Form";
 
 const MAX_NAME_LEN = 100;
@@ -25,6 +26,7 @@ export async function exportFineToSheets(payload: ExportFinePayload): Promise<vo
   const service = createServiceClient();
   const { data: sheetSetting } = await service.from("settings").select("value").eq("key", "google_spreadsheet_id").single();
   const spreadsheetId = sheetSetting?.value?.trim() || FALLBACK_SPREADSHEET_ID;
+  if (!spreadsheetId) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
 
   const safeName = String(member_name).slice(0, MAX_NAME_LEN);
   const safeType = String(fine_type).slice(0, MAX_TYPE_LEN);
