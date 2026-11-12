@@ -68,10 +68,17 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
   async function loadSessions() {
     setSessionLoading(true);
     setSessionError("");
-    const res = await fetch("/api/admin/sessions");
-    if (res.ok) setSessions(await res.json());
-    else setSessionError("Failed to load sessions.");
-    setSessionLoading(false);
+    try {
+      const res = await fetch("/api/admin/sessions");
+      if (res.ok) setSessions(await res.json());
+      else setSessionError("Failed to load sessions.");
+    } catch {
+      // Dropped connection (phone switching networks): show it instead of an
+      // endless spinner.
+      setSessionError("No connection. Couldn't load sessions — try again.");
+    } finally {
+      setSessionLoading(false);
+    }
   }
 
   // Deferred one microtask so loadSessions' opening setSessionLoading/setSessionError

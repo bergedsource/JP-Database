@@ -6,6 +6,10 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
+  // Only report from deployed builds; local `next dev` errors were landing in
+  // the same inbox.
+  enabled: process.env.NODE_ENV === "production",
+
   dsn: "https://00351180a6ab7807aa87ad775e62e410@o4511222056222720.ingest.us.sentry.io/4511222059565056",
 
   // Sample 20% of transactions to stay within free quota limits

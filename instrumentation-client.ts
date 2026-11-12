@@ -5,6 +5,10 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
+  // Only report from deployed builds. Local `next dev` errors (hot-reload
+  // mid-edit, a stopped local Supabase) were landing in the same inbox.
+  enabled: process.env.NODE_ENV === "production",
+
   dsn: "https://00351180a6ab7807aa87ad775e62e410@o4511222056222720.ingest.us.sentry.io/4511222059565056",
 
   // Sample 20% of transactions to stay within free quota limits
@@ -29,6 +33,15 @@ Sentry.init({
     /SCDynimacBridge/,
     // Meta (Instagram/Facebook) webview autofill hook
     /_AutofillCallbackHandler/,
+    // Outlook/Office link scanners and some extensions call into the page over a
+    // bridge and reject with this plain object. Not our code.
+    /Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/,
+    // The browser cancelling a View Transition animation (tab hidden, or a second
+    // tap starting a new one). The state update still applies; only the
+    // animation is skipped. withTransition() in HomeClient catches these too.
+    /Transition was aborted because of invalid state/,
+    /Old view transition aborted by new view transition/,
+    /View transition was skipped because document visibility state is hidden/,
   ],
 });
 

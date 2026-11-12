@@ -21,11 +21,16 @@ import {
 const TIERS: HearingTier[] = ["quick", "standard", "long", "longest"];
 
 async function saveSetting(key: string, value: string): Promise<string | null> {
-  const res = await fetch("/api/admin/settings", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key, value }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+  } catch {
+    return "No connection. Try again.";
+  }
   if (res.ok) return null;
   const data = await res.json().catch(() => ({}));
   return data.error ?? "Couldn't save. Try again.";

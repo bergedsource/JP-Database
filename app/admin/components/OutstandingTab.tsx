@@ -69,6 +69,7 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   // Amount editing state
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
   const [editingAmountValue, setEditingAmountValue] = useState<string>("");
+  const [rowError, setRowError] = useState("");
 
   async function submitOutstandingFine(e: React.FormEvent) {
     e.preventDefault();
@@ -119,20 +120,32 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
   }
 
   async function updateFineStatus(id: string, status: FineStatus) {
-    await fetch(`/api/admin/fines/${id}/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    setRowError("");
+    try {
+      const res = await fetch(`/api/admin/fines/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) setRowError("Couldn't change that fine's status. Try again.");
+    } catch {
+      setRowError("No connection — that status change didn't save. Try again.");
+    }
     await refresh();
   }
 
   async function updateFineAmount(id: string, newAmount: number | null) {
-    await fetch(`/api/admin/fines/${id}/amount`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: newAmount }),
-    });
+    setRowError("");
+    try {
+      const res = await fetch(`/api/admin/fines/${id}/amount`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: newAmount }),
+      });
+      if (!res.ok) setRowError("Couldn't change that amount. Try again.");
+    } catch {
+      setRowError("No connection — that amount didn't save. Try again.");
+    }
     setEditingAmountId(null);
     setEditingAmountValue("");
     await refresh();
@@ -328,6 +341,8 @@ export default function OutstandingTab({ members, fines, isPrivileged, currentUs
           </form>
         </div>
       </div>}
+
+      {rowError && <p className="adm-error" role="alert">{rowError}</p>}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
