@@ -23,14 +23,19 @@ export default function StatusNote() {
   async function save(value: string) {
     setBusy(true);
     setError("");
-    const res = await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: STATUS_NOTE_KEY, value }),
-    });
-    if (res.ok) { setSaved(value.trim().slice(0, 120)); setDraft(value.trim().slice(0, 120)); }
-    else setError("Couldn't post that. Try again.");
-    setBusy(false);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: STATUS_NOTE_KEY, value }),
+      });
+      if (res.ok) { setSaved(value.trim().slice(0, 120)); setDraft(value.trim().slice(0, 120)); }
+      else setError("Couldn't post that. Try again.");
+    } catch {
+      setError("No connection. Try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

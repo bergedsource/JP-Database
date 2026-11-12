@@ -25,8 +25,12 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/sessions/${sessionId}/queue`, { cache: "no-store" });
-    if (res.ok) setQ(await res.json());
+    try {
+      const res = await fetch(`/api/admin/sessions/${sessionId}/queue`, { cache: "no-store" });
+      if (res.ok) setQ(await res.json());
+    } catch {
+      // A dropped connection; the next 5 s poll tries again.
+    }
   }, [sessionId]);
 
   useEffect(() => {
