@@ -735,13 +735,29 @@ export default function HomeClient({
 
 // Runs a state change as a View Transition where supported (smooth cross-fade /
 // card morph), otherwise just applies it.
+type ViewTransitionLike = {
+  ready: Promise<void>;
+  finished: Promise<void>;
+  updateCallbackDone: Promise<void>;
+};
 function withTransition(update: () => void) {
-  const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-  if (!d.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const d = document as Document & { startViewTransition?: (cb: () => void) => ViewTransitionLike };
+  if (
+    !d.startViewTransition ||
+    document.hidden ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
     update();
     return;
   }
-  d.startViewTransition(() => flushSync(update));
+  const t = d.startViewTransition(() => flushSync(update));
+  // The browser aborts the animation (InvalidStateError) if the tab is hidden
+  // mid-transition — e.g. the user switches apps on mobile. The state update
+  // still applies; only the animation is skipped, so swallow these rejections.
+  const ignore = () => {};
+  t.ready.catch(ignore);
+  t.finished.catch(ignore);
+  t.updateCallbackDone.catch(ignore);
 }
 
 // The balance counts up to its amount (instant with reduced motion).
