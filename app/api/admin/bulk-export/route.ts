@@ -4,8 +4,9 @@ import { sheetSafe } from "@/lib/sheet-safe";
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
 
+// Checked per request, not at import: a top-level throw fails `next build`
+// wherever the var isn't set (e.g. Vercel previews).
 const FALLBACK_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
-if (!FALLBACK_SPREADSHEET_ID) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
 
 // Extract §XX-XXX from fine_type e.g. "Missing Chapter Meeting (§11-100)" → "§11-100"
 function extractBylaw(fineType: string): string {
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth });
     const tabName = `${term} Fines`;
     const spreadsheetId = (typeof customId === "string" && customId.trim()) ? customId.trim() : defaultSheetId;
+    if (!spreadsheetId) throw new Error("GOOGLE_SPREADSHEET_ID env var is not set");
     const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
     let sheetId: number = 0;
 
