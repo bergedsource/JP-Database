@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 // The card iMessage / GroupMe / Snapchat show when someone shares the link.
-export const alt = "Acacia JP: fines, balance and your spot in line at JP";
+export const alt = "Acacia JP: fines, balance and the next JP";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -20,7 +20,7 @@ export default async function OpengraphImage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <div style={{ fontSize: 92, fontWeight: 800, color: "#000000", letterSpacing: -3 }}>Acacia JP</div>
             <div style={{ fontSize: 40, color: "#000000", lineHeight: 1.3, maxWidth: 640 }}>
-              Your fines, your balance and your spot in line at JP.
+              Your fines, your balance and the next JP.
             </div>
             <div style={{ fontSize: 30, fontWeight: 700, color: "#D73F09" }}>Oregon State Chapter</div>
           </div>

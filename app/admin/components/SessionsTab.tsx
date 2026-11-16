@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import FineDetailsEditor from "./FineDetailsEditor";
 import SessionSettings from "./SessionSettings";
-import TicketsSoFar from "./TicketsSoFar";
-import SessionQueue from "./SessionQueue";
 import { rollMap, sortFines, type FineSort } from "./rollSort";
 import { NO_OFFICER } from "@/lib/jp-info";
 import type { FineStatus, JpSession, JpSessionChange, JpSessionFine, Member } from "@/lib/types";
@@ -41,10 +39,8 @@ type SessionDetail = {
   changes: JpSessionChange[];
   absences?: { member_id: string; member_name: string }[];
   officer_order?: string[]; // fixed hearing order of officers for this session
-  tickets?: { member_id: string; officer: string; no: number | null; status: string; phone: string | null }[];
 };
 
-const TICKET_LABEL: Record<string, string> = { waiting: "Waiting", here: "Here", called: "Called", skipped: "Skipped", done: "Done" };
 
 export default function SessionsTab({ members, isPrivileged, refresh }: { members: Member[]; isPrivileged: boolean; refresh: () => Promise<void> }) {
   const [sessions, setSessions] = useState<JpSession[]>([]);
@@ -223,7 +219,6 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
       const pa = order.indexOf(a.name), pb = order.indexOf(b.name);
       return (pa === -1 ? Infinity : pa) - (pb === -1 ? Infinity : pb) || b.brothers - a.brothers || a.name.localeCompare(b.name);
     });
-  const ticketFor = (f: JpSessionFine) => sessionDetail?.tickets?.find((t) => t.member_id === f.member_id && t.officer === officerOf(f));
   const activeOfficer =
     officerTab === "all" || officers.some((o) => o.name === officerTab)
       ? officerTab
@@ -235,7 +230,6 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
       {sessionError && <p className="adm-error" role="alert">{sessionError}</p>}
 
       {isPrivileged && sessionView === "list" && <SessionSettings />}
-      {isPrivileged && sessionView === "list" && <TicketsSoFar />}
 
       {isPrivileged && sessionView === "list" && (
         <div className="adm-card">
@@ -337,10 +331,6 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
             )}
           </div>
 
-          {isPrivileged && !sessionDetail.session.closed_at && (
-            <SessionQueue sessionId={sessionDetail.session.id} refreshKey={decidedCount} />
-          )}
-
           {sessionDetailLoading ? (
             <p className="adm-empty">Loading…</p>
           ) : (
@@ -413,17 +403,6 @@ export default function SessionsTab({ members, isPrivileged, refresh }: { member
                             <span className="ses-fine-name">
                               {fine.member_name}
                               {rolls.get(fine.member_id) != null && <span className="adm-roll">#{rolls.get(fine.member_id)}</span>}
-                              {!sessionDetail.session.closed_at && (() => {
-                                const t = ticketFor(fine);
-                                return t ? (
-                                  <span className="ses-ticket-chip" title={`Ticket #${t.no ?? "?"} for ${t.officer}: ${TICKET_LABEL[t.status] ?? t.status}`}>
-                                    Ticket{t.no ? ` #${t.no}` : ""} · {TICKET_LABEL[t.status] ?? t.status}
-                                    {t.phone && <a className="ses-ticket-call" href={`tel:${t.phone}`} onClick={(e) => e.stopPropagation()}>Call</a>}
-                                  </span>
-                                ) : (
-                                  <span className="ses-ticket-chip none" title="No ticket for this officer tonight">No ticket</span>
-                                );
-                              })()}
                             </span>
                             <span className="ses-fine-type">
                               {fine.fine_type}

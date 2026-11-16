@@ -6,11 +6,9 @@ import { Figtree } from "next/font/google";
 import type { Fine, Member } from "@/lib/types";
 import type { JpInfo } from "@/lib/jp-info";
 import type { PublicMember, PublicSettings } from "@/lib/public-data";
-import { CommonFinesCard, NextJpCard, WaitCard } from "./JpInfoCard";
+import { CommonFinesCard, NextJpCard } from "./JpInfoCard";
 import ThemeToggle from "./ThemeToggle";
 import { haptic } from "@/lib/haptics";
-import { allSavedTickets } from "./TicketBox";
-import { TicketSheet, TonightHero, forgetMe, readMe, rememberMe, type MemberLite, type SavedTicket } from "./TonightHero";
 
 // Self-hosted by next/font so the CSP's font-src 'self' allows it.
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
@@ -53,12 +51,6 @@ export default function HomeClient({
     url: initialSettings?.venmo_url ?? "https://venmo.com/Dillon-Berge",
   });
   const [jpInfo, setJpInfo] = useState<JpInfo | null>(initialInfo);
-  // Who this phone belongs to (last name picked) and the tickets it holds; both
-  // live in localStorage, so they are read after mount.
-  const [me, setMe] = useState<MemberLite | null>(null);
-  const [saved, setSaved] = useState<SavedTicket[]>([]);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetMember, setSheetMember] = useState<MemberLite | null>(null);
   // Fines requested on the first touch of a name, before the tap even finishes.
   const prefetch = useRef<{ id: string; req: Promise<Fine[]> } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -71,7 +63,6 @@ export default function HomeClient({
       }
     }
     document.addEventListener("mousedown", handleClick);
-    const local = setTimeout(() => { setMe(readMe()); setSaved(allSavedTickets()); }, 0);
     // Only fetched here if the server couldn't include them.
     if (!initialMembers) {
       fetch("/api/members")
@@ -87,12 +78,12 @@ export default function HomeClient({
         })
         .catch(() => {});
     }
-    // The server copy can be up to 30 s old; refresh it (who's up, ticket window).
+    // The server copy can be up to 30 s old; refresh it (next session).
     fetch("/api/jp-info")
       .then((r) => (r.ok ? r.json() : null))
       .then((d: JpInfo | null) => setJpInfo(d))
       .catch(() => {});
-    return () => { clearTimeout(local); document.removeEventListener("mousedown", handleClick); };
+    return () => { document.removeEventListener("mousedown", handleClick); };
   }, [initialMembers, initialSettings]);
 
   function finesFor(id: string): Promise<Fine[]> {
@@ -120,9 +111,6 @@ export default function HomeClient({
 
   async function selectMember(member: Member) {
     haptic();
-    const lite = { id: member.id, name: member.name, roll: member.roll ?? null };
-    rememberMe(lite);
-    setMe(lite);
     withTransition(() => {
       setQuery(member.name);
       setShowSuggestions(false);
@@ -140,31 +128,6 @@ export default function HomeClient({
     });
   }
 
-  function openSheet(m: MemberLite | null) {
-    haptic();
-    setSheetMember(m ?? (selected ? { id: selected.id, name: selected.name, roll: selected.roll ?? null } : me));
-    setSheetOpen(true);
-  }
-
-  function closeSheet() {
-    setSheetOpen(false);
-    setSaved(allSavedTickets());
-  }
-
-  function pickMe(m: MemberLite) {
-    rememberMe(m);
-    setMe(m);
-  }
-
-  // "See my fines": load his record if we know him, else go to the name search.
-  function seeFines(m: MemberLite | null) {
-    const full = m ? allMembers.find((x) => x.id === m.id) : undefined;
-    if (full) { selectMember(full); return; }
-    const input = document.getElementById("member-search") as HTMLInputElement | null;
-    input?.scrollIntoView({ behavior: "smooth", block: "center" });
-    input?.focus({ preventScroll: true });
-  }
-
   function clearSelection() {
     withTransition(() => {
       setSelected(null);
@@ -173,10 +136,6 @@ export default function HomeClient({
       setSuggestions([]);
     });
   }
-
-  // Tickets on this phone for the session tickets are open for (older ones dropped).
-  const openDate = jpInfo?.tickets.state === "open" ? jpInfo.tickets.date : null;
-  const myTickets = openDate ? saved.filter((t) => !t.date || t.date === openDate) : [];
 
   const currentFines = fines.filter((f) => ["pending", "upheld"].includes(f.status));
   const pastFines = fines.filter((f) => ["dismissed", "overturned", "paid", "labor", "added_to_dues"].includes(f.status));
@@ -210,7 +169,7 @@ export default function HomeClient({
         /* Dark mode: black and white swap; orange and the secondaries stay. */
         :root[data-theme="dark"] { --black: #FFFFFF; --white: #000000; color-scheme: dark; }
         /* Moondust fills keep black text in dark mode; the footer stays black. */
-        :root[data-theme="dark"] :is(.card-note, .pay-cashapp, .jp-ticket-select, .jp-ticket-done, .suggestion-item:hover, .suggestion-item:focus-visible, .suggestion-item:active, .jp-contact-opt:not(.on)) { color: #000000; }
+        :root[data-theme="dark"] :is(.card-note, .pay-cashapp, .suggestion-item:hover, .suggestion-item:focus-visible, .suggestion-item:active) { color: #000000; }
         /* Cash App button goes Cash App green in dark mode (user request), logo ringed so it stays visible. */
         :root[data-theme="dark"] .pay-cashapp { background: #00D632; color: #000000; }
         :root[data-theme="dark"] .pay-cashapp img { border-radius: 9px; box-shadow: 0 0 0 2px #000000; }
@@ -315,33 +274,6 @@ export default function HomeClient({
         /* Next JP (dark card) */
         .jp-date { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
         .jp-place { line-height: 1.5; }
-        .jp-line { border-top: 1px solid var(--white); padding-top: 14px; display: flex; flex-direction: column; gap: 2px; }
-        .jp-line-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-        .jp-line-title { font-weight: 700; }
-        .jp-line-count, .jp-line-more { font-size: 14px; font-variant-numeric: tabular-nums; }
-        .jp-line-group { margin-bottom: 4px; font-size: 13px; font-weight: 700; color: var(--orange); }
-        .jp-line-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
-        .jp-line-panel { animation: lineIn 0.35s ease both; }
-        @keyframes lineIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
-        .jp-line-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .jp-line-tab { min-height: 44px; padding: 0 12px; border: 1px solid var(--white); border-radius: 999px; background: var(--black); color: var(--white); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .jp-line-tab.on { background: var(--white); color: var(--black); }
-        .jp-line-tab:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
-        .jp-line-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; margin: 0 -10px; border-radius: 10px; }
-        .jp-line-row.first { background: var(--orange); }
-        .jp-line-roll { flex: none; min-width: 3.4em; font-weight: 800; font-variant-numeric: tabular-nums; }
-        .jp-line-name { flex: 1; min-width: 0; }
-        .jp-line-tag { font-size: 14px; font-weight: 600; }
-        .jp-line-more { margin-top: 6px; }
-        .jp-window { margin-top: auto; background: var(--orange); border-radius: 16px; padding: 14px 16px; }
-        .jp-window .jp-ticket-line { color: var(--white); }
-        .jp-window .jp-ticket-line strong { color: var(--white); }
-
-        /* Wait */
-        .jp-queue { display: flex; gap: 3px; }
-        .jp-queue span { flex-basis: 0; height: 8px; border-radius: 4px; background: var(--moondust); }
-        .jp-queue span.ahead { background: var(--black); }
-        .jp-queue span.you { background: var(--orange); }
 
         /* Common fines */
         .jp-common { list-style: none; display: flex; flex-direction: column; }
@@ -351,35 +283,6 @@ export default function HomeClient({
         .jp-common-name { font-weight: 600; }
         .jp-common-meta { font-size: 14px; }
         .jp-common-count { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-        /* Take a ticket */
-        .jp-ticket { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--moondust); }
-        .jp-ticket-line { font-size: 15px; line-height: 1.5; }
-        .jp-ticket-line strong { color: var(--orange); font-variant-numeric: tabular-nums; }
-        .jp-ticket-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 24px; border: 0; border-radius: 999px; background: var(--orange); color: var(--white); font: inherit; font-size: 17px; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
-        .jp-ticket-btn:hover { background: var(--black); color: var(--white); }
-        .jp-ticket-btn:disabled { opacity: 0.6; cursor: wait; }
-        .jp-ticket-btn:focus-visible, .jp-contact-opt:focus-visible { outline: 3px solid var(--black); outline-offset: 2px; }
-        .jp-ticket-form { display: flex; flex-direction: column; gap: 10px; }
-        .jp-contact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: var(--moondust); }
-        .jp-contact-opt { min-height: 42px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--black); font: inherit; font-weight: 600; cursor: pointer; }
-        .jp-contact-opt.on { background: var(--white); border-color: var(--black); }
-        .jp-officer-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
-        .jp-officer-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--black); color: var(--white); font-weight: 600; font-size: 14px; }
-        .jp-officer-chip button { width: 40px; height: 40px; border: none; border-radius: 50%; background: transparent; color: var(--white); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
-        .jp-officer-chip button:hover { background: var(--orange); }
-        .jp-ticket-hint { font-weight: 400; font-size: 13px; }
-        .jp-ticket-check { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 15px; cursor: pointer; }
-        .jp-ticket-check input { width: 18px; height: 18px; accent-color: var(--orange); }
-        .jp-ticket-label { font-size: 14px; font-weight: 600; }
-        .jp-ticket-row { display: flex; gap: 8px; }
-        .search-input.jp-ticket-input { height: 48px; flex: 1; min-width: 0; padding: 0 14px; border: 1px solid var(--black); border-radius: 14px; background: var(--white); font: inherit; font-size: 16px; color: var(--black); outline: none; }
-        .search-input.jp-ticket-input:focus { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
-        .jp-ticket-form > .jp-ticket-input { flex: none; }
-        .jp-ticket-select { cursor: pointer; appearance: auto; background: var(--moondust) !important; border-color: var(--moondust) !important; }
-        .jp-ticket-links { display: flex; flex-direction: column; gap: 8px; }
-        .jp-ticket-error { font-size: 14px; font-weight: 600; color: var(--orange); }
-        .jp-ticket-fine { font-size: 13px; line-height: 1.5; }
 
         /* How JP works */
         .steps { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
@@ -395,13 +298,13 @@ export default function HomeClient({
 
         /* Instant tap feedback (phones never hover) */
         a, button, select, input, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        .press, .nav-login, .nav-link, .back-btn, .pay-btn, .past-toggle, .jp-ticket-btn, .jp-contact-opt, .jp-line-tab, .suggestion-item, .search-go {
+        .press, .nav-login, .nav-link, .back-btn, .pay-btn, .past-toggle, .suggestion-item, .search-go {
           transition: transform 0.12s var(--ease), background-color 0.12s var(--ease), color 0.12s var(--ease);
         }
         .press:active, .nav-login:active, .nav-link:active, .back-btn:active, .pay-btn:active, .past-toggle:active,
-        .jp-ticket-btn:active, .jp-contact-opt:active, .jp-line-tab:active, .search-go:active { transform: scale(0.96); }
+        .search-go:active { transform: scale(0.96); }
         .suggestion-item:active { background: var(--moondust); transform: none; }
-        .pay-venmo:active, .jp-ticket-btn:active, .action-pay:active { background: var(--black); color: var(--white); }
+        .pay-venmo:active, .action-pay:active { background: var(--black); color: var(--white); }
 
         /* Loading placeholders */
         /* Only shown if loading takes over 300 ms, so fast lookups never flash it. */
@@ -422,64 +325,9 @@ export default function HomeClient({
         .paid-up { display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
         .paid-check { width: 40px; height: 40px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; animation: popIn 0.4s var(--ease) both; }
         @keyframes popIn { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
-        .jp-ticket-done { font-weight: 700; color: var(--black); padding: 12px 14px; border-radius: 14px; background: var(--moondust); }
-        /* JP-day hero (app/TonightHero.tsx): the ticket is the first thing on the page.
-           Text on orange stays white in both themes. */
-        .tn { background: var(--orange); color: #FFFFFF; }
-        .tn-dark { background: #000000; }
-        :root[data-theme="dark"] .tn-dark { border-bottom: 1px solid var(--moondust); }
-        .tn-inner { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; padding-bottom: 28px; }
-        .tn-pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; background: #FFFFFF; color: #000000; font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 999px; }
-        .tn-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--orange); animation: tnPulse 1.6s ease-in-out infinite; }
-        @keyframes tnPulse { 50% { opacity: 0.25; } }
-        .tn-kicker { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--orange); }
-        .tn-title { font-size: clamp(36px, 10vw, 52px); line-height: 1.04; font-weight: 800; letter-spacing: -0.02em; }
-        .tn-where { font-size: 18px; font-weight: 600; line-height: 1.4; }
-        .tn-card { background: var(--white); color: var(--black); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
-        .tn-label { font-size: 15px; font-weight: 700; }
-        .tn-picker { position: relative; z-index: 6; }
-        .tn-input { width: 100%; height: 52px; border: 1px solid var(--black); border-radius: 14px; padding: 0 14px; background: var(--white); color: var(--black); font: inherit; font-size: 17px; outline: none; }
-        .tn-input:focus { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
-        .tn-btn { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; border: 0; border-radius: 999px; background: var(--black); color: var(--white); font: inherit; font-weight: 800; font-size: 18px; cursor: pointer; }
-        .tn-btn:focus-visible, .tn-btn-ghost:focus-visible, .tn-link:focus-visible, .tn-ticket:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 2px; }
-        .tn-card .tn-btn:focus-visible { outline-color: var(--black); }
-        .tn-hint { font-size: 14px; line-height: 1.45; }
-        .tn-btn:disabled { background: var(--moondust); color: #000000; cursor: default; }
-        .tn-opens { font-size: 15px; font-weight: 600; text-align: center; }
-        .tn-link { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-        .tn-row { display: flex; flex-wrap: wrap; gap: 8px 20px; }
-        .tn-ticket { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 24px; background: var(--orange); color: #FFFFFF; text-decoration: none; max-width: 560px; }
-        .tn-ticket:hover { color: #FFFFFF; }
-        .tn-ticket.called { outline: 4px solid #FDD26E; }
-        .tn-ticket-top { display: flex; justify-content: space-between; gap: 12px; }
-        .tn-ticket-label { display: block; font-size: 15px; font-weight: 700; }
-        .tn-ticket-big { display: block; font-size: 56px; line-height: 1; font-weight: 800; }
-        .tn-ticket-line { font-size: 17px; font-weight: 600; margin-top: 6px; }
-        .tn-ticket-open { align-self: flex-start; margin-top: 8px; padding: 10px 16px; border-radius: 999px; background: #FFFFFF; color: #000000; font-weight: 800; font-size: 15px; }
-        .tn-note { background: #FDD26E; color: #000000; border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.45; max-width: 560px; }
-        .tn-btn-ghost { min-height: 48px; padding: 0 18px; border: 1px solid #FFFFFF; border-radius: 999px; background: transparent; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
-        .tn-strip { display: flex; align-items: flex-start; gap: 12px; margin-top: 4px; padding: 12px 14px; border-radius: 16px; background: var(--moondust); color: #000000; font-size: 15px; line-height: 1.4; }
-        .tn-strip svg { flex-shrink: 0; margin-top: 1px; }
-        /* Take a ticket sheet (a <dialog>; solid black behind it, no overlays) */
-        .tn-sheet { width: 100%; max-width: 560px; max-height: 92dvh; margin: auto auto 0; padding: 0; border: 0; border-radius: 28px 28px 0 0; background: var(--white); color: var(--black); overflow-y: auto; overscroll-behavior: contain; }
-        .tn-sheet::backdrop { background: #000000; }
-        .tn-sheet[open] { animation: tnUp 0.28s var(--ease); }
-        @keyframes tnUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-        .tn-sheet-body { display: flex; flex-direction: column; gap: 14px; padding: 10px 16px calc(24px + env(safe-area-inset-bottom)); font-family: var(--font-sans), system-ui, sans-serif; }
-        .tn-grab { align-self: center; width: 44px; height: 5px; border-radius: 999px; background: var(--moondust); }
-        .tn-sheet-head { display: flex; align-items: center; justify-content: space-between; }
-        .tn-sheet-title { font-size: 26px; font-weight: 800; }
-        .tn-close { width: 44px; height: 44px; border: 0; border-radius: 999px; background: var(--moondust); color: #000000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .tn-step { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-        .tn-me { display: flex; align-items: center; gap: 12px; border: 2px solid var(--black); border-radius: 16px; padding: 10px 14px; }
-        .tn-me-name { flex: 1; font-weight: 700; font-size: 17px; }
-        .tn-change { min-height: 44px; border: 0; background: none; color: var(--orange); font: inherit; font-weight: 700; cursor: pointer; }
-        .tn-sheet-text { font-size: 15px; line-height: 1.5; }
-        .tn-sheet-small { font-size: 13px; line-height: 1.45; }
         @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-        /* Bottom action bar: Take a ticket on every screen size; Pay only on phones
-           (on computers the record card's Pay buttons are already in view). */
+        /* Bottom action bar: Pay, phones only (on computers the record card's Pay buttons are in view). */
         .action-bar {
           position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
           display: flex; justify-content: center; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
@@ -488,9 +336,7 @@ export default function HomeClient({
         .action-bar > * { max-width: 420px; }
         .page-wrap:has(.action-bar) .footer { padding-bottom: 76px; }
         .action-bar a, .action-bar button { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: 17px; text-decoration: none; cursor: pointer; text-align: center; }
-        .action-ticket, .action-ticket:hover { background: var(--black); color: var(--white); }
-        .action-ticket.solo, .action-ticket.solo:hover { background: var(--orange); color: #FFFFFF; }
-        @media (min-width: 641px) { .action-bar .action-pay { display: none; } .action-bar .action-ticket { background: var(--orange); color: #FFFFFF; } }
+        @media (min-width: 641px) { .action-bar { display: none; } .page-wrap:has(.action-bar) .footer { padding-bottom: 0; } }
         @media (max-width: 640px) {
           .action-pay { background: var(--orange); color: var(--white); }
           .action-pay:hover { color: var(--white); }
@@ -525,27 +371,12 @@ export default function HomeClient({
           <a href="/admin/login" className="nav-login">Officer login</a>
         </nav>
 
-        {jpInfo && (
-          <>
-            <TonightHero
-              info={jpInfo}
-              members={allMembers}
-              me={me}
-              saved={myTickets}
-              onPickMe={pickMe}
-              onForgetMe={() => { forgetMe(); setMe(null); }}
-              onOpenSheet={openSheet}
-              onSeeFines={seeFines}
-            />
-          </>
-        )}
-
         <main className="container">
           <header className="hero">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/crest.webp" alt="" width={88} height={88} style={{ objectFit: "contain" }} />
             <h1 className="hero-title">Jurisprudence</h1>
-            <p className="hero-sub">Your fines, your balance, and your spot in line at JP, all in one place.</p>
+            <p className="hero-sub">Your fines, your balance, and the next JP, all in one place.</p>
             <div className="search-wrap" ref={wrapperRef}>
               <label htmlFor="member-search" className="visually-hidden">Your name</label>
               <div className="search-pill">
@@ -657,7 +488,6 @@ export default function HomeClient({
             </div>
 
             <div className="grid">
-              <WaitCard info={jpInfo} member={selected} />
               <CommonFinesCard info={jpInfo} />
             </div>
 
@@ -679,37 +509,14 @@ export default function HomeClient({
           </div>
         </main>
 
-        {/* Phone: the two main actions within thumb reach once a brother has found himself. */}
-        {((selected && !loading && totalOwed > 0) || (jpInfo && jpInfo.tickets.state !== "none")) && (
+        {/* Phone: Pay within thumb reach once a brother has found himself. */}
+        {selected && !loading && totalOwed > 0 && (
           <div className="action-bar">
-            {selected && !loading && totalOwed > 0 && (
-              <a href={venmo.url} target="_blank" rel="noopener noreferrer" className="action-pay press">
+            <a href={venmo.url} target="_blank" rel="noopener noreferrer" className="action-pay press">
                 Pay ${money(totalOwed)}
               </a>
-            )}
-            {jpInfo?.tickets.state === "soon" && (
-              <a href="#tonight" className={`action-ticket press${selected && !loading && totalOwed > 0 ? "" : " solo"}`}>
-                Take a ticket · opens {new Date(jpInfo.tickets.opensAt).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm")}
-              </a>
-            )}
-            {jpInfo?.tickets.state === "open" && (
-              myTickets.length > 0 ? (
-                <a href={`/ticket/${myTickets[0].token}`} className="action-ticket press">My ticket #{myTickets[0].ticketNo}</a>
-              ) : (
-                <button type="button" className={`action-ticket press${selected && !loading && totalOwed > 0 ? "" : " solo"}`} onClick={() => openSheet(null)}>Take a ticket</button>
-              )
-            )}
           </div>
         )}
-
-        <TicketSheet
-          open={sheetOpen}
-          onClose={closeSheet}
-          info={jpInfo}
-          members={allMembers}
-          member={sheetMember}
-          onPickMe={(m) => { setSheetMember(m); if (m) pickMe(m); }}
-        />
 
         <footer className="footer">
           <div className="container footer-inner">

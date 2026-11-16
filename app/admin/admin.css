@@ -34,15 +34,11 @@
 :root[data-theme="dark"] .adm-nav-item:hover,
 :root[data-theme="dark"] .adm-icon-btn:hover,
 :root[data-theme="dark"] .ses-state.closed,
-:root[data-theme="dark"] .ses-queue-status,
-:root[data-theme="dark"] .ses-queue-row.now,
 :root[data-theme="dark"] .ses-choice:not(.selected):hover:not(:disabled),
 :root[data-theme="dark"] .adm-suggestion-btn:hover,
 :root[data-theme="dark"] .ses-close-btn:hover,
 :root[data-theme="dark"] .adm-member-tag,
 :root[data-theme="dark"] .adm-view-only-banner { color: #000000; }
-:root[data-theme="dark"] .ses-queue-row.now .ses-queue-roll,
-:root[data-theme="dark"] .ses-queue-row.now .ses-queue-who * { color: #000000; }
 :root[data-theme="dark"] .adm-nav-item.active,
 :root[data-theme="dark"] .ses-officer-tab.on { background: #FFFFFF; border-color: #FFFFFF; color: #000000; }
 :root[data-theme="dark"] .ses-officer-tab { background: #000000; color: #FFFFFF; }
@@ -676,7 +672,7 @@
 .ses-card-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .ses-card-hint { font-size: 13px; color: var(--text-muted); }
 .ses-next { border-color: var(--gold-dim); }
-.ses-next .adm-card-title, .ses-timing .adm-card-title { margin: 0; }
+.ses-next .adm-card-title { margin: 0; }
 .ses-next-form { display: flex; flex-direction: column; gap: 14px; }
 .ses-next-fields { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .ses-next-fields .adm-input { width: auto; min-height: 42px; }
@@ -689,67 +685,6 @@
 .ses-absent-note { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
 .ses-absent-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; }
 .adm-noshow { font-size: 12px; font-weight: 700; color: #D73F09; background: #FDD26E; border-radius: 4px; padding: 2px 8px; white-space: nowrap; }
-.ses-learned { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: var(--text-soft); }
-.ses-timing summary { cursor: pointer; list-style: none; }
-.ses-timing summary::-webkit-details-marker { display: none; }
-.ses-timing:not([open]) summary { border-bottom: 0; }
-.ses-timing-row {
-  display: grid;
-  grid-template-columns: 110px 120px minmax(0, 1fr);
-  gap: 16px;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-light);
-}
-.ses-timing-name { font-weight: 700; }
-.ses-timing-input { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 14px; }
-.ses-timing-input .adm-input { width: 64px; text-align: right; }
-.ses-timing-desc { font-size: 14px; line-height: 1.5; color: var(--text-muted); }
-.ses-timing-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; }
-@media (max-width: 640px) {
-  .ses-timing-row { grid-template-columns: 1fr auto; }
-  .ses-timing-desc { grid-column: 1 / -1; }
-}
-
-/* Ticket queue (open session) */
-.ses-queue summary { cursor: pointer; list-style: none; }
-.ses-queue summary::-webkit-details-marker { display: none; }
-.ses-queue-body { display: flex; flex-direction: column; gap: 16px; }
-.ses-ticket-chip { display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 8px; border: 1px solid var(--gold); border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; vertical-align: middle; }
-.ses-ticket-call { margin-left: 8px; color: var(--gold); text-decoration: underline; }
-.ses-ticket-chip.none { border-color: var(--border); font-weight: 600; }
-.ses-status-note { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-.ses-queue-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
-.ses-queue-now { margin: 0; font-size: 15px; color: var(--text-muted); }
-.ses-queue-now strong { color: var(--text); }
-.ses-queue-officer { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--gold); }
-.ses-queue-officer span { font-weight: 400; color: var(--text-muted); font-size: 13px; margin-left: 6px; }
-.ses-queue-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
-.ses-queue-row {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--border-light);
-  border-radius: 6px;
-}
-.ses-queue-row.now { background: #C6DAE7; box-shadow: inset 3px 0 0 var(--gold); }
-.ses-queue-row.skipped { opacity: 0.6; }
-.ses-queue-roll { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.ses-queue-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ses-queue-name { font-weight: 700; }
-.ses-queue-meta { font-size: 13px; color: var(--text-muted); }
-.ses-queue-status { font-size: 12px; font-weight: 700; border-radius: 4px; padding: 3px 8px; background: var(--surface-3); color: var(--text-soft); white-space: nowrap; }
-.ses-queue-status.s-called { background: var(--gold); color: var(--bg); }
-.ses-queue-status.s-here { background: #C4D6A4; color: #000000; }
-.ses-queue-status.s-skipped { background: #FDD26E; color: #D73F09; }
-.ses-queue-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-.ses-queue-actions .ses-choice { min-height: 36px; padding: 0 12px; text-decoration: none; }
-@media (max-width: 640px) {
-  .ses-queue-row { grid-template-columns: 40px minmax(0, 1fr) auto; }
-  .ses-queue-actions { grid-column: 1 / -1; justify-content: flex-start; }
-}
 
 .adm-roll { margin-left: 8px; font-size: 13px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 

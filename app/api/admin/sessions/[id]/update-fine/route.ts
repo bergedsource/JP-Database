@@ -1,7 +1,6 @@
 import { getCurrentRole } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isRateLimited, getIP, adminLimiter } from "@/lib/rate-limit";
-import { afterDecision } from "@/lib/jp-docket";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/admin/sessions/[id]/update-fine — update a fine's status and/or amount, log the change
@@ -109,13 +108,6 @@ export async function POST(
     .eq("id", fine_id);
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
-
-  // Pending → decided: if that was his last fine from this officer, his ticket for
-  // that group is done and the next ticket holder is called (shared with the Fines tab).
-  if (hasStatus) {
-    const { data: s } = await service.from("jp_sessions").select("date_held").eq("id", session_id).single();
-    if (s) await afterDecision(service, fine, old_status, new_status, s.date_held);
-  }
 
   const auditTable = current.role === "root" ? "system_events" : "audit_logs";
 
