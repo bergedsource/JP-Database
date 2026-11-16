@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { todayPacific, type CommonFine, type JpInfo } from "./jp-info";
-import { loadDocket } from "./jp-docket";
+import { NEXT_SESSION_KEY, parseNextSession, todayPacific, type CommonFine, type JpInfo } from "./jp-info";
 
 // Public homepage data, shared by the /api routes and the server-rendered homepage
 // (so the page arrives already filled in). Every read goes through the curated
@@ -32,41 +31,23 @@ export async function publicSettings(service: SupabaseClient): Promise<PublicSet
 }
 
 // The homepage JP cards: the next session the chair has posted, the five most
-// common fine types on record, the hearing line by officer group (name + roll #,
-// like the public member search shows), and officers who fined in the last 30 days.
-// null if the fines can't be read.
+// common fine types on record. null if the fines can't be read.
 export async function jpInfo(service: SupabaseClient): Promise<JpInfo | null> {
-  // Next session + whether tickets are open (shared with the ticket routes so they
-  // agree). Until migration_jp_info_settings.sql runs, nothing is "posted".
+  // The next session the chair posted, unless its date has passed.
   let nextSession: JpInfo["nextSession"] = null;
-  let tickets: JpInfo["tickets"] = { state: "none" };
-  let sessionLive = false;
-  let line: JpInfo["line"] = { groups: [], brothers: 0 };
   try {
-    const docket = await loadDocket(service);
-    nextSession = docket.nextSession;
-    tickets = docket.tickets;
-    sessionLive = !!docket.liveSession;
-    // Slots are already in hearing order, grouped by officer.
-    const groups: JpInfo["line"]["groups"] = [];
-    for (const s of docket.slots) {
-      let g = groups.find((x) => x.officer === s.officer);
-      if (!g) groups.push((g = { officer: s.officer, brothers: 0, upNext: [] }));
-      g.brothers++;
-      if (!docket.skipped.has(s.memberId) && g.upNext.length < 5) {
-        g.upNext.push({ roll: s.roll, name: docket.members.get(s.memberId)?.name ?? "Unknown" });
-      }
-    }
-    line = { groups, brothers: new Set(docket.slots.map((s) => s.memberId)).size };
+    const { data } = await service.from("public_settings").select("value").eq("key", NEXT_SESSION_KEY).maybeSingle();
+    const posted = parseNextSession(data?.value as string | undefined);
+    nextSession = posted && posted.date >= todayPacific() ? posted : null;
   } catch {}
 
   // The fines table only holds the current year (it's wiped every Jan 4), so this
   // counts everything on record. Paged because PostgREST caps a response at 1000 rows.
-  const rows: { fine_type: string; amount: number | null; fining_officer: string | null; date_issued: string }[] = [];
+  const rows: { fine_type: string; amount: number | null }[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await service
       .from("public_member_fines")
-      .select("fine_type, amount, fining_officer, date_issued")
+      .select("fine_type, amount")
       .range(from, from + 999);
     if (error) return null;
     rows.push(...(data ?? []));
@@ -87,14 +68,7 @@ export async function jpInfo(service: SupabaseClient): Promise<JpInfo | null> {
     .slice(0, 5)
     .map(([fineType, amounts]) => ({ fineType, count: amounts.length, amount: typicalAmount(amounts) }));
 
-  // Officers who fined anyone in the last 30 days (Pacific dates).
-  const [y, m, d] = todayPacific().split("-").map(Number);
-  const cutoff = new Date(Date.UTC(y, m - 1, d - 30)).toISOString().slice(0, 10);
-  const recentOfficers = [...new Set(
-    rows.filter((r) => r.date_issued >= cutoff && r.fining_officer?.trim()).map((r) => r.fining_officer!.trim())
-  )].sort((a, b) => a.localeCompare(b));
-
-  return { nextSession, commonFines, totalFines: rows.length, tickets, sessionLive, line, recentOfficers };
+  return { nextSession, commonFines, totalFines: rows.length };
 }
 
 // "$10" when every fine of the type costs the same, "Often $100" when one amount is

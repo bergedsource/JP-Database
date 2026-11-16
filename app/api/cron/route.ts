@@ -73,7 +73,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: "annual cleanup: no fines found, aborting" });
     }
 
-    await service.from("jp_tickets").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     // Delete JP session records in FK-safe order (changes → fines → sessions)
     await service.from("jp_session_changes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     await service.from("jp_session_fines").delete().neq("session_id", "00000000-0000-0000-0000-000000000000");
@@ -159,9 +158,6 @@ export async function GET(req: NextRequest) {
   // Overdue pending fines are no longer auto-upheld — the admin UI flags them (lib/overdue.ts) for an owner to uphold or extend.
   // Exception: fines missed at a closed JP session are upheld 15 days after that session (lib/missed-fines.ts).
   await upholdMissedFines(service, now);
-
-  // --- Daily: drop JP tickets (and their phone numbers) more than two days old ---
-  await service.from("jp_tickets").delete().lt("created_at", new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString());
 
   // --- Daily: Auto-detect social probation ---
   const [{ data: upheldFines }, { data: autoSP }] = await Promise.all([

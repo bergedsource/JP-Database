@@ -20,12 +20,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://jp-database.vercel.app"),
   openGraph: {
     title: "Acacia JP",
-    description: "Look up your fines, pay your balance, and take a ticket for JP. Oregon State Chapter of Acacia.",
+    description: "Look up your fines, pay your balance, and see when JP is. Oregon State Chapter of Acacia.",
     url: "/",
     siteName: "Acacia JP",
     type: "website",
   },
-  twitter: { card: "summary_large_image", title: "Acacia JP", description: "Your fines, your balance and your spot in line at JP." },
+  twitter: { card: "summary_large_image", title: "Acacia JP", description: "Your fines, your balance and the next JP." },
 };
 
 // Tints the phone browser bar Beaver Orange.
