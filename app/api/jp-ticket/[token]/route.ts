@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { isRateLimited, getIP, publicLimiter, ticketIpLimiter, ticketLimiter } from "@/lib/rate-limit";
 import { waitFor, type TicketStatus, type TicketView } from "@/lib/jp-info";
-import { hashTicketToken, loadDocket, nowHearing } from "@/lib/jp-docket";
+import { hashTicketToken, loadDocketShared, nowHearing } from "@/lib/jp-docket";
 import { STATUS_NOTE_KEY } from "@/lib/jp-info";
 import { missedUpholdDate } from "@/lib/missed-fines";
 
@@ -22,7 +22,7 @@ async function findTicket(token: string) {
 // number or anyone else's name.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  // Per ticket (polled every 15 s) plus a roomy per-IP cap: brothers on the same
+  // Per ticket (polled every 30 s) plus a roomy per-IP cap: brothers on the same
   // house wifi share one IP, so the regular public limit would lock them out.
   if (
     (await isRateLimited(ticketLimiter, `t:${token.slice(0, 64)}`)) ||
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
   let docket;
   try {
-    docket = await loadDocket(service);
+    docket = await loadDocketShared(service);
   } catch {
     return NextResponse.json({ error: "Couldn't load the docket" }, { status: 500, headers: NO_STORE });
   }

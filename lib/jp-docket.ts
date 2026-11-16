@@ -36,6 +36,21 @@ export type Docket = {
   skipped: Set<string>; // member ids the chair has skipped tonight
 };
 
+// Read-only callers (the ticket screen, polled by every phone in line) share one
+// docket per server instance for a few seconds instead of each running ~6 queries.
+// Admin/queue routes keep calling loadDocket() directly so they always see fresh data.
+// Callers must treat the result as read-only.
+const SHARED_TTL_MS = 5000;
+let shared: { at: number; p: Promise<Docket> } | null = null;
+export function loadDocketShared(service: SupabaseClient): Promise<Docket> {
+  if (shared && Date.now() - shared.at < SHARED_TTL_MS) return shared.p;
+  const p = loadDocket(service);
+  const entry = { at: Date.now(), p };
+  shared = entry;
+  p.catch(() => { if (shared === entry) shared = null; }); // don't cache failures
+  return p;
+}
+
 export async function loadDocket(service: SupabaseClient): Promise<Docket> {
   const [pendingRes, membersRes, settingsRes, liveRes] = await Promise.all([
     service.from("public_member_fines").select("member_id, fine_type, fining_officer").eq("status", "pending"),

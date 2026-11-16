@@ -235,7 +235,7 @@ export function TonightHero({
         });
       });
     load();
-    const t = setInterval(() => { if (document.visibilityState === "visible") load(); }, 20000);
+    const t = setInterval(() => { if (document.visibilityState === "visible") load(); }, 30000);
     return () => { stop = true; clearInterval(t); };
   }, [tokens]);
 

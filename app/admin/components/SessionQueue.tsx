@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { QueueResponse, QueueRow } from "@/app/api/admin/sessions/[id]/queue/route";
 
-const POLL_MS = 5000;
+const POLL_MS = 10000;
 const TEXT_BODY = "JP: you're up in about 5 minutes. Head to JP now. – JP Chair";
 const proxyText = (brother: string) => `JP: you're up as ${brother}'s proxy in about 5 minutes. Head to JP now. – JP Chair`;
 
@@ -29,14 +29,17 @@ export default function SessionQueue({ sessionId, refreshKey }: { sessionId: str
       const res = await fetch(`/api/admin/sessions/${sessionId}/queue`, { cache: "no-store" });
       if (res.ok) setQ(await res.json());
     } catch {
-      // A dropped connection; the next 5 s poll tries again.
+      // A dropped connection; the next poll tries again.
     }
   }, [sessionId]);
 
   useEffect(() => {
     const first = setTimeout(load, 0);
-    const t = setInterval(load, POLL_MS);
-    return () => { clearTimeout(first); clearInterval(t); };
+    // Skip polls while the tab is hidden; catch up the moment it's visible again.
+    const t = setInterval(() => { if (document.visibilityState === "visible") load(); }, POLL_MS);
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearTimeout(first); clearInterval(t); document.removeEventListener("visibilitychange", onVisible); };
   }, [load, refreshKey]);
 
   async function act(action: string, memberId?: string, officer?: string) {

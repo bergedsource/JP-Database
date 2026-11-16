@@ -7,12 +7,11 @@ import { loadDocket } from "./jp-docket";
 // public_* views, so nothing private is reachable from here.
 
 export type PublicMember = { id: string; name: string; status: string; roll: number | null };
-export type PublicSettings = { venmo_handle: string; venmo_url: string; game_enabled: string };
+export type PublicSettings = { venmo_handle: string; venmo_url: string };
 
 export const SETTINGS_DEFAULTS: PublicSettings = {
   venmo_handle: "@Dillon-Berge",
   venmo_url: "https://venmo.com/Dillon-Berge",
-  game_enabled: "false",
 };
 
 export async function publicMembers(service: SupabaseClient): Promise<PublicMember[] | null> {
@@ -26,7 +25,7 @@ export async function publicSettings(service: SupabaseClient): Promise<PublicSet
     const { data } = await service
       .from("public_settings")
       .select("key, value")
-      .in("key", ["venmo_handle", "venmo_url", "game_enabled"]);
+      .in("key", ["venmo_handle", "venmo_url"]);
     for (const row of data ?? []) map[row.key as keyof PublicSettings] = row.value ?? map[row.key as keyof PublicSettings];
   } catch {}
   return map;

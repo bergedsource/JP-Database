@@ -9,7 +9,7 @@ import { haptic } from "@/lib/haptics";
 
 const sans = Figtree({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-sans" });
 
-const POLL_MS = 15000;
+const POLL_MS = 30000;
 
 function ordinal(n: number): string {
   const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
@@ -80,7 +80,7 @@ export default function TicketPage({ params }: { params: Promise<{ token: string
 
   useEffect(() => {
     const first = setTimeout(load, 0);
-    const poll = setInterval(load, POLL_MS);
+    const poll = setInterval(() => { if (document.visibilityState === "visible") load(); }, POLL_MS);
     // Until the first load lands, retry every 3 s instead of waiting a full poll.
     const retry = setInterval(() => { if (!loadedRef.current) load(); }, 3000);
     const tick = setInterval(() => setNow(Date.now()), 1000);
