@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { Fine, LeaderboardEntry } from "@/lib/types";
+import { useEffect, useState } from "react";
+import type { Fine } from "@/lib/types";
 import { EyeIcon } from "../PasswordInput";
 
 type Props = {
@@ -13,10 +13,6 @@ type Props = {
 
 type AdminUser = { user_id: string; email: string; role: string; created_at: string };
 type ExportHistoryItem = { spreadsheetId: string; term: string; date: string; url: string };
-
-// Trap questions stay collapsed until asked for, so the answers aren't on screen
-// by default. Per-browser only — this is a shoulder-surfing guard, not access control.
-const TRAP_VISIBLE_KEY = "jp-admin-trap-questions-visible";
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -52,37 +48,6 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
   const [showExportHelp, setShowExportHelp] = useState(false);
 
-  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardView, setLeaderboardView] = useState<"all" | "best">("all");
-  const [leaderboardClearing, setLeaderboardClearing] = useState(false);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [gameEnabled, setGameEnabled] = useState(false);
-  const [gameEnabledSaving, setGameEnabledSaving] = useState(false);
-
-  type TriviaEntry = {
-    id: number;
-    question_text: string;
-    option_a: string;
-    option_b: string;
-    option_c: string;
-    option_d: string;
-    correct_index: number;
-    created_at: string;
-    created_by: string | null;
-  };
-  const [triviaEntries, setTriviaEntries] = useState<TriviaEntry[]>([]);
-  const [triviaForm, setTriviaForm] = useState({
-    question_text: "",
-    option_a: "",
-    option_b: "",
-    option_c: "",
-    option_d: "",
-    correct_index: 0,
-  });
-  const [triviaSubmitting, setTriviaSubmitting] = useState(false);
-  const [triviaError, setTriviaError] = useState("");
-  const [trapVisible, setTrapVisible] = useState(false);
-
   const [lastRosterSyncAt, setLastRosterSyncAt] = useState<string | null>(null);
   const [rosterSyncRunning, setRosterSyncRunning] = useState(false);
   const [rosterSyncResult, setRosterSyncResult] = useState<{
@@ -98,22 +63,7 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
   useEffect(() => {
     loadAdminUsers();
     loadSettings();
-    loadLeaderboard();
-    loadTrivia();
-    // Read after mount, not in useState — keeps the first client render matching the server's.
-    try {
-      if (localStorage.getItem(TRAP_VISIBLE_KEY) === "true") setTrapVisible(true);
-    } catch { /* private mode / storage blocked — stay collapsed */ }
   }, []);
-
-  function toggleTrapVisible() {
-    const next = !trapVisible;
-    setTrapVisible(next);
-    try {
-      localStorage.setItem(TRAP_VISIBLE_KEY, next ? "true" : "false");
-    } catch { /* storage blocked — the toggle still works for this session */ }
-  }
-
   async function loadAdminUsers() {
     const res = await fetch("/api/admin/users");
     if (res.ok) setAdminUsers(await res.json());
@@ -128,7 +78,6 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       try {
         setExportHistory(data.export_history ? JSON.parse(data.export_history) : []);
       } catch { setExportHistory([]); }
-      setGameEnabled(data.game_enabled === "true");
       setLastRosterSyncAt(data.last_roster_sync_at ?? null);
     }
   }
@@ -153,25 +102,6 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       setRosterSyncRunning(false);
     }
   }
-
-  async function loadLeaderboard() {
-    const res = await fetch("/api/admin/leaderboard");
-    if (res.ok) {
-      const data = await res.json();
-      setLeaderboardEntries(Array.isArray(data.entries) ? data.entries : []);
-    }
-  }
-
-  const visibleLeaderboard = useMemo(() => {
-    if (leaderboardView === "all") return leaderboardEntries;
-    const seen = new Set<string>();
-    return leaderboardEntries.filter((e) => {
-      const key = e.username.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [leaderboardEntries, leaderboardView]);
 
   async function createAdminUser(e: React.FormEvent) {
     e.preventDefault();
@@ -259,72 +189,6 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
       setExportResult({ ok: false, msg: data.error ?? "Export failed" });
     }
     setExportLoading(false);
-  }
-
-  async function toggleGameEnabled(next: boolean) {
-    setGameEnabledSaving(true);
-    const res = await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "game_enabled", value: next ? "true" : "false" }),
-    });
-    if (res.ok) setGameEnabled(next);
-    setGameEnabledSaving(false);
-  }
-
-  async function clearLeaderboard() {
-    if (!confirm("Delete ALL leaderboard entries? This cannot be undone.")) return;
-    setLeaderboardClearing(true);
-    const res = await fetch("/api/admin/leaderboard", { method: "DELETE" });
-    if (res.ok) await loadLeaderboard();
-    setLeaderboardClearing(false);
-  }
-
-  async function approveLeaderboardEntry(id: string, username: string) {
-    if (!confirm(`Clear the flag for ${username} and push their score to the live leaderboard?`)) return;
-    setApprovingId(id);
-    const res = await fetch(`/api/admin/leaderboard/${id}`, { method: "PATCH" });
-    if (res.ok) await loadLeaderboard();
-    setApprovingId(null);
-  }
-
-  async function deleteLeaderboardEntry(id: string, username: string) {
-    if (!confirm(`Remove ${username}'s entry?`)) return;
-    const res = await fetch(`/api/admin/leaderboard/${id}`, { method: "DELETE" });
-    if (res.ok) await loadLeaderboard();
-  }
-
-  async function loadTrivia() {
-    const res = await fetch("/api/admin/trivia");
-    if (res.ok) {
-      const data = await res.json();
-      setTriviaEntries(Array.isArray(data.entries) ? data.entries : []);
-    }
-  }
-
-  async function createTrivia(e: React.FormEvent) {
-    e.preventDefault();
-    setTriviaSubmitting(true);
-    setTriviaError("");
-    const res = await fetch("/api/admin/trivia", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(triviaForm),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setTriviaError(data.error ?? "Failed to add trivia");
-    } else {
-      setTriviaForm({ question_text: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_index: 0 });
-      await loadTrivia();
-    }
-    setTriviaSubmitting(false);
-  }
-
-  async function deleteTrivia(id: number, questionText: string) {
-    if (!confirm(`Delete trivia question "${questionText.slice(0, 60)}${questionText.length > 60 ? "…" : ""}"?`)) return;
-    const res = await fetch(`/api/admin/trivia/${id}`, { method: "DELETE" });
-    if (res.ok) await loadTrivia();
   }
 
   return (
@@ -727,265 +591,6 @@ export default function TransitionTab({ fines, currentUserId, userRole, setUserR
             </div>
           )}
         </div>
-      </div>
-
-      <div className="adm-card">
-        <div className="adm-card-header">
-          <span className="adm-card-title">Chapter Trivia Game</span>
-        </div>
-        <div className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={gameEnabled}
-                onChange={(e) => toggleGameEnabled(e.target.checked)}
-                disabled={gameEnabledSaving}
-              />
-              <span style={{ fontSize: 13 }}>Game enabled (public site shows Play button + leaderboard)</span>
-            </label>
-          </div>
-
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
-                Leaderboard
-                {leaderboardEntries.length > 0 && (
-                  <span style={{ marginLeft: 6 }}>
-                    ({visibleLeaderboard.length}
-                    {leaderboardView === "best" && visibleLeaderboard.length !== leaderboardEntries.length
-                      ? ` of ${leaderboardEntries.length}`
-                      : ""}
-                    )
-                  </span>
-                )}
-              </div>
-              <div style={{ display: "inline-flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
-                <button
-                  type="button"
-                  onClick={() => setLeaderboardView("all")}
-                  className="adm-btn"
-                  style={{
-                    fontSize: 11,
-                    padding: "4px 10px",
-                    background: leaderboardView === "all" ? "var(--gold)" : "transparent",
-                    color: leaderboardView === "all" ? "#FFFFFF" : "var(--text-dim)",
-                    border: "none",
-                    borderRadius: 0,
-                  }}
-                >
-                  All entries
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLeaderboardView("best")}
-                  className="adm-btn"
-                  style={{
-                    fontSize: 11,
-                    padding: "4px 10px",
-                    background: leaderboardView === "best" ? "var(--gold)" : "transparent",
-                    color: leaderboardView === "best" ? "#FFFFFF" : "var(--text-dim)",
-                    border: "none",
-                    borderRadius: 0,
-                  }}
-                >
-                  Best per user
-                </button>
-              </div>
-            </div>
-            {leaderboardEntries.length === 0 ? (
-              <p style={{ fontSize: 13, color: "var(--text-dim)", margin: 0 }}>No entries yet.</p>
-            ) : (
-              <div style={{ maxHeight: 400, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 4 }}>
-                <table className="adm-table" style={{ width: "100%" }}>
-                  <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
-                    <tr>
-                      <th style={{ width: 48 }}>#</th>
-                      <th>Username</th>
-                      <th>Score</th>
-                      <th>Time</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleLeaderboard.map((e, idx) => {
-                      const m = Math.floor(e.time_seconds / 60);
-                      const s = e.time_seconds % 60;
-                      return (
-                        <tr key={e.id} style={e.flagged_suspect ? { background: "var(--surface)" } : undefined}>
-                          <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--text-dim)" }}>{idx + 1}</td>
-                          <td>
-                            {e.username}
-                            {e.flagged_suspect && (
-                              <span
-                                title="Failed a trap-trivia question — suspected cheater. This run is hidden from the public leaderboard."
-                                aria-label="suspected cheater"
-                                style={{ marginLeft: 6, color: "#D73F09", fontSize: 13 }}
-                              >
-                                {"\u{1F6A9}"}
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12, color: "var(--gold)" }}>{e.score}</td>
-                          <td style={{ fontFamily: "var(--font-sans), sans-serif", fontSize: 12 }}>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</td>
-                          <td style={{ textAlign: "right" }}>
-                            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                              {e.flagged_suspect && (
-                                <button
-                                  onClick={() => approveLeaderboardEntry(e.id, e.username)}
-                                  disabled={approvingId === e.id}
-                                  style={{ fontSize: 11, background: "#C4D6A4", border: "1px solid #C4D6A4", color: "#000000", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", fontWeight: 600 }}
-                                >
-                                  {approvingId === e.id ? "Approving…" : "Approve"}
-                                </button>
-                              )}
-                              <button className="adm-delete-btn" onClick={() => deleteLeaderboardEntry(e.id, e.username)}>
-                                {leaderboardView === "best" ? "Remove this run" : "Remove"}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <button
-              onClick={clearLeaderboard}
-              disabled={leaderboardClearing || leaderboardEntries.length === 0}
-              className="adm-btn"
-              style={{ background: "#D73F09", color: "#FFFFFF" }}
-            >
-              {leaderboardClearing ? "Clearing…" : "Clear All Entries"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="adm-card">
-        <div className="adm-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <span className="adm-card-title">Chapter Trivia (Trap Questions)</span>
-          <button
-            type="button"
-            onClick={toggleTrapVisible}
-            aria-expanded={trapVisible}
-            aria-controls="trap-questions-body"
-            style={{ background: "#C6DAE7", border: "1px solid #C6DAE7", color: "var(--gold)", borderRadius: 6, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans), sans-serif", whiteSpace: "nowrap" }}
-          >
-            {trapVisible ? "Hide ▲" : "Show ▼"}
-          </button>
-        </div>
-        {!trapVisible ? (
-          <div id="trap-questions-body" className="adm-card-body">
-            <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0, fontFamily: "var(--font-sans), sans-serif" }}>
-              Hidden — {triviaEntries.length} trap question{triviaEntries.length === 1 ? "" : "s"} loaded.
-              Click Show to view or edit them.
-            </p>
-          </div>
-        ) : (
-        <div id="trap-questions-body" className="adm-card-body" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0 }}>
-            Chapter trivia questions get mixed into each game run as silent trap questions.
-            Wrong answers don&apos;t change the player&apos;s score or lives — but flag the run as
-            suspect (failed trap = likely cheating). Flagged runs are hidden from the public
-            leaderboard and marked with {"\u{1F6A9}"} above.
-          </p>
-
-          <form onSubmit={createTrivia} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <input
-              className="adm-input"
-              placeholder="Question (e.g., What year was Acacia OSU founded?)"
-              value={triviaForm.question_text}
-              onChange={(e) => setTriviaForm({ ...triviaForm, question_text: e.target.value })}
-              maxLength={200}
-              required
-            />
-            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 6, alignItems: "center" }}>
-              {(["a", "b", "c", "d"] as const).map((letter, idx) => (
-                <span key={`row-${letter}`} style={{ display: "contents" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-                    <input
-                      type="radio"
-                      name="correct_index"
-                      checked={triviaForm.correct_index === idx}
-                      onChange={() => setTriviaForm({ ...triviaForm, correct_index: idx })}
-                    />
-                    {letter.toUpperCase()}
-                  </label>
-                  <input
-                    className="adm-input"
-                    placeholder={`Option ${letter.toUpperCase()}${idx === triviaForm.correct_index ? " (correct)" : ""}`}
-                    value={triviaForm[`option_${letter}` as const]}
-                    onChange={(e) => setTriviaForm({ ...triviaForm, [`option_${letter}`]: e.target.value })}
-                    maxLength={200}
-                    required
-                  />
-                  <span style={{ fontSize: 10, color: "var(--text-dim)", minWidth: 60 }}>
-                    {idx === triviaForm.correct_index ? "correct" : ""}
-                  </span>
-                </span>
-              ))}
-            </div>
-            {triviaError && (
-              <p role="alert" style={{ color: "#D73F09", fontSize: 12, margin: 0 }}>{triviaError}</p>
-            )}
-            <div>
-              <button type="submit" className="adm-btn" disabled={triviaSubmitting}>
-                {triviaSubmitting ? "Adding…" : "Add trivia"}
-              </button>
-            </div>
-          </form>
-
-          <div>
-            <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
-              {triviaEntries.length === 0
-                ? "No trivia questions yet — without any, no runs will ever be flagged."
-                : `${triviaEntries.length} trivia question${triviaEntries.length === 1 ? "" : "s"}`}
-            </div>
-            {triviaEntries.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {triviaEntries.map((t) => (
-                  <div
-                    key={t.id}
-                    style={{
-                      border: "1px solid var(--border)",
-                      borderRadius: 4,
-                      padding: "8px 10px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 12,
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{t.question_text}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-sans), sans-serif" }}>
-                        {["A", "B", "C", "D"].map((letter, idx) => (
-                          <span key={letter} style={{ marginRight: 12, color: idx === t.correct_index ? "var(--gold)" : undefined }}>
-                            {letter}: {t[`option_${letter.toLowerCase()}` as "option_a" | "option_b" | "option_c" | "option_d"]}
-                            {idx === t.correct_index ? " ✓" : ""}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <button
-                      className="adm-delete-btn"
-                      onClick={() => deleteTrivia(t.id, t.question_text)}
-                      style={{ flexShrink: 0 }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        )}
       </div>
     </div>
   );

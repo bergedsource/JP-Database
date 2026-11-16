@@ -32,7 +32,6 @@ export async function PUT(req: NextRequest) {
     "venmo_url",
     "export_history",
     "google_spreadsheet_id",
-    "game_enabled",
     "master_roster_spreadsheet_id",
     "master_roster_sheet_name",
     "last_roster_sync_at",

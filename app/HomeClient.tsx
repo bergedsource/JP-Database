@@ -52,7 +52,6 @@ export default function HomeClient({
     handle: initialSettings?.venmo_handle ?? "@Dillon-Berge",
     url: initialSettings?.venmo_url ?? "https://venmo.com/Dillon-Berge",
   });
-  const [gameEnabled, setGameEnabled] = useState(initialSettings?.game_enabled === "true");
   const [jpInfo, setJpInfo] = useState<JpInfo | null>(initialInfo);
   // Who this phone belongs to (last name picked) and the tickets it holds; both
   // live in localStorage, so they are read after mount.
@@ -85,7 +84,6 @@ export default function HomeClient({
         .then((r) => r.json())
         .then((d) => {
           setVenmo({ handle: d.venmo_handle ?? "@Dillon-Berge", url: d.venmo_url ?? "https://venmo.com/Dillon-Berge" });
-          setGameEnabled(d.game_enabled === "true");
         })
         .catch(() => {});
     }
@@ -523,7 +521,6 @@ export default function HomeClient({
             <span className="brand-name">Acacia JP</span>
           </a>
           <a href="#how" className="nav-link nav-link-wide">How JP works</a>
-          {gameEnabled && <a href="/game" className="nav-link">Game</a>}
           <ThemeToggle className="theme-toggle" />
           <a href="/admin/login" className="nav-login">Officer login</a>
         </nav>

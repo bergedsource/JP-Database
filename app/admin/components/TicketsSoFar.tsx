@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { TicketsSoFarResponse } from "@/app/api/admin/tickets/route";
 
-const POLL_MS = 15000;
+const POLL_MS = 30000;
 const STATUS_LABEL: Record<string, string> = { waiting: "Waiting", here: "Here", called: "Called", skipped: "Skipped", done: "Done" };
 
 // Read-only list of tickets taken for the next JP night, shown on the Sessions list
@@ -25,7 +25,7 @@ export default function TicketsSoFar() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, POLL_MS);
+    const t = setInterval(() => { if (document.visibilityState === "visible") load(); }, POLL_MS);
     return () => clearInterval(t);
   }, [load]);
 
