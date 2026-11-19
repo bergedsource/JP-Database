@@ -28,8 +28,8 @@ export async function POST(
   const auditTable = current.role === "root" ? "system_events" : "audit_logs";
 
   // Missed his turn: any fine from this session still undecided at close stays
-  // pending until 15 days after the session date, then the daily cron upholds it
-  // (only those fines, so an officer he did show up for isn't affected). He is also
+  // pending with a review deadline 15 days after the session date, when it shows as
+  // overdue for an owner to uphold or extend (it is never upheld automatically). He is also
   // recorded absent for the week. Both happen BEFORE the session is marked closed,
   // so if either write fails the session stays open and the chair can retry.
   const { data: sessionFines, error: sfError } = await service
@@ -83,8 +83,8 @@ export async function POST(
       },
       {
         admin_email: current.email,
-        action: "Missed Fines — Upheld in 15 Days",
-        details: `${session.date_held} (upheld ${upholdOn} unless decided): ${missed.map((m) => `${nameOf.get(m.memberId) ?? "Unknown"} — ${m.fineType}`).join("; ")}`,
+        action: "Missed Fines — Review in 15 Days",
+        details: `${session.date_held} (flagged for review ${upholdOn} unless decided): ${missed.map((m) => `${nameOf.get(m.memberId) ?? "Unknown"} — ${m.fineType}`).join("; ")}`,
       },
     ]);
   }
