@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { syncMasterRoster } from "@/lib/sync-roster";
 import { timingSafeEqualStr } from "@/lib/timing-safe";
-import { upholdMissedFines } from "@/lib/missed-fines";
 
 async function sendEmail(to: string[], subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) return;
@@ -155,9 +154,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Overdue pending fines are no longer auto-upheld — the admin UI flags them (lib/overdue.ts) for an owner to uphold or extend.
-  // Exception: fines missed at a closed JP session are upheld 15 days after that session (lib/missed-fines.ts).
-  await upholdMissedFines(service, now);
+  // Pending fines are never auto-upheld, including ones missed at a JP session: the admin UI
+  // flags them once their review deadline passes (lib/overdue.ts) for an owner to uphold or extend.
 
   // --- Daily: Auto-detect social probation ---
   const [{ data: upheldFines }, { data: autoSP }] = await Promise.all([
